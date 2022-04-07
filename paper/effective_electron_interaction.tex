@@ -5,7 +5,8 @@
 \usepackage{mathrsfs}
 \usepackage{subcaption}
 \usepackage{tikz}
-\usepackage[compat=1.1.0]{tikz-feynman}
+\usepackage{axodraw2}
+% \usepackage[compat=1.1.0]{tikz-feynman}
 \DeclareGraphicsRule{*}{mps}{*}{}
 
 %\usepackage{cite}
@@ -229,6 +230,7 @@ where $z$ is the wave-function renormalization factor.
 
 The quasiparticle in the minimal theory has a renormalized propagator,
 \begin{equation}
+    \label{eq:gR}
     g_{R;k}=-\frac{1}{ik_0+\frac{\bk^2}{2m^*}-\mu_R},
 \end{equation}
 where the mass is renormalized to the effective mass $m^*$, and the chemical potential is chosen so that $g_R$ gives the electron density. Since we also rescale the quasiparticle fields with the factor $\sqrt{z}$, the quasiparticle spectral density has weight one.
@@ -281,55 +283,68 @@ In addition, the counterterm for the renormalized interaction is given by
 
 The definitions in Eq.\eqref{eq:ct2} and \eqref{eq:ct3} are not useful unless we give precise definitions of the renormalized parameters.
 
-The renormalized parameters are defined through physical observables in terms of one-particle and two-particle vertex functions. The one-particle vertex function, namely the self-energy, can be derived from the fully dressed propagator of the electron,
+The renormalized parameters are defined through physical observables in terms of two-point and four-point vertex functions of the quasiparticle.
+The two-point vertex function can be derived from the fully dressed propagator of the quasiparticle,
 \begin{equation}
-    G_k\equiv \left< \mathcal{T} \hat{c}(\tau_1 \mathbf{x}_1) \hat{c}^\dag(\tau_2 \mathbf{x}_2) \right>_k,
+    G^R_k \equiv \left< \mathcal{T} \hat{c}_R(\tau_1 \mathbf{x}_1) \hat{c}_R^{\dag}(\tau_2 \mathbf{x}_2) \right>_k=\frac{1}{z}\left< \mathcal{T} \hat{c}(\tau_1 \mathbf{x}_1) \hat{c}^{\dag}(\tau_2 \mathbf{x}_2) \right>_k,
 \end{equation}
-so that the self-energy of the bare electron,
+so that the two-point vertex function of the quasiparticle,
 \begin{equation}
-    \Sigma_k = G_k^{-1}-g_k^{-1}.
+    \Gamma^{2,R}_k = (G^R_k)^{-1}.
 \end{equation}
 
-According to the Landau Fermi liquid theory, the renormalized parameters $z$, $m^*$ and $\mu_R$ are fixed by the ow-energy limit of the self-energy near the Fermi surface defines. We will simply quote the Fermi liquid results in literature,
+According to the Landau Fermi liquid theory, $\Gamma^2_k$ should be analytic in the vicinity of the Fermi surface,
+\begin{align*}
+    \Gamma^{2,R}_k & \rightarrow -i k_0-\frac{\bold{k}_F}{m^*}\cdot(\bold{k}-\bold{k}_F)+O(\omega_n^2, (\bold{k}-\bold{k}_F)^2) \\
+                   & \rightarrow -i k_0-\frac{\bold{k}^2}{2m^*}+E_F+O(\omega_n^2, (\bold{k}-\bold{k}_F)^2)
+\end{align*}
+
+The above equation leads to the following renormalization conditions that implicitly fixes the renormalized parameters $z$, $m^*$ and $\mu_R$.
+For convenience, we introduce the quasiparticle self-energy
+\begin{equation}
+    \Sigma^{R}_k \equiv \Gamma^{2,R}_k-g_{R; k}
+\end{equation}
 
 \begin{enumerate}
-    \item The renormalized chemical potential is defined as,
+    \item The renormalized chemical potential is fixed by,
           \begin{equation}
               \label{eq:condition1}
-              \mu_R \equiv \mu- \operatorname{Re}\Sigma_{(0, k_F)}
+              \mu_R \equiv \operatorname{Re}\Gamma^{R;2}_{(0, k_F)} = E_F \rightarrow \operatorname{Re}\Sigma^{R}_{(0, k_F)} = 0
           \end{equation}
 
-          At a sufficiently low temperature, the renormalized chemical potential potential $\mu_R$ should be the Fermi energy $E_F$, which is an input parameter of the problem.
-
-    \item The wave-function renormalization factor $z$ is fixed by the small frequency behavior of the self-energy near the Fermi surface,
+    \item The wave-function renormalization factor $z$ is implicitly fixed by the equation,
           \begin{equation}
               \label{eq:condition2}
-              \frac{1}{z} = 1-\frac{\partial \operatorname{Im} \Sigma_{(0, k_F)}}{\partial i\omega},
+              \frac{\partial }{\partial k_0}\left(\operatorname{Im} \Gamma^{R; 2}_{(0, k_F)}\right) = -1 \rightarrow \frac{\partial }{\partial k_0}\left(\operatorname{Im} \Sigma^{R}_{(0, k_F)}\right) = 0,
           \end{equation}
     \item The effective mass is fixed by both the small momentum and the frequency behavior of the self-energy near the Fermi surface,
           \begin{equation}
               \label{eq:condition3}
-              \frac{m}{m^*}=z \cdot \left(1+\frac{m}{k_F}\frac{\partial \operatorname{Re}\Sigma_{(0, k_F)}}{\partial k}\right).
+              \frac{m}{m^*}=-\frac{m}{k_F}\frac{\partial }{\partial \bold{k}}\left(\operatorname{Re}\Gamma^{R;2}_{(0, k_F)}\right) \rightarrow \frac{\partial }{\partial \bold{k}}\left(\operatorname{Re}\Sigma^{R}_{(0, k_F)}\right)=0.
           \end{equation}
 \end{enumerate}
 
-The remaining renormalized parameter $f^+$ is the Landau parameter of the quasiparticle interaction. It can extracted from the two-electron scattering amplitude. More specifically,  from the connected two-body Green's function,
+The remaining renormalized parameter $f^+$ is the Landau parameter of the quasiparticle interaction. It can be extracted from the two-quasiparticle scattering amplitude.
+More specifically,  from the connected two-body Green's function of the quasiparticle,
 \begin{equation}
-    G^c_{k_1k_2; k_3k_4}\equiv \left< \mathcal{T} \hat{c}(\tau_1 \mathbf{x}_1)\hat{c}(\tau_2 \mathbf{x}_2) \hat{c}^\dag(\tau_3 \mathbf{x}_3)\hat{c}^\dag(\tau_4 \mathbf{x}_4) \right>^c_{k_1 k_2 k_3 k_3},
+    G^{c,R}_{k_1k_2; k_3k_4}\equiv \left< \mathcal{T} \hat{c}_R(\tau_1 \mathbf{x}_1)\hat{c}_R(\tau_2 \mathbf{x}_2) \hat{c}_R^\dag(\tau_3 \mathbf{x}_3)\hat{c}_R^\dag(\tau_4 \mathbf{x}_4) \right>^c_{k_1 k_2 k_3 k_3},
 \end{equation}
-one can derive the $4$-point 1PI vertex function, or the scattering amplitude, by amputating the two-body Green's function with the one-electron propagator,
+one can derive the $4$-point 1PI vertex function, or the scattering amplitude, by amputating the two-body Green's function with the one-quasiparticle propagator,
 \begin{equation}
-    \Gamma^4_{k_1k_2;k_3k_4}\equiv G^c_{k_1k2; k3k4}/\left[G(k_1)G(k_2)G(k_3)G(k_4)\right].
+    \Gamma^{4,R}_{k_1k_2;k_3k_4}\equiv G^{c,R}_{k_1k_2; k_3k_4}/\left[G^R_{k_1}G^R_{k_2}G^R_{k_3}G^R_{k_4}\right].
 \end{equation}
 
 The parameter $f^+$ is fixed to the spin-symmetric Landau parameter with $l=0$,
 \begin{equation}
     \label{eq:condition4}
-    f^+ = z^2 \left. \overline{\Gamma_4(k_1, k_2; k_1-q, k_2+q)}\right|^+_{q\rightarrow 0, q_0 \gg v_F^*|\bq| }-v_q.
+    f^+ = \overline{\Gamma^{4,R}_{k_1, k_2; k_1-q, k_2+q}}-v_q.
 \end{equation}
-where the symbol $\overline{\Gamma_4}$ means projecting the incoming momentum-frequency to the Fermi surface $k_1=(0, k_F\mathbf{n}_1)$ and $k_2=(0, k_F\mathbf{n}_2)$, then average over the orientation of the unit vectors $\mathbf{n}_1$ and $\mathbf{n}_2$.
+where the symbol $\overline{\Gamma_4}$ means three operations:
+i) project the incoming momentum-frequency to the Fermi surface $k_1=(0, k_F\mathbf{n}_1)$ and $k_2=(0, k_F\mathbf{n}_2)$,
+ii) then send $q\rightarrow 0$ along the trajector $q_0 \gg v_F^*|\bq|$,
+iii) and finally average over the orientation of the unit vectors $\mathbf{n}_1$ and $\mathbf{n}_2$.
 
-The equations Eq. \eqref{eq:condition1},\eqref{eq:condition2}, \eqref{eq:condition3} and \eqref{eq:condition4} are called renormalization conditions.
+The equations Eq. \eqref{eq:condition1},\eqref{eq:condition2}, \eqref{eq:condition3} and \eqref{eq:condition4} give the renormalization conditions to fix all renormalized parameters.
 
 
 % where $\Gamma_4^\Omega$ is the quasiparticle scattering amplitude ($1PI$ vertex function) in the limit of zero transfer momentum $\mathbf{q}=0$ and small transfer frequency $\Omega \rightarrow 0$. The momenta and frequencies of two incoming electrons should be fixed on the Fermi surface. Note that the $l=0$ and spin-symmetric (denoted by the symbol $+$) component of $\Gamma_4^\Omega$ has a divergent term, which is bare Coulomb repulsion. This term must be subtracted to give the Landau parameter, which is regular. 
@@ -392,8 +407,28 @@ The building blocks of the diagrams are given in Fig.\eqref{fig:component}.
     \label{fig:component}
 \end{figure}
 
-\section{Charge Instability in the Charged Fermi liquid Theory}
+\subsubsection{One-loop Order}
+Example of Feynman graph using axodraw2 macros:
+\begin{figure}
+    \centering
+    \resizebox{0.8\linewidth}{!}{
+        \begin{axopicture}(537,132) (120,-103)
+            \SetWidth{2.0}
+            \SetColor{Black}
+            \Line[arrow,arrowpos=0.5,arrowlength=10,arrowwidth=8,arrowinset=0.2](128,-92)(368,-92)
+            \PhotonArc[clock](248,-100)(120.266,176.186,3.814){7.5}{18.5}
+            \Line[arrow,arrowpos=0.5,arrowlength=5,arrowwidth=2,arrowinset=0.2](480,-88)(656,-88)
+            \COval(570,-88)(14.142,14.142)(45.0){Black}{White}\Line(562.929,-95.071)(577.071,-80.929)\Line(562.929,-80.929)(577.071,-95.071)
+            \Text(240,-48)[lb]{\Huge{\Black{$\Sigma_1$}}}
+            \Text(560,-48)[lb]{\Huge{\Black{$\delta_g^1$}}}
+            \Text(420,-70)[lb]{\Huge{\Black{$+$}}}
+        \end{axopicture}
+    }
+    \label{fig:sigma1}
+    \caption{One-loop renormalized Feynman diagram of the quasiparticle self-energy.}
+\end{figure}
 
+\section{Charge Instability in the Charged Fermi liquid Theory}
 
 Here we review the two-particle properties of the charged Fermi liquid in the context of the electron gas problem Eq.\eqref{eq:jellium}. We are particularly interested in the potential instability in the particle-hole channel.
 
