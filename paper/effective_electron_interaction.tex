@@ -337,9 +337,9 @@ one can derive the $4$-point 1PI vertex function, or the scattering amplitude, b
 The parameter $f^+$ is fixed to the spin-symmetric Landau parameter with $l=0$,
 \begin{equation}
     \label{eq:condition4}
-    f^+ = \overline{\Gamma^{4,R}_{k_1, k_2; k_1-q, k_2+q}}-v_q.
+    f^+ = \left<\Gamma^{4,R}_{k_1, k_2; k_1-q, k_2+q}\right>_\Omega-v_q.
 \end{equation}
-where the symbol $\overline{\Gamma_4}$ means three operations:
+where the symbol $\left<\Gamma_4\right>_\Omega$ is an operation with three steps:
 i) project the incoming momentum-frequency to the Fermi surface $k_1=(0, k_F\mathbf{n}_1)$ and $k_2=(0, k_F\mathbf{n}_2)$,
 ii) then send $q\rightarrow 0$ along the trajector $q_0 \gg v_F^*|\bq|$,
 iii) and finally average over the orientation of the unit vectors $\mathbf{n}_1$ and $\mathbf{n}_2$.
@@ -389,14 +389,13 @@ According to the definition of the renormalized interaction Eq.\eqref{eq:R},
     v_q = \frac{R_q+f^+}{1+(R_q+f^+)\Pi_0^*}-f^+,
 \end{equation}
 Plugging it into Eq.\eqref{eq:ct3} and expanding in a power series in $R_q$, we obtain
-\begin{align*}
+\begin{align}
     \delta_R & =  z^2\left(\frac{R_q\xi+f^+}{1+(R_q\xi+f^+)\Pi_0^*}-f^+\right)\xi - R_q\xi \\
-             & =           \{2z_1 R_q-[(R_q+f_1)^2+f_2]\Pi_0^*\}\xi^2+...
-\end{align*}
+             & =           \left[2z_1 R_q-(R_q+f_1)^2\Pi_0^*\right]\xi^2+...
+\end{align}
 The physical meaning of terms will be clear later.
 
-Now we have all components to formulate the renormalized perturbation theory in terms of renormalized Feynman diagrams.
-The building blocks of the diagrams are given in Fig.\eqref{fig:component}.
+\subsubsection{Renormalized Feynman Diagrams}
 
 \begin{figure}
     \centering
@@ -407,26 +406,103 @@ The building blocks of the diagrams are given in Fig.\eqref{fig:component}.
     \label{fig:component}
 \end{figure}
 
-\subsubsection{One-loop Order}
-Example of Feynman graph using axodraw2 macros:
 \begin{figure}
     \centering
-    \resizebox{0.8\linewidth}{!}{
-        \begin{axopicture}(537,132) (120,-103)
-            \SetWidth{2.0}
-            \SetColor{Black}
-            \Line[arrow,arrowpos=0.5,arrowlength=10,arrowwidth=8,arrowinset=0.2](128,-92)(368,-92)
-            \PhotonArc[clock](248,-100)(120.266,176.186,3.814){7.5}{18.5}
-            \Line[arrow,arrowpos=0.5,arrowlength=5,arrowwidth=2,arrowinset=0.2](480,-88)(656,-88)
-            \COval(570,-88)(14.142,14.142)(45.0){Black}{White}\Line(562.929,-95.071)(577.071,-80.929)\Line(562.929,-80.929)(577.071,-95.071)
-            \Text(240,-48)[lb]{\Huge{\Black{$\Sigma_1$}}}
-            \Text(560,-48)[lb]{\Huge{\Black{$\delta_g^1$}}}
-            \Text(420,-70)[lb]{\Huge{\Black{$+$}}}
-        \end{axopicture}
-    }
-    \label{fig:sigma1}
-    \caption{One-loop renormalized Feynman diagram of the quasiparticle self-energy.}
+    \begin{subfigure}{\linewidth}
+        \resizebox{0.9\linewidth}{!}{
+            \include{figure/gamma4_0}
+        }
+        \caption{ }
+    \end{subfigure}
+    \begin{subfigure}{\linewidth}
+        \resizebox{0.75\linewidth}{!}{
+            \include{figure/sigma1}
+        }
+        \caption{ }
+    \end{subfigure}
+    \caption{The first order renormalized diagrams and their counterterms.
+        a) Quasiparticle $4$-point vertex function.
+        b) Quasiparticle self-energy. The Hatree diagram is neglected since it merely shifts the chemical potential.}
+    \label{fig:order1}
 \end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{\linewidth}
+        \resizebox{0.75\linewidth}{!}{
+            \include{figure/gamma4_1}
+        }
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}{\linewidth}
+        \resizebox{0.75\linewidth}{!}{
+            \include{figure/sigma_2}
+        }
+        \caption{ }
+    \end{subfigure}
+    \caption{The second order renormalized diagrams and their counterterms.
+        a) Quasiparticle $4$-point vertex function. Each diagram and counterterm has an
+        exchange counterpart by swapping the two outgoing quasiparticles. The bubble diagram is completely
+        canceled out by the counterterm, thus not included.
+        b) Quasiparticle self-energy.}
+    \label{fig:order2}
+\end{figure}
+
+
+Now we have all components to formulate the renormalized perturbation theory in terms of renormalized Feynman diagrams.
+The building blocks of the diagrams are given in Fig.\eqref{fig:component}. By organizing the
+diagrams in number of renormalized interactions (namely, in order of $\xi$),
+we derive the first two orders of renormalized Feynman diagrams for the quasiparticle
+self-energy and scattering amplitudein in Fig.\ref{fig:order1} and Fig.\ref{fig:order2}.
+
+We first discuss the first order diagrams in Fig.\ref{fig:order1}. They give the leading order
+estimation of the renormalized parameters. Fig.\ref{fig:order1}(a) is for the $4$-point vertex function
+$\Gamma^{4,R}_{k_1, k_2; k_1-q, k_2+q}$. Averaging it on the Fermi surface using Eq.\eqref{eq:condition4}
+gives the leading order of the Landau parameter,
+\begin{equation}
+    f_1 = -\left< R_{-q+k_2-k_1}\right>_\Omega.
+\end{equation}
+Note that the direct interaction doesn't contribute to $f_1$ because
+$\left<R_q\right>=v_q$ and the bare Coulomb interation is not part of the Landau parameter.
+
+The leading order quasiparticle self-energy is shown in Fig.\eqref{fig:order1}(b).
+It is the first example of diagrams that comes with a counterterm $\delta_g^1$. The sum of the diagram
+and the counterterm should satisfy the renormalization condition Eq.\eqref{eq:condition1}, \eqref{eq:condition2} and \eqref{eq:condition3}.
+We conclude the leading order correction to the $z$-factor is
+\begin{equation}
+    z_1 = \left. \frac{\partial \operatorname{Im} \Sigma_1}{\partial k_0} \right|_{(0, k_F)},
+\end{equation}
+where $\Sigma_1$ is the Fock diagram (the left diagram in Fig.\eqref{fig:order1}(b)).
+
+Similarly, the effective mass counterterm should be
+\begin{equation}
+    \tilde{m}_1 = \left. \frac{\partial \operatorname{Re} \Sigma_1}{\partial \bold{k}} \right|_{(0, k_F)}.
+\end{equation}
+The leading order correction to the effective mass is
+\begin{equation}
+    m_1 = z_1+\tilde{m}_1.
+\end{equation}
+In addition, the chemical potential counterterm should remove the chemical-potential shift from the self-energy diagram, therefore,
+\begin{equation}
+    \delta \mu_1 = -\operatorname{Re} \Sigma_1(0, k_F).
+\end{equation}
+
+The above procedure can be systematically performed for the second order corrections.
+As shown in Fig.\ref{fig:order2}, the second order Feynman diagrams come with sophisticated counterterms.
+For the $4$-point vertex function diagrams, the interaction counterterm $\delta_R^2$ appears for the first time.
+For clarity, we split $\delta_R^2$ into three parts, each of which is paired with a renormalized Feynman diagram.
+For example, the diagram $\gamma_2^{1d}$, which is a left vertex correction diagram, is paired with the counterterm $z_1R_q-f1\Pi^*_0R_q$.
+The physical meaning is clear: $z_1 R_q$ canecels out the regular contribution in the left vertex correction,
+while $f_1\Pi_0^*R_q$ cancels out the non-analytic contribution from a particle-hole pair.
+
+Using the renormalization condition in Eq.\eqref{eq:condition4}, we derive the second-order correction to the Landau parameter,
+\begin{equation}
+    f_2 = \left<\gamma_2^{3d}+\gamma_2^{4d}+\gamma_2^{1e}+\gamma_2^{2e}+\gamma_2^{3e}+\gamma_2^{4e} + \text{CT}\right>_\Omega.
+\end{equation}
+Note that only the proper diagrams (one-interaction-irreducible) diagrams contribute to $f^+$.
+
+The second-order self-energy diagrams and their counterterms are shown in Fig.\ref{fig:order2}(b).
+They fix the corrections $z_2$, $m_2$ and $\mu_2$. We will not repeat the analysis here.
 
 \section{Charge Instability in the Charged Fermi liquid Theory}
 
