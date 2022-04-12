@@ -3,8 +3,8 @@ using StaticArrays
 using ElectronGas: Parameter
 
 const beta = 1000.0
-const rs = 8.0
-const mass2 = 1e-8
+const rs = 5.0
+const mass2 = 1e-10
 const Fs = -0.7
 const Fa = -0.0
 const massratio = 1.0
