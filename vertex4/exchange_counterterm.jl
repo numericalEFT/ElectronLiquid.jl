@@ -4,18 +4,7 @@ In this demo, we analysis the contribution of the exchange KO interaction to the
 
 using Lehmann, GreenFunc, CompositeGrids
 using ElectronGas: Polarization
-include("interaction.jl")
-
-const z = 1.0
-
-Fp = Fs
-Fm = Fa
-# U = -0.456
-
-U = 0.0
-# Cp, Cm = U / 2, -U / 2
-Cp, Cm = -Fs, -Fa
-massratio = 1.0
+include("../common/interaction.jl")
 
 function exchange_interaction(Fp, Fm, massratio, Cp=0.0, Cm=0.0)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
@@ -35,12 +24,12 @@ function exchange_interaction(Fp, Fm, massratio, Cp=0.0, Cm=0.0)
     end
     # Wp *= -NF * z^2 # additional minus sign because the interaction is exchanged
     # Wm *= -NF * z^2
-    Wp *= -NF  # additional minus sign because the interaction is exchanged
-    Wm *= -NF
+    Wp *= -NF * massratio  # additional minus sign because the interaction is exchanged
+    Wm *= -NF * massratio
     return Wp, Wm, θgrid
 end
 
-function exchange_interaction_oneloop(Fp, Fm, massratio, Cp=0.0, Cm=0.0)
+function exchange_interaction_oneloop(Fp, Fm, massratio=1.0, Cp=0.0, Cm=0.0)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
     fp = Fs / NF
@@ -48,11 +37,11 @@ function exchange_interaction_oneloop(Fp, Fm, massratio, Cp=0.0, Cm=0.0)
     Wp = zeros(Float64, length(qs))
 
     for (qi, q) in enumerate(qs)
-        Pi = -NF * lindhard(q / 2.0 / kF)
+        Pi = -NF * massratio * lindhard(q / 2.0 / kF)
         Wp[qi] = ((KOstatic(q) + fp)^2 - (KOstatic(q))^2) * Pi
     end
 
-    Wp *= -NF  # additional minus sign because the interaction is exchanged
+    Wp *= -NF * massratio  # additional minus sign because the interaction is exchanged
     Wm = Wp .* 0.0
     return Wp, Wm, θgrid
 end
@@ -89,12 +78,12 @@ function projected_exchange_interaction(l, Fp, Fm, massratio, verbose=1; interac
     return Ws0, Wa0
 end
 
-Ws0, Wa0 = projected_exchange_interaction(0, Fp, Fm, massratio)
-Wsc, Wac = exchange2direct(Fp, Fm)
+Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio)
+Wsc, Wac = exchange2direct(Fs, Fa)
 println(Ws0 + Wsc)
 println(Wa0 + Wac)
 # projected_exchange_interaction(1, Fp, Fm, massratio)
-Ws0, Wa0 = projected_exchange_interaction(0, Fp, Fm, massratio, interaction=exchange_interaction_oneloop)
+Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, interaction=exchange_interaction_oneloop)
 println(Ws0)
 println(Wa0)
 exit(0)

@@ -7,6 +7,8 @@ const rs = 5.3
 const mass2 = 0.0001
 const Fs = -1.0
 const Fa = -0.0
+const massratio = 1.0
+const z = 1.0
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
 
