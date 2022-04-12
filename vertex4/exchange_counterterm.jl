@@ -6,7 +6,7 @@ using Lehmann, GreenFunc, CompositeGrids
 using ElectronGas: Polarization
 include("../common/interaction.jl")
 
-function exchange_interaction(Fp, Fm, massratio, Cp=0.0, Cm=0.0)
+function exchange_interaction(Fp, Fm, massratio, Cp=Fp, Cm=Fm)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
 
@@ -64,8 +64,8 @@ function exchange2direct(Wse, Wae)
     return Ws, Wa
 end
 
-function projected_exchange_interaction(l, Fp, Fm, massratio, verbose=1; interaction=exchange_interaction)
-    println("l=$l:")
+function projected_exchange_interaction(l, Fp, Fm, massratio, interaction, verbose=1)
+    verbose > 0 && println("l=$l:")
     Wse, Wae, θgrid = interaction(Fp, Fm, massratio)
     Wse0 = Legrendre(l, Wse, θgrid)
     Wae0 = Legrendre(l, Wae, θgrid)
@@ -78,26 +78,29 @@ function projected_exchange_interaction(l, Fp, Fm, massratio, verbose=1; interac
     return Ws0, Wa0
 end
 
-Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio)
-Wsc, Wac = exchange2direct(Fs, Fa)
-println(Ws0 + Wsc)
-println(Wa0 + Wac)
-# projected_exchange_interaction(1, Fp, Fm, massratio)
-Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, interaction=exchange_interaction_oneloop)
-println(Ws0)
-println(Wa0)
-exit(0)
+# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction)
+# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction_oneloop)
+# exit(0)
 
+if abspath(PROGRAM_FILE) == @__FILE__
+    mix = 0.2
+    Fp, Fm = Fs, Fa
+    for i = 1:100
+        # println("iteration: $i")
+        global Fp, Fm
+        nFs, nFa = projected_exchange_interaction(0, Fp, Fm, massratio, exchange_interaction, 0)
+        Fp = Fp * (1 - mix) + nFs * mix
+        Fm = Fm * (1 - mix) + nFa * mix
+        Fm = 0.0
+    end
+    println("Self-consistent approach: ")
+    println("Fs = ", Fp)
+    println("Fa = ", Fm)
 
-# Fs, Fa = Fp, Fm
-# mix = 0.2
-# for i = 1:100
-#     println("iteration: $i")
-#     global Fs, Fa
-#     nFs, nFa = projected_exchange_interaction(0, Fs, Fa, massratio)
-#     Fs = Fs * (1 - mix) + 2 * nFs * mix
-#     Fa = Fa * (1 - mix) + nFa * mix
-#     Fa = 0.0
-# end
-# println("Fs = ", Fs)
-# println("Fa = ", Fa)
+    println("Variational approach: ")
+    println("parameter Fs     optimized Fs      optimized Fa")
+    for Fp in LinRange(0.0, 4.0, 101)
+        nFs, nFa = projected_exchange_interaction(0, -Fp, 0.0, massratio, exchange_interaction, 0)
+        println("$Fp     $nFs       $nFa")
+    end
+end
