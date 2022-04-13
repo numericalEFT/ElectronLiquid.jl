@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e8
+const steps = 1e7
 const isF = true
 
 include("../common/interaction.jl")
@@ -96,8 +96,6 @@ function MC()
         for li in 1:N
             @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
         end
-
-
     end
 
 end

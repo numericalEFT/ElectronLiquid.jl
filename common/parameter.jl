@@ -2,7 +2,7 @@
 using StaticArrays
 using ElectronGas: Parameter
 
-const beta = 1000.0
+const beta = 25.0
 const rs = 5.0
 const mass2 = 0.001
 const Fs = -0.58545
