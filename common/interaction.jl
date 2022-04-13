@@ -20,13 +20,13 @@ function Coulombinstant(q)
 end
 
 function KOinstant(q)
-    fp = Fs / NF
+    fp = Fs / NF / massratio
     return 4π * e0^2 / (q^2 + mass2) + fp
 end
 
 function KOstatic(q)
-    fp = Fs / NF
-    Pi = -NF * lindhard(q / 2.0 / kF)
+    fp = Fs / NF / massratio
+    Pi = -NF * lindhard(q / 2.0 / kF) * massratio
 
     vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi) - fp
     return vd
@@ -41,7 +41,7 @@ function KO(qgrid, τgrid)
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
             Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-                Fs=-Fs, Fa=-Fa, regular=true)
+                Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
         end
     end
     for (qi, q) in enumerate(qgrid)

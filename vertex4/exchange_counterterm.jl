@@ -43,9 +43,9 @@ function exchange_interaction_oneloop(Fp, Fm, massratio=1.0, Cp=0.0, Cm=0.0)
     Wp = zeros(Float64, length(qs))
 
     for (qi, q) in enumerate(qs)
-        # Pi = -NF * massratio * lindhard(q / 2.0 / kF)
-        # Wp[qi] = -((KOstatic(q) + fp)^2 - (KOstatic(q))^2) * Pi
-        Wp[qi] = 2 * z1 * KOstatic(q)
+        Pi = -NF * massratio * lindhard(q / 2.0 / kF)
+        Wp[qi] = -((KOstatic(q) + fp)^2 - (KOstatic(q))^2) * Pi
+        Wp[qi] += 2 * z1 * KOstatic(q)
     end
 
     Wp *= NF * massratio  # additional minus sign because the interaction is exchanged
