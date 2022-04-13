@@ -4,6 +4,7 @@ In this demo, we analysis the contribution of the exchange KO interaction to the
 
 using Lehmann, GreenFunc, CompositeGrids
 using ElectronGas: Polarization
+using ElectronGas: SelfEnergy
 include("../common/interaction.jl")
 
 function exchange_interaction(Fp, Fm, massratio, Cp=Fp, Cm=Fm)
@@ -32,16 +33,22 @@ end
 function exchange_interaction_oneloop(Fp, Fm, massratio=1.0, Cp=0.0, Cm=0.0)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
-    fp = Fs / NF
+    fp = Fs / NF / massratio
+
+    Σ = SelfEnergy.G0W0(para; Euv=100 * para.EF, maxK=8 * para.kF, Nk=16, order=8, minK=1e-8 * para.kF, int_type=:ko_const, Fs=-Fp, Fa=-0.0)
+    zz = SelfEnergy.zfactor(Σ)
+    z1 = 1 - 1 / zz
+    println("z1 = ", z1)
 
     Wp = zeros(Float64, length(qs))
 
     for (qi, q) in enumerate(qs)
-        Pi = -NF * massratio * lindhard(q / 2.0 / kF)
-        Wp[qi] = ((KOstatic(q) + fp)^2 - (KOstatic(q))^2) * Pi
+        # Pi = -NF * massratio * lindhard(q / 2.0 / kF)
+        # Wp[qi] = -((KOstatic(q) + fp)^2 - (KOstatic(q))^2) * Pi
+        Wp[qi] = 2 * z1 * KOstatic(q)
     end
 
-    Wp *= -NF * massratio  # additional minus sign because the interaction is exchanged
+    Wp *= NF * massratio  # additional minus sign because the interaction is exchanged
     Wm = Wp .* 0.0
     return Wp, Wm, θgrid
 end
@@ -78,9 +85,9 @@ function projected_exchange_interaction(l, Fp, Fm, massratio, interaction, verbo
     return Ws0, Wa0
 end
 
-# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction)
-# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction_oneloop)
-# exit(0)
+Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction)
+Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction_oneloop)
+exit(0)
 
 if abspath(PROGRAM_FILE) == @__FILE__
     mix = 0.2
