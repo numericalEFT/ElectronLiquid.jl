@@ -8,11 +8,10 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 1e6
 const isF = true
 
-include("parameter.jl")
-include("interaction.jl")
+include("../common/interaction.jl")
 
 # println(dW0)
 # exit(0)
@@ -21,10 +20,10 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 1
+const Order = 2
 
-Qin = [1.0, 0, 0]
-Kin = [0, 1.0, 0]
+Qin = [1.0, 0, 0, 0]
+Kin = [0, 1.0, 0, 0]
 legK = [Qin, Kin]
 
 diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
@@ -33,18 +32,18 @@ diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true
         Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-        Girreducible,
+        # Girreducible,
         Proper,   #one interaction irreduble diagrams or not
         NoBubble, #allow the bubble diagram or not
     ],
-    transferLoop=Qin
+    transferLoop=Qin[1:2+order]
 )
 
 const diagpara = [diagPara(o) for o in 1:Order]
 ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of different orders
-# println(ver3)
+# println(ver3[2])
 
-# plot_tree(ver3[1].diagram)
+# plot_tree(ver3[2].diagram)
 # exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
@@ -94,15 +93,12 @@ function measure(config)
     factor = 1.0 / config.reweight[config.curr]
     x = config.var[3][1]
     # println(config.observable[1][1])
-    if config.curr == 1
-        weight = integrand(config)
-        config.observable[1, 1] += weight.d / 2 / abs(weight) * factor
-        config.observable[1, 2] += weight.e / 2 / abs(weight) * factor
-        config.observable[2, 1] += weight.d * x / 2 / abs(weight) * factor
-        config.observable[2, 2] += weight.e * x / 2 / abs(weight) * factor
-    else
-        return
-    end
+    o = config.curr
+    weight = integrand(config)
+    config.observable[o, 1, 1] += weight.d / 2 / abs(weight) * factor
+    config.observable[o, 1, 2] += weight.e / 2 / abs(weight) * factor
+    config.observable[o, 2, 1] += weight.d * x / 2 / abs(weight) * factor
+    config.observable[o, 2, 2] += weight.e * x / 2 / abs(weight) * factor
 end
 
 function MC()
@@ -113,7 +109,7 @@ function MC()
 
     dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
     # println(dof)
-    obs = zeros(Nl, 2) # observable for the Fock diagram 
+    obs = zeros(Order, Nl, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16)
@@ -128,13 +124,16 @@ function MC()
         N = size(avg)[1]
         grid = lgrid
 
-        println("UpUp ver4: ")
-        for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[li, 1], std[li, 1])
-        end
-        println("UpDown ver4: ")
-        for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[li, 2], std[li, 2])
+        for o in 1:Order
+            println("Order ", o)
+            println("UpUp ver4: ")
+            for li in 1:N
+                @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 1], std[o, li, 1])
+            end
+            println("UpDown ver4: ")
+            for li in 1:N
+                @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 2], std[o, li, 2])
+            end
         end
     end
 
