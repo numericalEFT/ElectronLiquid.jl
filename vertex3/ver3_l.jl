@@ -44,7 +44,11 @@ ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of diffe
 # println(ver3[2])
 
 # plot_tree(ver3[2].diagram)
-# exit(0)
+# dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
+# plot_tree(dver3_w)
+dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
+plot_tree(dver3_g)
+exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
 const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
