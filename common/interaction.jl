@@ -172,16 +172,22 @@ end
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
 function eval(id::BareInteractionId, K, extT, varT)
     qd = sqrt(dot(K, K))
-    if id.type == Instant
-        if id.para.interactionTauNum == 1
-            return e0^2 / ϵ0 / (dot(K, K) + mass2)
-        elseif id.para.interactionTauNum == 2
-            return interactionStatic(qd, varT[id.extT[1]], varT[id.extT[2]])
+    if id.order[2] == 0
+        if id.type == Instant
+            if id.para.interactionTauNum == 1
+                return e0^2 / ϵ0 / (dot(K, K) + mass2)
+            elseif id.para.interactionTauNum == 2
+                return interactionStatic(qd, varT[id.extT[1]], varT[id.extT[2]])
+            else
+                error("not implemented!")
+            end
+        elseif id.type == Dynamic
+            return interactionDynamic(qd, varT[id.extT[1]], varT[id.extT[2]])
         else
             error("not implemented!")
         end
-    elseif id.type == Dynamic
-        return interactionDynamic(qd, varT[id.extT[1]], varT[id.extT[2]])
+        # elseif id.order[2] == 1
+
     else
         error("not implemented!")
     end
