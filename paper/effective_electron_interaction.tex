@@ -814,28 +814,178 @@ One may refer to Ref. \citenum{agd} for a detailed derivation. The $3$-vertex ha
 
 \section{Microscopic Theory of the Kukkonen-Overhauser Interaction}
 
-The Kukkonen-Overhauser ansatz is a phenomenological theory for the effective electron-electron interaction in a Coulomb gas\cite{kukkonen}. In Ref.\citenum{vignale1}, the authors attempt to construct a microscopic theory for the Kukkonen-Overhauser ansatz.  However, this theory resorts to a uncontrolled approximation in which the authors assume that the particle-hole-irreducible vertex function depends only on the momentum transfer along the particle-hole channel ("local" approximation). The operation definition of such approximation is not absent. As a result, it is impossible to calculate the high order corrections within the current form of the theory. To fix this problem, we will propose a microscopic theory for the KO interaction without relying on uncontrolled approximation. Our theory can be regarded as a generalization of the Landau Fermi liquid theory to non-forward scattering process.
+In this section, give an exact microscopic theory of the Kukkonent-Overhauser (KO) ansatz for the electron-electron interaction.
+Our theory is an application of the Bogoliubov-Parasiuk-Hepp-Zimmermann (BPHZ) renormalization scheme in a charged Fermi liquid.
+With a renormalization scheme, one could absorb the dominating contributions that arise in perturbative calculations beyond the leading order
+and derive a renormalized coupling.
+We find that the KO interaction corresponds to a minimal subtraction renormalizaiton scheme (MS scheme) where the renormalized interaction only absorbs the
+singular part (from the particle-hole excitations) in the $4$-point vertex function.
 
-Following the reasoning of the Fermi liquid theory, we split the 1PI $4$-point vertex function $\Gamma^4$ into a particle-hole-irreducible vertex function $\Gamma^{ph}$ and the remaining reducible part,
-\begin{equation}
-    \Gamma^4_{12;34}=\Gamma^{ph}_{1,2;3,4}+\int_{1',2',3',4'}\Gamma^{ph}_{1,1';3,3'}G_{3',2'}G_{4',1'}\Gamma^4_{2',2;4',4},
-\end{equation}
-where the label include momentum, frequency and the spin index. $G_{55'}$ are the fully dressed electron propagator from $5$ to $5'$.
+The Original form of the Kukkonen-Overhauser ansatz of electron-electron interaction is phenomenologically motivated by the linear response theory\cite{kukkonen}.
+Later, Vignale and Singwi attempt to derive the Kukkonen-Overhauser ansatz from a microscopic theory~\cite{vignale1} based on many-body perturabtion theory.
+However, their theory resorts to two approximations: i) the Landau parameter is assumed to come from the particle-hole-irreducible vertex function $\tilde{I}$ only;
+ii) the vertex function $\tilde{I}$ is further assumed to depends only on the momentum transfer along the particle-hole channel (``local'' approximation).
+The first approximation neglects the regular contributions from the particle-hole reducible diagrams to the Landau parameter, while the second
+approximation neglects the dependence of the vertex function $\tilde{I}$ on the external momenta and frequencies other than the transfer momentum.
 
-The particle-hole pair can be split into a non-analytic term and a regular correction,
+We now derive an exact microscopic theory without making the above approximations.
+The vertex function of a charged Fermi liquid has two singular contributions: i) singularity from the long-range Coulomb repulsion, and
+ii) singulary from the particle-hole pair. The renormalizaiton scheme should take care of both.
+
+Following the Fermi liquid theory,
+we split the 1PI $4$-point vertex function $\Gamma^4$ into a particle-hole-irreducible vertex function $\Gamma^{phi}$
+and the remaining reducible part,
 \begin{equation}
-    G_{3',2'}G_{4',1'}=z^2\Pi^*_{0; 1',2'}\delta_{1',3'}\delta_{2',4'}+\phi_{3',4';1',2'},
+    \label{eq:particle-hole-sc}
+    \Gamma^4_{k_1k_2;q}=\Gamma^{i}_{k_1k_2;q}+\int_{k}\Gamma^{i}_{k_1k;q}G_{k}G_{k+q}\Gamma^4_{k+q,k_2;q},
+\end{equation}
+where the label include momentum, frequency and the spin index. The propagators $G$ are the fully dressed.
+% All objects $G$ and $\Gamma$ should be considered as a collection of Feynman diagrams parameterized by the 
+
+For simplicity, we will write the above equation in a more compact way,
+\begin{equation}
+    \Gamma^4=\Gamma^{i}+\Gamma^{i}\cdot G^2 \cdot \Gamma^4,
+\end{equation}
+where the dot $A\cdot B$ means a convolution between $A$ and $B$ with one incoming and one outgoing legs.
+If $A$ and $B$ only depends on the transfer momentum/freuency, then $\cdot$ is the conventional multiplication.
+
+Now we define an operator $[...]$ to separate a vertex function into a dominating and easy-to-resum part
+and the remaining corrections,
+\begin{equation}
+    O_{k_1k_2;q} \equiv [O_{k_1k_2;q}]+\delta O_{k_1k_2;q},
+\end{equation}
+where $[\delta O_{k_1k_2;q}]=0$.
+
+The specific definition of the operator depends on the type of the vertex functions,
+but it should satify a set of general rules so that one can easily resum the dominating parts later,
+\begin{enumerate}
+    \item $[O]$ should be a function of the transfer momentum/frequency $q$ only.
+    \item If $O$ only depends on the transfer momentum/frequency, then it maps to itself $[O_q]=O_q$.
+          Combining with the firist rule, we have $[[O_q]]=[O_q]$.
+    \item Additivity $[O_1+O_2]=[O_1]+[O_2]$.
+    \item Homogeneity $[A\cdot B_q \cdot C] = [A]B_q[C]$. By setting $A$ or $C$ to be unity, one obtains a specialized
+          homogeneity $[A\cdot B_q] = [A]B_q$ or $[B_q\cdot C] = B_q[C]$. The homogeneity
+          and the additivity ensures the operator $[...]$ is a linear map.
+\end{enumerate}
+
+Now we derive the dominating part of $\Gamma^4$ use the above relations.
+Apply the operator on both the left and the right side of Eq.\eqref{eq:particle-hole-sc}, we obtain
+\begin{equation}
+    \label{eq:particle_hole_sc_renorm}
+    [\Gamma^4] = [\Gamma^{i}]+[\Gamma^{i}\cdot G^2 \cdot \Gamma^4].
+\end{equation}
+% Following the Landau Fermi liquid theory, the dominating part of the particle-hole propagator
+% should be the quasiparticle Lindhard function which is a function of the transfer momentum/frequency only,
+% \begin{equation}
+%     [G^2]\equiv z^2 \Pi_0^*(q),
+% \end{equation}
+% and we will call the remaining correction $\phi \equiv = G^2-[G^2]$. It is a regular function
+% depends on three momenta/frequencies. 
+Splitting $G^2$ in Eq.\eqref{eq:particle_hole_sc_renorm}
+into two parts $[G^2]$ and $\delta G^2 \equiv \phi$, we obtain
+\begin{equation}
+    \label{eq:sc1}
+    [\Gamma^4] = [\Gamma^{i}]+[\Gamma^{i}][G^2][\Gamma^4] + [\Gamma^{i}\cdot \phi \cdot \Gamma^4].
+\end{equation}
+One can do that same for the $G^2$ in Eq.\eqref{eq:particle-hole-sc}, we obtain
+\begin{equation}
+    \label{eq:sc2}
+    \Gamma^4 = \Gamma^{i}+\Gamma^{i}\cdot[G^2]\cdot \Gamma^4 + \Gamma^{i}\cdot \phi \cdot \Gamma^4.
+\end{equation}
+These two equations form a closed self-consistent loop to derive $[\Gamma^4]$. By substituting
+the $\Gamma^4$ in the third term on the right hand side of Eq.\eqref{eq:sc1} again and again with Eq.\eqref{eq:sc2},
+we obtain
+\begin{equation}
+    [\Gamma^4] = \Gamma^\Omega+\Gamma^\Omega[G^2][\Gamma^4],
+\end{equation}
+where
+\begin{equation}
+    \label{eq:sc3}
+    \Gamma^\Omega_q \equiv [\Gamma^{i}]+[\Gamma^{i}\cdot \phi \cdot \Gamma^{i}]+[\Gamma^{i}\cdot \phi \cdot \Gamma^{i}\cdot \phi \cdot \Gamma^{i}]...
+\end{equation}
+Once we know $\Gamma^\Omega$, we can derive the resummed $[\Gamma^4]$,
+\begin{equation}
+    \label{eq:sc4}
+    [\Gamma^4] = \frac{\Gamma^\Omega_q}{1-\Gamma^\Omega_q [G^2]}
 \end{equation}
 
-One can prove that,
+Now we give the explict defintion of the projection operator $[...]$ for different object.
+For the particle-hole propagator, the dominating singular part can be parameterized as,
 \begin{equation}
-    \Gamma^4_{12;34}=F_{1,2;3,4}+\int_{1',2',3',4'}F_{1,1';3,1'}z^2\Pi^*_{1',2'}\Gamma^4_{2',2;2',4},
+    [G^2] \equiv [G_k G_{k+q}] \equiv z^2 \Pi_0^*(q)\frac{1}{4\pi}\delta(|{\bf{k}}|-k_F)\delta(k_0),
 \end{equation}
-where,
+where the phase factor enforces the momentum variable on the Fermi surface. Then Eq.\eqref{eq:sc4} can be further simplied to
 \begin{equation}
-    F_{1,2;3,4} = \Gamma_{ph}+\Gamma_{ph}\phi\Gamma_{ph}+\Gamma_{ph}\phi\Gamma_{ph}\phi\Gamma_{ph}+...
+    \label{eq:sc5}
+    [\Gamma^4] = \frac{\Gamma^\Omega_q}{1-z^2\Gamma^\Omega_q \Pi_0^*(q)}
 \end{equation}
 
+We now investigate the vertex function $\Gamma^\Omega$. It's leading contribution, namely
+the vertex $\Gamma^{phi}$, is free of the singularity caused by the particle-hole pair. However, it contains
+a singular bare Coulomb interaction. Therefore, we further split it into an improper part and a proper part,
+\begin{equation}
+    \Gamma^{i}=v_q+\Gamma^{i+p},
+\end{equation}
+where the proper part is regular for the entire Fermi volume.
+
+By splitting the $\Gamma^{phi}$ into two parts in Eq.\eqref{eq:sc3}, we derive,
+\begin{equation}
+    \Gamma^{\Omega} = \Gamma_3^{\Omega}v_q \Gamma_3^{\Omega}+\Gamma_{prop}^{\Omega}
+\end{equation}
+where
+\begin{equation}
+    \Gamma_3^\Omega \equiv 1+[\phi\cdot \Gamma^{i+p}]+[\phi \cdot \Gamma^{i+p} \cdot \phi \cdot \Gamma^{i+p}]+...
+\end{equation}
+while
+\begin{equation}
+    \Gamma^\Omega_{prop} \equiv [\Gamma^{i+p}]+[\Gamma^{i+p}\cdot \phi \cdot \Gamma^{i+p}]+[\Gamma^{i+p}\cdot \phi \cdot \Gamma^{i+p}\cdot \phi \cdot \Gamma^{i+p}]...
+\end{equation}
+
+In the above two equations, all terms in $[...]$ are regular. Therefore, one can define all the projection operator as,
+\begin{equation}
+    [O_{k_1k_2;q}] =\left<O_{k_F{\bf{n}}_1, k_F{\bf{n}}_2; 0}\right>_\Omega,
+\end{equation}
+where the average is over the angle between ${\bf{n}}_1$ and ${\bf{n}}_2$ and the spin indices.
+The definition connects the vertex functions to the Fermi liquid parameters,
+\begin{equation}
+    \Gamma_3^\Omega = \frac{1}{z},
+\end{equation}
+and,
+\begin{equation}
+    \Gamma_{prop}^\Omega = \frac{f_0^+}{z^2},
+\end{equation}
+
+We arrive with a parameterization of $\Gamma^4$,
+\begin{equation}
+    [\Gamma^4]=\frac{1}{z^2}\frac{v_q+f_0^+}{1-(v_q+f_0^+)\Pi_0^*}\equiv R_q
+\end{equation}
+
+So far, we use the renormalization scheme to resum the dominating contribution up to the entire Fermi volume.
+However, this only resums the singularity in the particle-hole channel. To resum its exchange counterpart,
+one may introduce a symmetrized projection operator,
+\begin{equation}
+    [\Gamma^4]_{sym} \equiv [\Gamma^4_{k_1k_2; q}]+[\Gamma^4_{k_1k_2; -q+k_2-k_1}]=R_q-R_{-q+k_2-k_1}
+\end{equation}
+Now the remaining part of $\Gamma^4$
+\begin{equation}
+    \delta \Gamma^4 = \Gamma^4-[\Gamma^4]_{sym}
+\end{equation}
+is regular in both the particle-hole and particle-hole-exchanged channel.
+
+This regular contribution is not guaranteed to be small. In the original form of the KO paper,
+the authors proposed to model this contribution with the double counted contribution,
+\begin{equation}
+    \delta \Gamma^4 \approx -\frac{1}{z^2}f_0^+(q)+\frac{1}{z^2}f_0^+(-q+k_2-k_1)
+\end{equation}
+
+However, a more systematic approach is to resum this contribution by introducing an effective local interaction,
+\begin{equation}
+    u \equiv \delta \Gamma^4_{k_1=0, k_2=0; q=0},
+\end{equation}
+Then the following parameterization will be a good parameterization of $\Gamma_4$ within the entire Fermi volume,
+\begin{equation}
+    \Gamma^4_{k_1k_2;q} \approx R_q-R_{-q+k_2-k_1}+u
+\end{equation}
 
 
 \section{Problem of Double Counting}

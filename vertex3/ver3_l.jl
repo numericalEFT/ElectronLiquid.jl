@@ -46,8 +46,10 @@ ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of diffe
 # plot_tree(ver3[2].diagram)
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
-dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
-plot_tree(dver3_g)
+
+# dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
+dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
+plot_tree(dver3_w)
 exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
