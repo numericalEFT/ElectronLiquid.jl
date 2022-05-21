@@ -4,6 +4,7 @@ using Lehmann
 using FeynmanDiagram
 
 include("parameter.jl")
+include("green.jl")
 
 function lindhard(x)
     if (abs(x) < 1.0e-4)
@@ -60,6 +61,12 @@ function KO(qgrid, τgrid)
 end
 
 const dW0 = KO(qgrid, τgrid)
+
+function compositeGreen(qgrid, τgrid)
+    para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
+    dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+end
+
 
 """
    linear2D(data, xgrid, ygrid, x, y) 
@@ -162,10 +169,17 @@ function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     ϵ = dot(K, K) / (2me) - μ
     τ = τout - τin
-    if τ ≈ 0.0
-        return Spectral.kernelFermiT(-1e-8, ϵ, β)
+    order = id.order[1]
+    if order == 0
+        if τ ≈ 0.0
+            return Spectral.kernelFermiT(-1e-8, ϵ, β)
+        else
+            return Spectral.kernelFermiT(τ, ϵ, β)
+        end
+    elseif order == 1
+        return counterGreen2(ϵ, τ, β, z1, m1, mu1)
     else
-        return Spectral.kernelFermiT(τ, ϵ, β)
+        error("not implemented!")
     end
 end
 
