@@ -32,7 +32,7 @@ diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true
         Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-        # Girreducible,
+        Girreducible,
         Proper,   #one interaction irreduble diagrams or not
         NoBubble, #allow the bubble diagram or not
     ],
@@ -49,8 +49,8 @@ ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of diffe
 # plot_tree(dver3_w)
 
 dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
-println(dver3_g)
-println(typeof(dver3_g))
+# println(dver3_g)
+# println(typeof(dver3_g))
 # plot_tree(dver3_g)
 dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
@@ -58,8 +58,8 @@ dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
-# const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
-const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
+const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
+# const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
 # println(diag[1].root)
 # println(length(diag[1].node.current))
 const rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
@@ -138,13 +138,17 @@ function MC()
 
         for o in 1:Order
             println("Order ", o)
-            println("UpUp ver4: ")
+            println("UpUp ver3: ")
             for li in 1:N
                 @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 1], std[o, li, 1])
             end
-            println("UpDown ver4: ")
+            println("UpDown ver3: ")
             for li in 1:N
                 @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 2], std[o, li, 2])
+            end
+            println("Total ver3: ")
+            for li in 1:N
+                @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], sum(avg[o, li, :]), sum(std[o, li, :]))
             end
         end
     end
