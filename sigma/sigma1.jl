@@ -11,10 +11,10 @@ mass2 = 0.001
 
 # rslist = [5.0, 5.0, 5.0, 5.0, 5.0,]
 rslist = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
-fplist = [-0.20633, -0.33343, -0.43340, -0.51587, -0.58545, -0.64494, -0.74100] #order 1, self-consistent
+# fplist = [-0.20633, -0.33343, -0.43340, -0.51587, -0.58545, -0.64494, -0.74100] #order 1, self-consistent
 # fplist = [-0.22484, -0.38465, -0.52675, -0.65879, -0.78412, -0.90474, -1.1344] #order 1, variational outcome
 # fplist = [-0.44, -0.76, -1.0, -1.2, -1.48, -1.72, -2.2] #varitional parameter
-# fplist = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+fplist = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 paralist = [Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2) for rs in rslist]
 

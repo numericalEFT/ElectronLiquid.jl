@@ -27,10 +27,12 @@ function green2(Ek, τ, beta)
     #                   << ToString(Mom));
 end
 
-function counterGreen2(Ek, τ, beta, z1, m1, mu1)
+function counterGreen2(k, τ, beta, mu, me, massratio, z1, m1, mu1)
     dz = z1
-    dm = m1 - z1 / massratio
-    dmu = mu1 - z1 * EF
+    # dm = m1 - z1 / massratio
+    dmu = mu1
+    # dmu = mu1
+    Ek = k^2 / (2me * massratio) - mu
 
     if τ ≈ 0.0
         g1 = Spectral.kernelFermiT(-1e-8, Ek, β)
@@ -39,7 +41,9 @@ function counterGreen2(Ek, τ, beta, z1, m1, mu1)
     end
     g2 = green2(Ek, τ, beta)
 
-    return dz * g1 + (dm * Ek - dmu) * g2
+    # return dz * g1 + (dm * k^2 / (2me) - dmu) * g2
+    return dz * g1 - dmu * g2  #turn off the mass renormalization
+    # return -g2
 end
 
 # double fermi::ThreePhyGreen(double Tau, const momentum &Mom, bool IsFock) {

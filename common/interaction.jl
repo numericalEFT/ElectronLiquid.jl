@@ -167,7 +167,8 @@ end
 ##################### propagator and interaction evaluation ##############
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
-    ϵ = dot(K, K) / (2me) - μ
+    k = norm(K)
+    ϵ = k^2 / (2me * massratio) - μ
     τ = τout - τin
     order = id.order[1]
     if order == 0
@@ -177,7 +178,7 @@ function eval(id::BareGreenId, K, extT, varT)
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
     elseif order == 1
-        return counterGreen2(ϵ, τ, β, z1, m1, mu1)
+        return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
     else
         error("not implemented!")
     end

@@ -14,7 +14,7 @@ include("../common/interaction.jl")
 
 # println(dW0)
 # exit(0)
-const lgrid = [0, 1]
+const lgrid = [0, 1, 2, 3, 4, 5]
 const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
@@ -36,23 +36,23 @@ diagPara(order) = GenericPara(diagType=GreenDiag, innerLoopNum=order - 1, hasTau
 const diagpara = [diagPara(o) for o in 1:Order]
 green = [Parquet.green(diagpara[i]) for i in 1:Order]   #diagram of different orders
 # println(ver3[2])
-
-# plot_tree(green[1])
+# println(diagpara[2].totalTauNum)
+# plot_tree(green[2])
 # exit(0)
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 
-# dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
+green_g = DiagTree.derivative(green[1], BareGreenId)
 # println(dver3_g)
 # println(typeof(dver3_g))
-# plot_tree(dver3_g)
+# plot_tree(green_g)
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 # plot_tree(ver3[1].diagram)
 # exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
-const diag = [ExprTree.build(green[o]) for o in 1:Order]    #experssion tree representation of diagrams 
+const diag = [ExprTree.build(green[1]), ExprTree.build(green_g), ExprTree.build(green[2])]    #experssion tree representation of diagrams 
 # const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
 # println(diag[1].root)
 # println(diag[2].root)
@@ -85,7 +85,13 @@ function integrand(config)
     # exit(0)
     # println(wuu, ",  ", wud)
     # w = 0.5 / β
-    return w / (β / π)^order
+    if order == 1
+        return w / (β / π)
+    elseif order == 2 || order == 3
+        return w / (β / π)^2
+    else
+        error("not implemented!")
+    end
 end
 
 function measure(config)
@@ -105,16 +111,17 @@ function MC()
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
-    dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
+    # dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
+    dof = [[0, 1, 1], [0, 1, 1], [1, 3, 1]]
     # println(dof)
-    obs = zeros(ComplexF64, Order, Nl) # observable for the Fock diagram 
+    obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
 
     if isnothing(avg) == false
-        for o in 1:Order
-            println("Order ", o)
+        for o in 1:length(dof)
+            println("diagram ", o)
             for li in 1:Nl
                 # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
                 println(lgrid[li], "   ", avg[o, li], "  +-  ", std[o, li])
