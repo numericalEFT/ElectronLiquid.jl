@@ -5,7 +5,7 @@ using ElectronGas: Parameter
 include("counterterm.jl")
 
 const beta = 25.0
-const rs = 5.0
+const rs = 1.0
 const mass2 = 0.001
 # const Fs = -0.58545
 const Fs = -0.0

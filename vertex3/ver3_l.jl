@@ -32,7 +32,7 @@ diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true
         Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-        Girreducible,
+        # Girreducible,
         Proper,   #one interaction irreduble diagrams or not
         NoBubble, #allow the bubble diagram or not
     ],
