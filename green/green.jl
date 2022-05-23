@@ -19,7 +19,7 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 1
+const Order = 2
 
 diagPara(order) = GenericPara(diagType=GreenDiag, innerLoopNum=order - 1, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
@@ -85,7 +85,7 @@ function integrand(config)
     # exit(0)
     # println(wuu, ",  ", wud)
     # w = 0.5 / β
-    return imag(w)
+    return w / (β / π)^order
 end
 
 function measure(config)
@@ -106,8 +106,8 @@ function MC()
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
     dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
-    println(dof)
-    obs = zeros(Order, Nl) # observable for the Fock diagram 
+    # println(dof)
+    obs = zeros(ComplexF64, Order, Nl) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
@@ -116,7 +116,8 @@ function MC()
         for o in 1:Order
             println("Order ", o)
             for li in 1:Nl
-                @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
+                # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
+                println(lgrid[li], "   ", avg[o, li], "  +-  ", std[o, li])
             end
         end
     end
