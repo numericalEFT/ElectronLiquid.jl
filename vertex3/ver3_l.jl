@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 1e6
 const isF = true
 
 include("../common/interaction.jl")
@@ -20,7 +20,7 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 2
+const Order = 1
 
 Qin = [1.0, 0, 0, 0]
 Kin = [0, 1.0, 0, 0]
