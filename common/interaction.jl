@@ -62,11 +62,46 @@ end
 
 const dW0 = KO(qgrid, τgrid)
 
-function compositeGreen(qgrid, τgrid)
+function counterKO(qgrid, τgrid)
     para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    Nq, Nτ = length(qgrid), length(τgrid)
+    Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    for (ni, n) in enumerate(dlr.n)
+        for (qi, q) in enumerate(qgrid)
+            Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
+                Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
+            Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
+        end
+    end
+    for (qi, q) in enumerate(qgrid)
+        w = KOinstant(q) * Rs[qi, 1] + Coulombinstant(q)
+        # turn on this to check consistencey between two static KO interactions
+        @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
+        # println("$(q/kF)   $(w*NF)")
+    end
+    cRs1 = zeros(Float64, (Nq, dlr.size))
+    for (ni, n) in enumerate(dlr.n)
+        for (qi, q) in enumerate(qgrid)
+            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
+            # cRs = (vq+f)^2 Π0/(1-(vq+f)Π0)^2
+            invKOinstant = q > 1.0e-6 ? 1.0 / KOinstant(q) : 1.0 / KOinstant(1.0e-6)
+            cRs1[qi, ni] = -Rs[qi, ni] / (invKOinstant - Pi[qi, ni])
+        end
+    end
+    # exit(0)
+    # println(Rs[:, 1])
+    # for (qi, q) in enumerate(qgrid)
+    #     println("$(q/kF)   $(cRs1[qi, 1])   $(Pi[qi, 1])   $(Rs[qi, 1])")
+    # end
+    # exit(0)
+    cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
+    return real.(cRs1)
 end
 
+const cRs1 = counterKO(qgrid, τgrid)
 
 """
    linear2D(data, xgrid, ygrid, x, y) 
@@ -120,6 +155,27 @@ linear interpolation of data(x, y)
     return gx
 end
 
+function counterR(qd, τIn, τOut, order)
+    if qd > maxK
+        return 0.0
+    end
+
+    dτ = abs(τOut - τIn)
+
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-6 * kF
+        # q = qgrid.grid[1] + 1.0e-6
+        qd = 1e-6 * kF
+    end
+
+    if order == 1
+        return linear2D(cRs1, qgrid, τgrid, qd, dτ)
+    else
+        error("not implemented!")
+    end
+end
+
 function interactionDynamic(qd, τIn, τOut)
     if qd > maxK
         return 0.0
@@ -152,7 +208,6 @@ function interactionStatic(qd, τIn, τOut)
     # return KOinstant(qd) / β
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
-    fp = Fs / NF
     # if qd > 50 * kF
     #     println("$τIn, $τOut")
     #     println("$(KOstatic(qd) / β), $(interactionDynamic(qd, τIn, τOut)), $(fp / β)")
@@ -203,9 +258,7 @@ function eval(id::BareInteractionId, K, extT, varT)
         else
             error("not implemented!")
         end
-        # elseif id.order[2] == 1
-
-    else
-        error("not implemented!")
+    else # counterterm for the interaction
+        return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
     end
 end

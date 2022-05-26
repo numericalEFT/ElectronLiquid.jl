@@ -22,8 +22,8 @@ println("Build the diagrams into an experssion tree ...")
 
 const Order = 2
 
-Qin = [1.0, 0, 0, 0]
-Kin = [0, 1.0, 0, 0]
+Qin = [1.0, 0, 0, 0, 0]
+Kin = [0, 1.0, 0, 0, 0]
 legK = [Qin, Kin]
 
 diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
@@ -58,8 +58,8 @@ dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
-const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
-# const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
+# const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
+const diag = [ExprTree.build(dver3_w), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
 # println(diag[1].root)
 # println(length(diag[1].node.current))
 const rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
@@ -133,7 +133,7 @@ function MC()
     if isnothing(avg) == false
         # avg *= NF
         # std *= NF
-        N = size(avg)[1]
+        N = size(lgrid)[1]
         grid = lgrid
 
         for o in 1:Order
