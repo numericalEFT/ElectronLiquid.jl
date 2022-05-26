@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e6
+const steps = 1e7
 
 include("../common/interaction.jl")
 
@@ -19,7 +19,7 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 1
+const Order = 2
 
 diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
@@ -27,9 +27,9 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
         Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-        # Girreducible,
-        # Proper,   #one interaction irreduble diagrams or not
-        NoBubble, #allow the bubble diagram or not
+    # Girreducible,
+    # Proper,   #one interaction irreduble diagrams or not
+    # NoBubble, #allow the bubble diagram or not
     ]
 )
 

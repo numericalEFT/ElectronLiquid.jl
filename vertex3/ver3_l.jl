@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e6
+const steps = 1e7
 const isF = true
 
 include("../common/interaction.jl")
@@ -20,7 +20,7 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 1
+const Order = 2
 
 Qin = [1.0, 0, 0, 0]
 Kin = [0, 1.0, 0, 0]
@@ -34,7 +34,7 @@ diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true
     filter=[
         # Girreducible,
         Proper,   #one interaction irreduble diagrams or not
-        NoBubble, #allow the bubble diagram or not
+        # NoBubble, #allow the bubble diagram or not
     ],
     transferLoop=Qin[1:2+order]
 )

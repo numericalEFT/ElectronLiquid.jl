@@ -145,6 +145,8 @@ function interactionStatic(qd, τIn, τOut)
     if qd <= 1e-6 * kF
         qd = 1e-6 * kF
     end
+    # if there is no dynamic interactoin
+    # return KOinstant(qd)
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
     # return KOinstant(qd) / β
