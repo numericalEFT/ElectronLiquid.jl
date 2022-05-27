@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e6
+const steps = 1e7
 
 include("../common/interaction.jl")
 
@@ -45,8 +45,8 @@ sigma = [Parquet.sigma(diagpara[i]) for i in 1:Order]   #diagram of different or
 dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId)
 dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId)
 
-plot_tree(dsigma1_w)
-exit(0)
+# plot_tree(dsigma1_w)
+# exit(0)
 sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
 dsigma1_g = ExprTree.build(dsigma1_g)
 dsigma1_w = ExprTree.build(dsigma1_w)
@@ -100,6 +100,11 @@ function measure(config)
     config.observable[o, l+1] += weight / abs(weight) * factor
 end
 
+function zfactor(avg, std)
+    return imag(avg[2] - avg[1]) / (2π / β), imag(std[2] + std[1]) / (2π / β)
+    # return imag(avg[1]) / (π / β), imag(std[1]) / (π / β)
+end
+
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= [kF, 0.0, 0.0]
@@ -108,8 +113,8 @@ function MC()
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
-    dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
-    # dof = [[0, 1, 1], [0, 1, 1], [1, 3, 1]]
+    # dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
+    dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
     # println(dof)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
@@ -123,7 +128,19 @@ function MC()
                 # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
                 println(lgrid[li], "   ", avg[o, li], "  +-  ", std[o, li])
             end
+            println("z0")
+            println(imag(avg[o, 1]) / (π / β), "  +-  ", imag(std[o, 1]) / (π / β))
+            println("z")
+            println(imag(avg[o, 2] - avg[o, 1]) / (2π / β), "  +-  ", imag(std[o, 1] + std[o, 2]) / (2π / β))
         end
+
+        nz1, ez1 = zfactor(avg[1, :], std[1, :])
+        nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
+        nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
+        nz2, ez2 = zfactor(avg[4, :], std[4, :])
+        println("total z factor:")
+        println("order 1: ", nz1, "  +-  ", ez1)
+        println("order 2: ", nz2 + nzg1 + nzw1 + nz1 * 2 * (-z1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
     end
 
 end
