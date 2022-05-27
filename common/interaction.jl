@@ -259,6 +259,16 @@ function eval(id::BareInteractionId, K, extT, varT)
             error("not implemented!")
         end
     else # counterterm for the interaction
-        return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+        order = id.order[2]
+        if id.type == Instant
+            if id.para.interactionTauNum == 1
+                denorm = dot(K, K) + mass2
+                return e0^2 / ϵ0 / denorm * (mass2 / denorm)^order
+            else
+                return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
+            end
+        elseif id.type == Dynamic
+            return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+        end
     end
 end

@@ -42,17 +42,19 @@ sigma = [Parquet.sigma(diagpara[i]) for i in 1:Order]   #diagram of different or
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 
-# green_g = DiagTree.derivative(green[1], BareGreenId)
-# println(dver3_g)
-# println(typeof(dver3_g))
-# plot_tree(green_g)
-# dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
-# plot_tree(dver3_w)
+dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId)
+dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId)
+
+plot_tree(dsigma1_w)
+exit(0)
+sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
+dsigma1_g = ExprTree.build(dsigma1_g)
+dsigma1_w = ExprTree.build(dsigma1_w)
 # plot_tree(ver3[1].diagram)
-# exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
-const diag = [ExprTree.build(sigma[i].diagram) for i in 1:Order]    #experssion tree representation of diagrams 
+# const diag = [ExprTree.build(sigma[i].diagram) for i in 1:Order]    #experssion tree representation of diagrams 
+const diag = [sigma[1], dsigma1_g, dsigma1_w, sigma[2]]    #experssion tree representation of diagrams 
 # const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
 # println(diag[1].root)
 # println(diag[2].root)
