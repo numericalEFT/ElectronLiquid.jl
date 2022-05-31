@@ -30,6 +30,21 @@ function exchange_interaction(Fp, Fm, massratio, Cp=Fp, Cm=Fm)
     return Wp, Wm, θgrid
 end
 
+function exchange_interaction_Yukawa(Fp, Fm, massratio)
+    θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
+    qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
+
+    Wp = zeros(Float64, length(qs))
+    Wm = zeros(Float64, length(qs))
+    for (qi, q) in enumerate(qs)
+        Wp[qi] = Coulombinstant(q)
+        # instantS[qi] = Interaction.coulombinv(q, para)[1]
+        # println(q, " -> ", Wp[qi] * NF, ", ", Wm[qi] * NF)
+    end
+    Wp *= -NF
+    return Wp, Wm, θgrid
+end
+
 function exchange_interaction_oneloop(Fp, Fm, massratio=1.0, Cp=0.0, Cm=0.0)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -87,6 +102,8 @@ end
 
 Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction)
 Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction_oneloop)
+projected_exchange_interaction(1, 0.0, 0.0, 1.0, exchange_interaction)
+projected_exchange_interaction(1, 0.0, 0.0, 1.0, exchange_interaction_Yukawa)
 exit(0)
 
 if abspath(PROGRAM_FILE) == @__FILE__

@@ -9,39 +9,40 @@ using Printf
 # beta = 25.0
 # mass2 = 0.001
 
-beta = 1000.0
-mass2 = 1e-6
+betalist = [25.0, 50.0, 100.0, 200.0, 400.0, 600.0, 1000.0]
+# betalist = [100.0,]
+# mass2list = [0.01, 0.005, 0.001, 0.0005, 0.0001, 5e-4, 0.00001, 5e-6, 1e-6]
+mass2list = [0.01,]
 
-rslist = [4.0,]
+rslist = [5.0,]
 # rslist = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
 # fplist = [-0.20633, -0.33343, -0.43340, -0.51587, -0.58545, -0.64494, -0.74100] #order 1, self-consistent
 # fplist = [-0.22484, -0.38465, -0.52675, -0.65879, -0.78412, -0.90474, -1.1344] #order 1, variational outcome
 # fplist = [-0.44, -0.76, -1.0, -1.2, -1.48, -1.72, -2.2] #varitional parameter
 fplist = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-paralist = [Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2) for rs in rslist]
 
 for (idx, rs) in enumerate(rslist)
-    fp = fplist[idx]
-    para = paralist[idx]
+    println("rs=", rs)
+    for beta in betalist
+        for mass2 in mass2list
+            fp = fplist[idx]
 
-    Σ = SelfEnergy.G0W0(para; Euv=100 * para.EF, maxK=8 * para.kF, Nk=16, order=8, minK=1e-8 * para.kF, int_type=:ko_const, Fs=-fp, Fa=-0.0)
-    zz = SelfEnergy.zfactor(Σ)
-    dS_dw = 1 - 1 / zz
+            para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
 
-    # println("zfactor ")
-    # println(zz)
-    # println(dS_dw)
+            Σ = SelfEnergy.G0W0(para; Euv=100 * para.EF, maxK=8 * para.kF, Nk=16, order=8, minK=1e-8 * para.kF, int_type=:ko_const, Fs=-fp, Fa=-0.0)
+            zz = SelfEnergy.zfactor(Σ)
+            dS_dw = 1 - 1 / zz
 
-    # effective mass is not stable!
-    # if you use two different defintion of k1 and k2, one got different effective mass
-    # println("mass ratio")
-    ratio = SelfEnergy.massratio(para, Σ)
-    # println(ratio)
-    dS_dK = (1 / ratio / zz - 1)
-    # println(dS_dK)
-    dmu = SelfEnergy.chemicalpotential(para, Σ)
-    @printf("%4i    %16.8f  %16.8f  %16.8f  %16.8f  %16.8f\n", rs, zz, ratio, dS_dw, dS_dK, dmu)
+            # println("mass ratio")
+            ratio = SelfEnergy.massratio(para, Σ)
+            # println(ratio)
+            dS_dK = (1 / ratio / zz - 1)
+            # println(dS_dK)
+            dmu = SelfEnergy.chemicalpotential(para, Σ)
+            @printf("%4i  %8.6f  %16.8f  %16.8f  %16.8f  %16.8f  %16.8f\n", beta, mass2, zz, ratio, dS_dw, dS_dK, dmu)
+        end
+    end
 end
 
 # kgrid = Σ.spaceGrid

@@ -8,8 +8,9 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
-const isF = true
+const steps = 1e6
+# const isF = true
+const isF = false
 
 include("../common/interaction.jl")
 
@@ -43,16 +44,16 @@ const diagpara = [diagPara(o) for o in 1:Order]
 ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of different orders
 # println(ver3[2])
 
-# plot_tree(ver3[2].diagram)
+# plot_tree(ver3[1].diagram)
 # exit(0)
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 
-# dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
+dver3_g = DiagTree.derivative(ver3[1].diagram, BareGreenId)
 # println(dver3_g)
 # println(typeof(dver3_g))
 # plot_tree(dver3_g)
-# dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
+dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 # plot_tree(ver3[1].diagram)
 # exit(0)
@@ -69,12 +70,14 @@ const extTuu = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, r
 const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
 
 
-@inline function phase(varT, extT)
+@inline function phase(varT, extT, idx)
     # println(extT)
     tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
-    if (isF)
-        # return cos(π / β * ((2tb) - (tfin + tfout)))
-        return cos(π / β * ((2tb) - 3 * tfin + tfout))
+
+    if (idx == 1)
+        return cos(π / β * ((2tb) - (tfin + tfout)))
+        # return cos(π / β * ((2tb) - 3 * tfin + tfout))
+        # return cos(π / β * ((2tb) - 3 * tfin + tfout))
     else
         return cos(π / β * (tfin - tfout))
     end
@@ -82,24 +85,24 @@ end
 
 function integrand(config)
     order = config.curr
-    x = config.var[3][1]
     varK, varT = config.var[1], config.var[2]
-
-    varK.data[:, 2] = [kF * x, kF * sqrt(1 - x^2), 0.0]
+    K3 = varK.data[:, 3]
+    x = config.var[3][1]
+    isf = x == 1 ? true : false
 
     ExprTree.evalNaive!(diag[order], varK.data, varT.data, eval)
     if !isempty(rootuu[order])
-        wuu = sum(diag[order].node.current[root] * phase(varT, extTuu[order][ri]) for (ri, root) in enumerate(rootuu[order]))
+        wuu = sum(diag[order].node.current[root] * phase(varT, extTuu[order][ri], isf) for (ri, root) in enumerate(rootuu[order]))
     else
         wuu = 0.0
     end
     if !isempty(rootud[order])
-        wud = sum(diag[order].node.current[root] * phase(varT, extTud[order][ri]) for (ri, root) in enumerate(rootud[order]))
+        wud = sum(diag[order].node.current[root] * phase(varT, extTud[order][ri], isf) for (ri, root) in enumerate(rootud[order]))
     else
         wud = 0.0
     end
     # println(wuu, ",  ", wud)
-    return Weight(wuu / β, wud / β)
+    return Weight(wuu / β * K3[1] / kF, wud / β * K3[1] / kF)
 end
 
 function measure(config)
@@ -108,17 +111,17 @@ function measure(config)
     # println(config.observable[1][1])
     o = config.curr
     weight = integrand(config)
-    config.observable[o, 1, 1] += weight.d / 2 / abs(weight) * factor
-    config.observable[o, 1, 2] += weight.e / 2 / abs(weight) * factor
-    config.observable[o, 2, 1] += weight.d * x / 2 / abs(weight) * factor
-    config.observable[o, 2, 2] += weight.e * x / 2 / abs(weight) * factor
+    config.observable[o, x, 1] += weight.d / abs(weight) * factor
+    config.observable[o, x, 2] += weight.e / abs(weight) * factor
 end
 
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
     K.data[:, 1] .= [0.0, 0.0, 0.0]
+    K.data[:, 2] = [kF, 0.0, 0.0]
+
     T = MCIntegration.Tau(β, β / 2.0)
-    X = MCIntegration.Continuous([-1.0, 1.0], 0.2) #x=cos(θ)
+    X = MCIntegration.Discrete(1, 2)
 
     dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
     # println(dof)
@@ -139,18 +142,11 @@ function MC()
 
         for o in 1:Order
             println("Order ", o)
-            println("UpUp ver3: ")
             for li in 1:N
                 @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 1], std[o, li, 1])
             end
-            println("UpDown ver3: ")
-            for li in 1:N
-                @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[o, li, 2], std[o, li, 2])
-            end
-            println("Total ver3: ")
-            for li in 1:N
-                @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], sum(avg[o, li, :]), sum(std[o, li, :]))
-            end
+            println("difference: ")
+            @printf("diff   %8.4f ±%8.4f\n", avg[o, 1, 1] - avg[o, 2, 1], abs(std[o, 1, 1]) + abs(std[o, 2, 1]))
         end
     end
 
