@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e6
+const steps = 4e7
 # const isF = true
 const isF = false
 
