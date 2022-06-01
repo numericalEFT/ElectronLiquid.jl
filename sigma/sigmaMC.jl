@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 4e7
 
 include("../common/interaction.jl")
 
@@ -70,7 +70,7 @@ const extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in 
 @inline function phase(varT, extT, l)
     # println(extT)
     tin, tout = varT[extT[1]], varT[extT[2]]
-    return exp(-1im * π * (2l + 1) / β * (tout - tin))
+    return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
 function integrand(config)
@@ -88,7 +88,7 @@ function integrand(config)
     # exit(0)
     # println(wuu, ",  ", wud)
     # w = 0.5 / β
-    return w
+    return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
 function measure(config)
@@ -101,7 +101,7 @@ function measure(config)
 end
 
 function zfactor(avg, std)
-    return imag(avg[2] - avg[1]) / (2π / β), imag(std[2] + std[1]) / (2π / β)
+    return imag(avg[2] - avg[1]) / (2π / β), (abs(imag(std[2])) + abs(imag(std[1]))) / (2π / β)
     # return imag(avg[1]) / (π / β), imag(std[1]) / (π / β)
 end
 
@@ -122,25 +122,50 @@ function MC()
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
 
     if isnothing(avg) == false
-        for o in 1:length(dof)
-            println("diagram ", o)
-            for li in 1:Nl
-                # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
-                println(lgrid[li], "   ", avg[o, li], "  +-  ", std[o, li])
+        name = ["1 0 0", "1 1 0", "1 0 1", "2 0 0"]
+        open("data.dat", "w") do f
+            for o in 1:length(dof)
+                write(f, "# $(name[o])\n")
+                for li in 1:Nl
+                    # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
+                    write(f, "$(lgrid[li])   $(avg[o, li])  +-  $(std[o, li])\n")
+                end
+                # println("z0")
+                # println(imag(avg[o, 1]) / (π / β), "  +-  ", imag(std[o, 1]) / (π / β))
+                # println("z")
+                # println(imag(avg[o, 2] - avg[o, 1]) / (2π / β), "  +-  ", imag(std[o, 1] + std[o, 2]) / (2π / β))
             end
-            println("z0")
-            println(imag(avg[o, 1]) / (π / β), "  +-  ", imag(std[o, 1]) / (π / β))
-            println("z")
-            println(imag(avg[o, 2] - avg[o, 1]) / (2π / β), "  +-  ", imag(std[o, 1] + std[o, 2]) / (2π / β))
+
+            write(f, "\n")
+
+            nz1, ez1 = zfactor(avg[1, :], std[1, :])
+            nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
+            nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
+            nz2, ez2 = zfactor(avg[4, :], std[4, :])
+
+            mu1, emu1 = real(avg[1, 1]), real(abs(std[1, 1]))
+            dmu1 = -mu1
+            dz1 = -nz1
+            
+            write(f, "# mu1 = $mu1 +- $emu1    z1 = $nz1 +- $ez1\n")
+            write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
+            write(f, "# nzg1 = $nzg1 +- $ezg1\n")
+            write(f, "# nzw1 = $nzw1 +- $ezw1\n")
+            write(f, "# nz2 = $nz2 +- $ez2\n")
+
+            write(f, "\n")
+
+            write(f, "# order 1\n")
+            write(f, "$dz1  +-  $ez1\n")
+            z2 = nz2+nzw1+dmu1*nzg1+dz1*nz1
+            dz2 = -z2
+            ez2 = ez2+ezw1+dmu1*ezg1+emu1*nzg1+2*ez1*nz1
+            write(f, "# order 2\n")
+            write(f, "$dz2 +- $ez2")
+            # write(f, "$nz2  +-  $ez1\n")
+            # println("order 2: ", nz2 + nzg1*mu1 + nzw1 + nz1 * 2 * (-nz1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
         end
 
-        nz1, ez1 = zfactor(avg[1, :], std[1, :])
-        nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
-        nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
-        nz2, ez2 = zfactor(avg[4, :], std[4, :])
-        println("total z factor:")
-        println("order 1: ", nz1, "  +-  ", ez1)
-        println("order 2: ", nz2 + nzg1 + nzw1 + nz1 * 2 * (-z1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
     end
 
 end

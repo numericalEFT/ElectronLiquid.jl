@@ -42,7 +42,8 @@ function counterGreen2(k, τ, beta, mu, me, massratio, z1, m1, mu1)
     g2 = green2(Ek, τ, beta)
 
     # return dz * g1 + (dm * k^2 / (2me) - dmu) * g2
-    return dz * g1 - dmu * g2  #turn off the mass renormalization
+    # return dz * g1 - dmu * g2  #turn off the mass renormalization
+    return g2  #simply return g*g
     # return -g2
 end
 
