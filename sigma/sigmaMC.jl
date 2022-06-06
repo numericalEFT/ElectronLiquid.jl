@@ -24,7 +24,7 @@ const Order = 2
 diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
-        # Dynamic
+        Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
     # Girreducible,
