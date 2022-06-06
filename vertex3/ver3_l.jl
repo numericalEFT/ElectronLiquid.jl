@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 1e6
 const isF = true
 
 include("../common/interaction.jl")
@@ -20,7 +20,7 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 1
+const Order = 2
 
 Qin = [1.0, 0, 0, 0, 0]
 Kin = [0, 1.0, 0, 0, 0]
@@ -73,8 +73,8 @@ const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, r
     # println(extT)
     tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
     if (isF)
-        # return cos(π / β * ((2tb) - (tfin + tfout)))
-        return cos(π / β * ((2tb) - 3 * tfin + tfout))
+        return cos(π / β * ((2tb) - (tfin + tfout)))
+        # return cos(π / β * ((2tb) - 3 * tfin + tfout))
     else
         return cos(π / β * (tfin - tfout))
     end

@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 1e6
 
 include("../common/interaction.jl")
 
@@ -42,19 +42,11 @@ sigma = [Parquet.sigma(diagpara[i]) for i in 1:Order]   #diagram of different or
 # dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
 # plot_tree(dver3_w)
 
-dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId)
-dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId)
-
-# plot_tree(dsigma1_w)
-# exit(0)
-sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
-dsigma1_g = ExprTree.build(dsigma1_g)
-dsigma1_w = ExprTree.build(dsigma1_w)
+# sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
 # plot_tree(ver3[1].diagram)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
-# const diag = [ExprTree.build(sigma[i].diagram) for i in 1:Order]    #experssion tree representation of diagrams 
-const diag = [sigma[1], dsigma1_g, dsigma1_w, sigma[2]]    #experssion tree representation of diagrams 
+const diag = [ExprTree.build(sigma[i].diagram) for i in 1:Order]    #experssion tree representation of diagrams 
 # const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
 # println(diag[1].root)
 # println(diag[2].root)
@@ -113,9 +105,8 @@ function MC()
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
-    # dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
-    # dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
-    dof = [[1, 0, 1], [1, 0, 1], [1, 0, 1], [2, 1, 1]]
+    dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
+    # dof = [[1, 1, 1], [2, 3, 1]]
     # println(dof)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
@@ -123,7 +114,7 @@ function MC()
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
 
     if isnothing(avg) == false
-        name = ["1 0 0", "1 1 0", "1 0 1", "2 0 0"]
+        name = ["Order 1", "Order 2", "Order 3", "Order 4"]
         open("data.dat", "w") do f
             for o in 1:length(dof)
                 write(f, "# $(name[o])\n")
@@ -137,34 +128,6 @@ function MC()
                 # println(imag(avg[o, 2] - avg[o, 1]) / (2π / β), "  +-  ", imag(std[o, 1] + std[o, 2]) / (2π / β))
             end
 
-            write(f, "\n")
-
-            nz1, ez1 = zfactor(avg[1, :], std[1, :])
-            nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
-            nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
-            nz2, ez2 = zfactor(avg[4, :], std[4, :])
-
-            mu1, emu1 = real(avg[1, 1]), real(abs(std[1, 1]))
-            dmu1 = -mu1
-            dz1 = -nz1
-
-            write(f, "# mu1 = $mu1 +- $emu1    z1 = $nz1 +- $ez1\n")
-            write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
-            write(f, "# nzg1 = $nzg1 +- $ezg1\n")
-            write(f, "# nzw1 = $nzw1 +- $ezw1\n")
-            write(f, "# nz2 = $nz2 +- $ez2\n")
-
-            write(f, "\n")
-
-            write(f, "# order 1\n")
-            write(f, "$dz1  +-  $ez1\n")
-            z2 = nz2 + nzw1 + dmu1 * nzg1 + dz1 * nz1
-            dz2 = -z2
-            ez2 = ez2 + ezw1 + dmu1 * ezg1 + emu1 * nzg1 + 2 * ez1 * nz1
-            write(f, "# order 2\n")
-            write(f, "$dz2 +- $ez2")
-            # write(f, "$nz2  +-  $ez1\n")
-            # println("order 2: ", nz2 + nzg1*mu1 + nzw1 + nz1 * 2 * (-nz1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
         end
 
     end

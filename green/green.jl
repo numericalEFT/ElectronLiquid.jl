@@ -67,7 +67,7 @@ const extT = [diag[ri].node.object[r].para.extT for (ri, r) in enumerate(root)]
 @inline function phase(varT, extT, l)
     # println(extT)
     tin, tout = varT[extT[1]], varT[extT[2]]
-    return exp(-1im * π * (2l + 1) / β * (tout - tin))
+    return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
 function integrand(config)

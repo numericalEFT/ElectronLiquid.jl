@@ -8,8 +8,8 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
-const isF = true
+const steps = 1e6
+const isF = false
 
 include("../common/interaction.jl")
 include("ver4_diag.jl")

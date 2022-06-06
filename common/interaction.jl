@@ -262,8 +262,8 @@ function eval(id::BareInteractionId, K, extT, varT)
         order = id.order[2]
         if id.type == Instant
             if id.para.interactionTauNum == 1
-                denorm = dot(K, K) + mass2
-                return e0^2 / ϵ0 / denorm * (mass2 / denorm)^order
+                invK = -1.0/(dot(K, K) + mass2)
+                return (-1)*e0^2 / ϵ0 *invK * (mass2 *invK)^order
             else
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
