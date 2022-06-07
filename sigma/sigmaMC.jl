@@ -46,6 +46,8 @@ dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId)
 dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId)
 
 # plot_tree(dsigma1_w)
+# println("order 2")
+# plot_tree(sigma[2].diagram)
 # exit(0)
 sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
 dsigma1_g = ExprTree.build(dsigma1_g)
@@ -114,8 +116,8 @@ function MC()
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
     # dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
-    # dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
-    dof = [[1, 0, 1], [1, 0, 1], [1, 0, 1], [2, 1, 1]]
+    dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
+    # dof = [[1, 0, 1], [1, 0, 1], [1, 0, 1], [2, 1, 1]]
     # println(dof)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 

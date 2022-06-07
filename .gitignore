@@ -9,3 +9,7 @@
 *.aux
 *.DS_Store
 *.xdv
+*.dat
+*.err
+*.out
+host.txt

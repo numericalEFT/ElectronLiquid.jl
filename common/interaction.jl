@@ -89,15 +89,23 @@ function counterKO(qgrid, τgrid)
             # cRs = (vq+f)^2 Π0/(1-(vq+f)Π0)^2
             invKOinstant = q > 1.0e-6 ? 1.0 / KOinstant(q) : 1.0 / KOinstant(1.0e-6)
             cRs1[qi, ni] = -Rs[qi, ni] / (invKOinstant - Pi[qi, ni])
+            # cRs1[qi, ni] = -Pi[qi, ni] *Coulombinstant(q)*Coulombinstant(q)
         end
     end
     # exit(0)
     # println(Rs[:, 1])
+    # n=length(dlr.n)
     # for (qi, q) in enumerate(qgrid)
-    #     println("$(q/kF)   $(cRs1[qi, 1])   $(Pi[qi, 1])   $(Rs[qi, 1])")
+    #     println("$(q/kF)   $(cRs1[qi, n])   $(Pi[qi, n])   $(Rs[qi, n])")
     # end
     # exit(0)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
+    # qn=length(qgrid)
+    # qi = 50
+    # for (ti, t) in enumerate(τgrid.grid)
+    #     println("$(t/β)   $(cRs1[qi, ti])")
+    # end
+    # exit(0)
     return real.(cRs1)
 end
 
@@ -262,9 +270,10 @@ function eval(id::BareInteractionId, K, extT, varT)
         order = id.order[2]
         if id.type == Instant
             if id.para.interactionTauNum == 1
-                invK = -1.0/(dot(K, K) + mass2)
-                return (-1)*e0^2 / ϵ0 *invK * (mass2 *invK)^order
+                invK = 1.0/(dot(K, K) + mass2)
+                return e0^2 / ϵ0 *invK * (mass2 *invK)^order
             else
+                # return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
