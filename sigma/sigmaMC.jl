@@ -7,8 +7,10 @@ using Lehmann
 
 using FeynmanDiagram
 using StaticArrays
+using JLD2
 
-const steps = 1e6
+const steps = 1e8
+const Order = 3
 
 include("../common/interaction.jl")
 
@@ -19,7 +21,14 @@ const Nl = length(lgrid)
 
 println("Build the diagrams into an experssion tree ...")
 
-const Order = 2
+partition = [(1, 0, 0),  # order 1
+    (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
+    (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
+]
+
+partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
+
+println("Diagram set: ", partition)
 
 diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
@@ -27,17 +36,29 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
         # Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-    # Girreducible,
-    # Proper,   #one interaction irreduble diagrams or not
-    # NoBubble, #allow the bubble diagram or not
+        # Girreducible,
+        # Proper,   #one interaction irreduble diagrams or not
+        # NoBubble, #allow the bubble diagram or not
+        NoFock,
     ]
 )
 
-sigma = [Parquet.sigma(diagPara(i)) for i in 1:Order]   #diagram of different orders
-dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId) # d_sigma/d_g
-dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId) # d_sigma/d_w
+sigma = Dict()
+for p in partition
+    d = Parquet.sigma(diagPara(p[1])).diagram
+    d = DiagTree.derivative(d, BareGreenId, p[2])
+    d = DiagTree.derivative(d, BareInteractionId, p[3])
+    sigma[p] = d
+end
 
-sigma = [sigma[1].diagram, dsigma1_g, dsigma1_w, sigma[2].diagram]
+# sigma = [Parquet.sigma(diagPara(i)) for i in 1:Order]   #diagram of different orders
+# sigma10 = DiagTree.derivative(sigma[1].diagram, BareGreenId) # d_sigma/d_g
+# sigma20 = DiagTree.derivative(sigma[1].diagram, BareGreenId, 2) # d_sigma/d_g
+# plot_tree(sigma20)
+# exit(0)
+# sigma01 = DiagTree.derivative(sigma[1].diagram, BareInteractionId) # d_sigma/d_w
+
+sigma = [sigma[p] for p in partition]
 const diagpara = [diags[1].id.para for diags in sigma]
 const diag = [ExprTree.build(diags) for diags in sigma]
 const root = [d.root for d in diag] #select the diagram with upup
@@ -86,6 +107,10 @@ function zfactor(avg, std)
     # return imag(avg[1]) / (π / β), imag(std[1]) / (π / β)
 end
 
+function chemicalpotential(avg, std)
+    return real(avg[1]), abs(std[1])
+end
+
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= [kF, 0.0, 0.0]
@@ -105,18 +130,16 @@ function MC()
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
 
     if isnothing(avg) == false
-        name = ["1 0 0", "1 1 0", "1 0 1", "2 0 0"]
+
+        jldsave("data.jld2", avg=avg, std=std)
+
         open("data.dat", "w") do f
+            @printf(f, "#%7s %16s %16s %16s %16s\n", "freq", "real", "real err", "imag", "imag err")
             for o in 1:length(dof)
-                write(f, "# $(name[o])\n")
+                write(f, "# $(partition[o])\n")
                 for li in 1:Nl
-                    # @printf("%8.4f   %8.4f ±%8.4f\n", lgrid[li], avg[o, li], std[o, li])
-                    write(f, "$(lgrid[li])   $(avg[o, li])  +-  $(std[o, li])\n")
+                    @printf(f, "%8.4f %16.8f %16.8f %16.8f %16.8f\n", lgrid[li], real(avg[o, li]), real(std[o, li]), imag(avg[o, li]), imag(std[o, li]))
                 end
-                # println("z0")
-                # println(imag(avg[o, 1]) / (π / β), "  +-  ", imag(std[o, 1]) / (π / β))
-                # println("z")
-                # println(imag(avg[o, 2] - avg[o, 1]) / (2π / β), "  +-  ", imag(std[o, 1] + std[o, 2]) / (2π / β))
             end
 
             write(f, "\n")
@@ -126,25 +149,39 @@ function MC()
             nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
             nz2, ez2 = zfactor(avg[4, :], std[4, :])
 
-            mu1, emu1 = real(avg[1, 1]), real(abs(std[1, 1]))
-            dmu1 = -mu1
+            mu1, emu1 = chemicalpotential(avg[1, :], std[1, :])
+            # dmu1 = -mu1
+            dmu1 = 0.0
             dz1 = -nz1
 
-            write(f, "# mu1 = $mu1 +- $emu1    z1 = $nz1 +- $ez1\n")
-            write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
-            write(f, "# nzg1 = $nzg1 +- $ezg1\n")
-            write(f, "# nzw1 = $nzw1 +- $ezw1\n")
-            write(f, "# nz2 = $nz2 +- $ez2\n")
+            write(f, "# chemical potential: \n")
+            write(f, "# mu1 = $mu1 +- $emu1\n")
+
+            nmug1, emug1 = chemicalpotential(avg[2, :], std[2, :])
+            nmuw1, emuw1 = chemicalpotential(avg[3, :], std[3, :])
+            nmu2, emu2 = chemicalpotential(avg[4, :], std[4, :])
+            mu2 = nmu2 + nmuw1 + dmu1 * nmug1
+            emu2 = emu2 + emuw1 + emug1 * abs(dmu1) + abs(nmug1) * emu1
+            write(f, "# mu2 = $mu2 +- $emu2\n")
+
 
             write(f, "\n")
 
+            write(f, "# zfactor: \n")
+            write(f, "# nzg1 = $nzg1 +- $ezg1\n")
+            write(f, "# nzw1 = $nzw1 +- $ezw1\n")
+            write(f, "# nz2 = $nz2 +- $ez2\n")
+            write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
+            write(f, "\n")
             write(f, "# order 1\n")
-            write(f, "$dz1  +-  $ez1\n")
-            z2 = nz2 + nzw1 + dmu1 * nzg1 + dz1 * nz1
-            dz2 = -z2
-            ez2 = ez2 + ezw1 + dmu1 * ezg1 + emu1 * nzg1 + 2 * ez1 * nz1
+            write(f, "# z1 = $z1  +-  $ez1\n")
+            z2 = nz2 + nzw1 + dmu1 * nzg1
+            ez2 = ez2 + ezw1 + abs(dmu1) * ezg1 + emu1 * abs(nzg1)
+            # z2 = nz2 + nzw1 + dmu1 * nzg1 + dz1 * nz1
+            # dz2 = -z2
+            # ez2 = ez2 + ezw1 + dmu1 * ezg1 + emu1 * nzg1 + 2 * ez1 * nz1
             write(f, "# order 2\n")
-            write(f, "$dz2 +- $ez2")
+            write(f, "# z2= $z2 +- $ez2")
             # write(f, "$nz2  +-  $ez1\n")
             # println("order 2: ", nz2 + nzg1*mu1 + nzw1 + nz1 * 2 * (-nz1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
         end

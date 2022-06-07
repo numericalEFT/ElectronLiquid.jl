@@ -13,3 +13,4 @@
 *.err
 *.out
 host.txt
+*.jld2

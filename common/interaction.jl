@@ -233,7 +233,9 @@ end
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    ϵ = k^2 / (2me * massratio) - μ
+    # ϵ = k^2 / (2me * massratio) - μ
+    fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
+    ϵ = k^2 / (2me * massratio) - μ + fock
     τ = τout - τin
     order = id.order[1]
     if order == 0
@@ -243,7 +245,11 @@ function eval(id::BareGreenId, K, extT, varT)
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
     elseif order == 1
-        return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
+        return green2(ϵ, τ, β)
+    elseif order == 2
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
+        return green3(ϵ, τ, β)
     else
         error("not implemented!")
     end
@@ -277,7 +283,11 @@ function eval(id::BareInteractionId, K, extT, varT)
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
-            return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            if order == 1
+                return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            else
+                error("not implemented!")
+            end
         end
     end
 end

@@ -1,13 +1,14 @@
 # We work with Rydberg units, length scale Bohr radius a_0, energy scale: Ry
 using StaticArrays
 using ElectronGas: Parameter
+using CompositeGrids
 
 include("counterterm.jl")
 
-const beta = 25.0
-const rs = 5.0
+const beta = 40.0
+const rs = 3.0
 # const mass2 = 0.3838^2
-const mass2 = 0.1
+const mass2 = 0.25
 # const Fs = -0.58545
 const Fs = -0.0
 const Fa = -0.0
