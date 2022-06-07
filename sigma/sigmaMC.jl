@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e7
+const steps = 1e6
 
 include("../common/interaction.jl")
 
@@ -24,7 +24,7 @@ const Order = 2
 diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
-        Dynamic
+        # Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
     # Girreducible,
@@ -33,34 +33,13 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
     ]
 )
 
-const diagpara = [diagPara(o) for o in 1:Order]
-sigma = [Parquet.sigma(diagpara[i]) for i in 1:Order]   #diagram of different orders
-# println(ver3[2])
-# println(diagpara[2].totalTauNum)
-# plot_tree(green[2])
-# exit(0)
-# dver3_w = DiagTree.derivative(ver3[1].diagram, BareInteractionId)
-# plot_tree(dver3_w)
+sigma = [Parquet.sigma(diagPara(i)) for i in 1:Order]   #diagram of different orders
+dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId) # d_sigma/d_g
+dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId) # d_sigma/d_w
 
-dsigma1_g = DiagTree.derivative(sigma[1].diagram, BareGreenId)
-dsigma1_w = DiagTree.derivative(sigma[1].diagram, BareInteractionId)
-
-# plot_tree(dsigma1_w)
-# println("order 2")
-# plot_tree(sigma[2].diagram)
-# exit(0)
-sigma = [ExprTree.build(sigma[i].diagram) for i in 1:Order]
-dsigma1_g = ExprTree.build(dsigma1_g)
-dsigma1_w = ExprTree.build(dsigma1_w)
-# plot_tree(ver3[1].diagram)
-# plot_tree(ver4uu[1][1])
-# plot_tree(ver4[1].diagram, maxdepth = 9)
-# const diag = [ExprTree.build(sigma[i].diagram) for i in 1:Order]    #experssion tree representation of diagrams 
-const diag = [sigma[1], dsigma1_g, dsigma1_w, sigma[2]]    #experssion tree representation of diagrams 
-# const diag = [ExprTree.build(dver3_g), ExprTree.build(ver3[2].diagram)]    #experssion tree representation of diagrams 
-# println(diag[1].root)
-# println(diag[2].root)
-# println(length(diag[1].node.current))
+sigma = [sigma[1].diagram, dsigma1_g, dsigma1_w, sigma[2].diagram]
+const diagpara = [diags[1].id.para for diags in sigma]
+const diag = [ExprTree.build(diags) for diags in sigma]
 const root = [d.root for d in diag] #select the diagram with upup
 #assign the external Tau to the corresponding diagrams
 const extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
@@ -115,10 +94,11 @@ function MC()
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
     X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
-    # dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum - 1, 1] for o in 1:Order] # K, T, ExtKidx
-    dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
+    # dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
     # dof = [[1, 0, 1], [1, 0, 1], [1, 0, 1], [2, 1, 1]]
     # println(dof)
+    # exit(0)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
