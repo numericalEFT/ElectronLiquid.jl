@@ -9,8 +9,8 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e8
-const Order = 3
+const steps = 1e7
+const Order = 4
 
 include("../common/interaction.jl")
 

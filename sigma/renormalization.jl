@@ -3,7 +3,7 @@ By definition, the sigma renormalization is defined as
 Σ1 = Σ11
 Σ2 = Σ20+Σ11*δμ1
 Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
 """
 
 include("../common/parameter.jl")
@@ -11,12 +11,13 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const Order = 3
+const Order = 4
 const FileName = "data.jld2"
 
 partition = [(1, 0, 0),  # order 1
     (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
     (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
+    (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
 ]
 
 partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
@@ -86,12 +87,38 @@ function chemicalpotential(rdata)
         δμ[3] = -μ[3]
     end
     if Order >= 4
-        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        μ[4] = _mu[(4, 0)] + δμ[1] * _mu[(3, 1)] + δμ[1]^2 * _mu[(2, 2)] + δμ[2] * _mu[(2, 1)] + 2 * δμ[1] * δμ[2] * _mu[(1, 2)] + δμ[3] * _mu[(1, 1)]
+        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+        μ[4] = _mu[(4, 0)] + δμ[1] * _mu[(3, 1)] + δμ[1]^2 * _mu[(2, 2)] + δμ[2] * _mu[(2, 1)]+ (δμ[1])^3 * _mu[(1, 3)] + 2 * δμ[1] * δμ[2] * _mu[(1, 2)] + δμ[3] * _mu[(1, 1)]
+        # μ[4] = _mu[(4, 0)]  + δμ[2] * _mu[(2, 1)] + δμ[3] * _mu[(1, 1)]
         δμ[4] = -μ[4]
     end
 
     return μ, δμ
+end
+
+function zfactor_renorm(idata, δμ)
+    _partition = sort([k for k in keys(rdata)])
+    # println(_partition)
+    _z = Dict()
+    for (p, val) in idata
+        _z[p] = zfactor(val)
+    end
+    z = Vector{Any}(undef, Order)
+    if Order >= 1
+        z[1] = _z[(1, 0)]
+    end
+    if Order >= 2
+        z[2] = _z[(2, 0)] + δμ[1] * _z[(1, 1)]
+    end
+    if Order >= 3
+        # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+        z[3] = _z[(3, 0)] + δμ[1] * _z[(2, 1)] + δμ[1]^2 * _z[(1, 2)] + δμ[2] * _z[(1, 1)]
+    end
+    if Order >= 4
+        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+        z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
+    end
+    return z
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -109,4 +136,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     _μ, δμ = chemicalpotential(rdata)
     println(_μ)
     println(δμ)
+    _z = zfactor_renorm(idata, δμ)
+    println(_z)
+    println(1/(1+_z[2]), ", ", 1/(1+_z[2]+_z[3]), ", ", 1/(1+_z[2]+_z[3]+_z[4]))
 end

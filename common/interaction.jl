@@ -250,6 +250,9 @@ function eval(id::BareGreenId, K, extT, varT)
     elseif order == 2
         # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green3(ϵ, τ, β)
+    elseif order == 3
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
+        return green3(ϵ, τ, β)
     else
         error("not implemented!")
     end
