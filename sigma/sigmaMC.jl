@@ -36,10 +36,10 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
         # Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
-        # Girreducible,
-        # Proper,   #one interaction irreduble diagrams or not
-        # NoBubble, #allow the bubble diagram or not
-        NoFock,
+    # Girreducible,
+    # Proper,   #one interaction irreduble diagrams or not
+    # NoBubble, #allow the bubble diagram or not
+    # NoFock,
     ]
 )
 
@@ -48,15 +48,16 @@ for p in partition
     d = Parquet.sigma(diagPara(p[1])).diagram
     d = DiagTree.derivative(d, BareGreenId, p[2])
     d = DiagTree.derivative(d, BareInteractionId, p[3])
-    sigma[p] = d
+    if p == (1, 0, 0)
+        sigma[p] = d
+    else
+        sigma[p] = DiagTree.removeHatreeFock!(d)
+    end
 end
-
-# sigma = [Parquet.sigma(diagPara(i)) for i in 1:Order]   #diagram of different orders
-# sigma10 = DiagTree.derivative(sigma[1].diagram, BareGreenId) # d_sigma/d_g
-# sigma20 = DiagTree.derivative(sigma[1].diagram, BareGreenId, 2) # d_sigma/d_g
-# plot_tree(sigma20)
+# DiagTree.removeHatreeFock!(sigma[2, 0, 0])
+# println(sigma[2, 0, 0])
+# plot_tree(sigma[(2, 0, 0)], maxdepth=8)
 # exit(0)
-# sigma01 = DiagTree.derivative(sigma[1].diagram, BareInteractionId) # d_sigma/d_w
 
 sigma = [sigma[p] for p in partition]
 const diagpara = [diags[1].id.para for diags in sigma]
