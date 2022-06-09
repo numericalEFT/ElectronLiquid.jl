@@ -5,7 +5,7 @@ using CompositeGrids
 
 include("counterterm.jl")
 
-const beta = 25.0
+const beta = 40.0
 const rs = 1.0
 # const mass2 = 0.3838^2
 const mass2 = 2.0

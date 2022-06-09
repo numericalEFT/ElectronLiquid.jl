@@ -44,6 +44,21 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
     ]
 )
 
+# dpara = GenericPara(diagType=SigmaDiag, innerLoopNum=4, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
+#     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
+#         Instant,
+#         # Dynamic
+#     ]),],  #instant charge-charge interaction
+#     filter=[
+#     # Girreducible,
+#     # Proper,   #one interaction irreduble diagrams or not
+#     # NoBubble, #allow the bubble diagram or not
+#     NoFock,
+#     ]
+# )
+# sigma4 = Parquet.sigma(dpara)
+# sigma4 = ExprTree.build(sigma4.diagram)
+
 sigma = Dict()
 for p in partition
     d = Parquet.sigma(diagPara(p[1])).diagram
@@ -92,6 +107,14 @@ function integrand(config)
     # exit(0)
     # println(wuu, ",  ", wud)
     # w = 0.5 / β
+    # if order == length(diag)
+    #     ExprTree.evalNaive!(sigma4, varK.data, varT.data, eval)
+    #     wp = sum(sigma4.node.current[r] * phase(varT, extT[order][ri], l) for (ri, r) in enumerate(sigma4.root))
+    #     @assert abs(wp-w)<1e-6 "$wp vs $w" 
+    #     println(partition[order])
+    #     println("$wp vs $w")
+    #     exit(0)
+    # end
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
