@@ -233,9 +233,9 @@ end
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    # ϵ = k^2 / (2me * massratio) - μ
-    fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
-    ϵ = k^2 / (2me * massratio) - μ + fock
+    ϵ = k^2 / (2me * massratio) - μ
+    # fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
+    # ϵ = k^2 / (2me * massratio) - μ + fock
     τ = τout - τin
     order = id.order[1]
     if order == 0
@@ -279,8 +279,8 @@ function eval(id::BareInteractionId, K, extT, varT)
         order = id.order[2]
         if id.type == Instant
             if id.para.interactionTauNum == 1
-                invK = 1.0/(dot(K, K) + mass2)
-                return e0^2 / ϵ0 *invK * (mass2 *invK)^order
+                invK = 1.0 / (dot(K, K) + mass2)
+                return e0^2 / ϵ0 * invK * (mass2 * invK)^order
             else
                 # return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!

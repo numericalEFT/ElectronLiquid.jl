@@ -9,8 +9,8 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e7
-const Order = 4
+const steps = 1e6
+const Order = 3
 
 include("../common/interaction.jl")
 
@@ -64,11 +64,12 @@ for p in partition
     d = Parquet.sigma(diagPara(p[1])).diagram
     d = DiagTree.derivative(d, BareGreenId, p[2])
     d = DiagTree.derivative(d, BareInteractionId, p[3])
-    if p == (1, 0, 0)
-        sigma[p] = d
-    else
-        sigma[p] = DiagTree.removeHatreeFock!(d)
-    end
+    sigma[p] = d
+    # if p == (1, 0, 0)
+    #     sigma[p] = d
+    # else
+    #     sigma[p] = DiagTree.removeHatreeFock!(d)
+    # end
 end
 # DiagTree.removeHatreeFock!(sigma[2, 0, 0])
 # println(sigma[2, 0, 0])

@@ -11,7 +11,7 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const Order = 4
+const Order = 3
 const FileName = "data.jld2"
 
 partition = [(1, 0, 0),  # order 1
@@ -74,8 +74,8 @@ function chemicalpotential(rdata)
     μ = Vector{Any}(undef, Order)
     if Order >= 1
         μ[1] = _mu[(1, 0)]
-        # δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
-        δμ[1] = 0.0 #for the Fock-renormalized G scheme only
+        δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
+        # δμ[1] = 0.0 #for the Fock-renormalized G scheme only
     end
     if Order >= 2
         μ[2] = _mu[(2, 0)] + δμ[1] * _mu[(1, 1)]
@@ -88,7 +88,7 @@ function chemicalpotential(rdata)
     end
     if Order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        μ[4] = _mu[(4, 0)] + δμ[1] * _mu[(3, 1)] + δμ[1]^2 * _mu[(2, 2)] + δμ[2] * _mu[(2, 1)]+ (δμ[1])^3 * _mu[(1, 3)] + 2 * δμ[1] * δμ[2] * _mu[(1, 2)] + δμ[3] * _mu[(1, 1)]
+        μ[4] = _mu[(4, 0)] + δμ[1] * _mu[(3, 1)] + δμ[1]^2 * _mu[(2, 2)] + δμ[2] * _mu[(2, 1)] + (δμ[1])^3 * _mu[(1, 3)] + 2 * δμ[1] * δμ[2] * _mu[(1, 2)] + δμ[3] * _mu[(1, 1)]
         # μ[4] = _mu[(4, 0)]  + δμ[2] * _mu[(2, 1)] + δμ[3] * _mu[(1, 1)]
         δμ[4] = -μ[4]
     end
@@ -117,7 +117,7 @@ function zfactor_renorm(idata, δμ)
     if Order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
         # z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
-        z[4] = _z[(4, 0)] + δμ[2] * _z[(2, 1)]+ δμ[3] * _z[(1, 1)]
+        z[4] = _z[(4, 0)] + δμ[2] * _z[(2, 1)] + δμ[3] * _z[(1, 1)]
     end
     return z
 end
@@ -139,5 +139,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     println(δμ)
     _z = zfactor_renorm(idata, δμ)
     println(_z)
-    println(1/(1+_z[2]), ", ", 1/(1+_z[2]+_z[3]), ", ", 1/(1+_z[2]+_z[3]+_z[4]))
+    # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
+    println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
 end
