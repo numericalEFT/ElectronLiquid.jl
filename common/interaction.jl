@@ -62,7 +62,7 @@ end
 
 const dW0 = KO(qgrid, τgrid)
 
-function counterKO(qgrid, τgrid)
+function counterKO(qgrid, τgrid, order)
     para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     Nq, Nτ = length(qgrid), length(τgrid)
@@ -88,7 +88,7 @@ function counterKO(qgrid, τgrid)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             # cRs = (vq+f)^2 Π0/(1-(vq+f)Π0)^2
             invKOinstant = q > 1.0e-6 ? 1.0 / KOinstant(q) : 1.0 / KOinstant(1.0e-6)
-            cRs1[qi, ni] = -Rs[qi, ni] / (invKOinstant - Pi[qi, ni])
+            cRs1[qi, ni] = (-Rs[qi, ni])^order / (invKOinstant - Pi[qi, ni])
             # cRs1[qi, ni] = -Pi[qi, ni] *Coulombinstant(q)*Coulombinstant(q)
         end
     end
@@ -109,7 +109,8 @@ function counterKO(qgrid, τgrid)
     return real.(cRs1)
 end
 
-const cRs1 = counterKO(qgrid, τgrid)
+const cRs1 = counterKO(qgrid, τgrid, 1)
+const cRs2 = counterKO(qgrid, τgrid, 2)
 
 """
    linear2D(data, xgrid, ygrid, x, y) 
@@ -179,6 +180,8 @@ function counterR(qd, τIn, τOut, order)
 
     if order == 1
         return linear2D(cRs1, qgrid, τgrid, qd, dτ)
+    elseif order == 2
+        return linear2D(cRs2, qgrid, τgrid, qd, dτ)
     else
         error("not implemented!")
     end
@@ -286,11 +289,7 @@ function eval(id::BareInteractionId, K, extT, varT)
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
-            if order == 1
-                return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
-            else
-                error("not implemented!")
-            end
+            return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
         end
     end
 end

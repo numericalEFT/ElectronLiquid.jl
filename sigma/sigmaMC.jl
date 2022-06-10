@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e6
+const steps = 1e9
 const Order = 3
 
 include("../common/interaction.jl")
@@ -34,7 +34,7 @@ println("Diagram set: ", partition)
 diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
-        # Dynamic
+        Dynamic
     ]),],  #instant charge-charge interaction
     filter=[
     # Girreducible,
@@ -43,21 +43,6 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
     # NoFock,
     ]
 )
-
-# dpara = GenericPara(diagType=SigmaDiag, innerLoopNum=4, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
-#     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
-#         Instant,
-#         # Dynamic
-#     ]),],  #instant charge-charge interaction
-#     filter=[
-#     # Girreducible,
-#     # Proper,   #one interaction irreduble diagrams or not
-#     # NoBubble, #allow the bubble diagram or not
-#     NoFock,
-#     ]
-# )
-# sigma4 = Parquet.sigma(dpara)
-# sigma4 = ExprTree.build(sigma4.diagram)
 
 sigma = Dict()
 for p in partition

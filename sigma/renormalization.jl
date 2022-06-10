@@ -41,7 +41,7 @@ Merge interaction order and the main order
 function mergeInteraction(data)
     res = Dict()
     for (p, val) in data
-        println(p)
+        # println(p)
         mp = (p[1] + p[3], p[2])
         if haskey(res, mp)
             res[mp] += val
@@ -139,6 +139,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     println(δμ)
     _z = zfactor_renorm(idata, δμ)
     println(_z)
+    for o in 1:Order
+        println("order $o: z = ", 1/(1+sum(_z[1:o])))
+    end
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
-    println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
+    # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
 end
