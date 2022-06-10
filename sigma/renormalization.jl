@@ -116,7 +116,8 @@ function zfactor_renorm(idata, δμ)
     end
     if Order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
+        # z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
+        z[4] = _z[(4, 0)] + δμ[2] * _z[(2, 1)]+ δμ[3] * _z[(1, 1)]
     end
     return z
 end
@@ -124,13 +125,13 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     rdata, idata = load()
     println("original data: ")
-    for (p, val) in rdata
+    for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
     rdata = mergeInteraction(rdata)
     idata = mergeInteraction(idata)
     println("merged data: ")
-    for (p, val) in rdata
+    for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
     _μ, δμ = chemicalpotential(rdata)
