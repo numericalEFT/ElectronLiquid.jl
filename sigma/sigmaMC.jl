@@ -9,8 +9,8 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e9
-const Order = 3
+const steps = 1e6
+const Order = 2
 
 include("../common/interaction.jl")
 
@@ -138,7 +138,7 @@ function MC()
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
-    avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
+    avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=64, reweight=10000)
 
     if isnothing(avg) == false
 

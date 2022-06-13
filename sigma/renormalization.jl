@@ -11,7 +11,7 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const Order = 3
+const Order = 2
 const FileName = "data.jld2"
 
 partition = [(1, 0, 0),  # order 1
@@ -140,7 +140,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     _z = zfactor_renorm(idata, δμ)
     println(_z)
     for o in 1:Order
-        println("order $o: z = ", 1/(1+sum(_z[1:o])))
+        println("order $o: z = ", 1 / (1 + sum(_z[1:o])))
     end
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))

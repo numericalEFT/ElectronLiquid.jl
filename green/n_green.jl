@@ -5,7 +5,7 @@ using CompositeGrids
 using Printf
 
 rs = 5.0
-beta = 40.0
+beta = 80.0
 mass2 = 0.01
 
 para = Parameter.rydbergUnit(1 / beta, rs, 3, Λs=mass2)
@@ -30,10 +30,30 @@ println("mu: ", SelfEnergy.chemicalpotential(para, sigma))
 sigma = toMatFreq(sigma)
 mui = instant(sigma, para.kF, 1, 1)
 println("static mu: ", mui)
-mud = dynamic(sigma, 0, para.kF, 1, 1)
+mud = dynamic(sigma, 1, para.kF, 1, 1)
 println("dynamic mu: ", mud)
 ngrid = sigma.timeGrid
 kgrid = sigma.spaceGrid
+
+# ds_dw = dynamic(sigma, 1, para.kF, 1, 1)
+# ds_dw = sigma.dynamic[1, 1, :,]
+kF_label = searchsortedfirst(kgrid.grid, para.kF)
+Σ_freq = GreenFunc.toMatFreq(sigma, [0, 1])
+
+ΣI = imag(Σ_freq.dynamic[1, 1, kF_label, :])
+Z0 = 1 / (1 - (ΣI[2] - ΣI[1]) / 2 / π * para.β)
+println("z = ", Z0)
+
+ds_dw = (Σ_freq.dynamic[1, 1, :, 2] - Σ_freq.dynamic[1, 1, :, 1]) / 2 / π * para.β
+for (ki, k) in enumerate(kgrid)
+    Ek = k^2 / (2 * para.me) - para.EF
+    ds_dw[ki] *= 4π * k^2 * Spectral.fermiDirac(Ek, para.β)
+end
+
+# println()
+
+println("∫dk dΣ/dω*f(ω) = ", Interp.integrate1D(ds_dw, kgrid) / (2π)^3 * 2 * para.β)
+
 
 g1 = deepcopy(sigma)
 printstyled("g\n", color=:yellow)
