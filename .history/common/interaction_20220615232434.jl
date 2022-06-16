@@ -236,9 +236,9 @@ end
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    # ϵ = k^2 / (2me * massratio) - μ
-    fock = SelfEnergy.Fock0_ZeroTemp(k, para) - SelfEnergy.Fock0_ZeroTemp(kF, para)
-    ϵ = k^2 / (2me * massratio) - μ + fock
+    ϵ = k^2 / (2me * massratio) - μ
+    # fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
+    # ϵ = k^2 / (2me * massratio) - μ + fock
     τ = τout - τin
     order = id.order[1]
     if order == 0

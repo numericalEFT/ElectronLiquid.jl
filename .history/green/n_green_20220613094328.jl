@@ -4,8 +4,8 @@ using Lehmann
 using CompositeGrids
 using Printf
 
-rs = 1.0
-beta = 25.0
+rs = 5.0
+beta = 80.0
 mass2 = 0.01
 
 para = Parameter.rydbergUnit(1 / beta, rs, 3, Λs=mass2)
@@ -52,7 +52,7 @@ end
 
 # println()
 
-println("∫dk dΣ/dω*f(ω) = ", Interp.integrate1D(ds_dw, kgrid) / (2π)^3 * 2)
+println("∫dk dΣ/dω*f(ω) = ", Interp.integrate1D(ds_dw, kgrid) / (2π)^3 * 2 * para.β)
 
 
 g1 = deepcopy(sigma)

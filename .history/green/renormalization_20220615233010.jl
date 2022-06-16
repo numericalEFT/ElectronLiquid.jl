@@ -102,5 +102,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
     end
     _μ, δμ = chemicalpotential(data)
     println(_μ)
-    println("chemical potential counterterm: ", δμ)
+    println(δμ)
 end

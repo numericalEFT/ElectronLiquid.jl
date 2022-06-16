@@ -4,8 +4,8 @@ using Lehmann
 using CompositeGrids
 using Printf
 
-rs = 1.0
-beta = 25.0
+rs = 5.0
+beta = 40.0
 mass2 = 0.01
 
 para = Parameter.rydbergUnit(1 / beta, rs, 3, Λs=mass2)

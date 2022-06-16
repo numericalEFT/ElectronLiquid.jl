@@ -236,9 +236,9 @@ end
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    # ϵ = k^2 / (2me * massratio) - μ
-    fock = SelfEnergy.Fock0_ZeroTemp(k, para) - SelfEnergy.Fock0_ZeroTemp(kF, para)
-    ϵ = k^2 / (2me * massratio) - μ + fock
+    ϵ = k^2 / (2me * massratio) - μ
+    # fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
+    # ϵ = k^2 / (2me * massratio) - μ + fock
     τ = τout - τin
     order = id.order[1]
     if order == 0
@@ -248,11 +248,13 @@ function eval(id::BareGreenId, K, extT, varT)
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
     elseif order == 1
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green2(ϵ, τ, β)
     elseif order == 2
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green3(ϵ, τ, β)
     elseif order == 3
-        # TODO: replace with green4
+        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green3(ϵ, τ, β)
     else
         error("not implemented!")
