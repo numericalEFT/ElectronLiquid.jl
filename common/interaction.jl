@@ -1,4 +1,5 @@
 import ElectronGas: Interaction as Inter
+import ElectronGas: Polarization
 using CompositeGrids
 using Lehmann
 using FeynmanDiagram
@@ -7,47 +8,93 @@ include("parameter.jl")
 include("green.jl")
 
 function lindhard(x)
-    if (abs(x) < 1.0e-4)
-        return 1.0
-    elseif (abs(x - 1.0) < 1.0e-4)
-        return 0.5
+    if dim == 3
+        if (abs(x) < 1.0e-4)
+            return 1.0
+        elseif (abs(x - 1.0) < 1.0e-4)
+            return 0.5
+        else
+            return 0.5 - (x^2 - 1) / 4.0 / x * log(abs((1 + x) / (1 - x)))
+        end
+    elseif dim == 2
+        if (abs(x) <= 1.0)
+            return 1.0
+        else
+            return 1 - sqrt(1 - 1 / x^2)
+        end
     else
-        return 0.5 - (x^2 - 1) / 4.0 / x * log(abs((1 + x) / (1 - x)))
+        error("not implemented!")
     end
 end
 
 function Coulombinstant(q)
-    return 4π * e0^2 / (q^2 + mass2)
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    if dim == 3
+        return 4π * e0^2 / (q^2 + mass2)
+    elseif dim == 2
+        return 2π * e0^2 / sqrt(q^2 + mass2)
+    else
+        error("not implemented!")
+    end
 end
 
 function KOinstant(q)
     fp = Fs / NF / massratio
-    return 4π * e0^2 / (q^2 + mass2) + fp
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    if dim == 3
+        return 4π * e0^2 / (q^2 + mass2) + fp
+    elseif dim == 2
+        return 2π * e0^2 / sqrt(q^2 + mass2) + fp
+    else
+        error("not implemented!")
+    end
 end
 
 function KOstatic(q)
     fp = Fs / NF / massratio
     Pi = -NF * lindhard(q / 2.0 / kF) * massratio
-
-    vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi) - fp
-    return vd
+    if dim == 3
+        vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi) - fp
+        return vd
+    elseif dim == 2
+        qm = sqrt(q^2 + mass2)
+        vd = (2π * e0^2 + fp * qm) / ((1 - fp * Pi) * qm - 2π * e0^2 * Pi) - fp
+        return vd
+    else
+        error("not implemented!")
+    end
 end
 
 function KO(qgrid, τgrid)
-    para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
+    # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     Nq, Nτ = length(qgrid), length(τgrid)
     Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
-            Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-                Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
+            invKOinstant = 1.0 / KOinstant(q)
+            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
+            Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
+            Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
+            if dim == 3
+                a = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
+                    Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)[1]
+                @assert abs(Rs[qi, ni] - a) < 1e-10 "$(Rs[qi, ni]) vs $a with diff = $(Rs[qi, ni]-a)"
+            end
         end
     end
     for (qi, q) in enumerate(qgrid)
         w = KOinstant(q) * Rs[qi, 1] + Coulombinstant(q)
         # turn on this to check consistencey between two static KO interactions
+        staticPi = -NF * lindhard(q / 2 / para.kF)
+        # println(Polarization.Polarization0_ZeroTemp(q, 0, para))
+        @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
         @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
         # println("$(q/kF)   $(w*NF)")
     end
@@ -63,17 +110,23 @@ end
 const dW0 = KO(qgrid, τgrid)
 
 function counterKO(qgrid, τgrid, order)
-    para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
+    # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     Nq, Nτ = length(qgrid), length(τgrid)
     Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    cRs1 = zeros(Float64, (Nq, dlr.size))
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
-            Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-                Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
+            invKOinstant = 1.0 / KOinstant(q)
+            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
+            Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
+            # Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
+            #     Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
+            # Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
+            cRs1[qi, ni] = (-Rs[qi, ni])^order / (invKOinstant - Pi[qi, ni])
         end
     end
     for (qi, q) in enumerate(qgrid)
@@ -82,30 +135,7 @@ function counterKO(qgrid, τgrid, order)
         @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
         # println("$(q/kF)   $(w*NF)")
     end
-    cRs1 = zeros(Float64, (Nq, dlr.size))
-    for (ni, n) in enumerate(dlr.n)
-        for (qi, q) in enumerate(qgrid)
-            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
-            # cRs = (vq+f)^2 Π0/(1-(vq+f)Π0)^2
-            invKOinstant = q > 1.0e-6 ? 1.0 / KOinstant(q) : 1.0 / KOinstant(1.0e-6)
-            cRs1[qi, ni] = (-Rs[qi, ni])^order / (invKOinstant - Pi[qi, ni])
-            # cRs1[qi, ni] = -Pi[qi, ni] *Coulombinstant(q)*Coulombinstant(q)
-        end
-    end
-    # exit(0)
-    # println(Rs[:, 1])
-    # n=length(dlr.n)
-    # for (qi, q) in enumerate(qgrid)
-    #     println("$(q/kF)   $(cRs1[qi, n])   $(Pi[qi, n])   $(Rs[qi, n])")
-    # end
-    # exit(0)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
-    # qn=length(qgrid)
-    # qi = 50
-    # for (ti, t) in enumerate(τgrid.grid)
-    #     println("$(t/β)   $(cRs1[qi, ti])")
-    # end
-    # exit(0)
     return real.(cRs1)
 end
 
@@ -267,7 +297,8 @@ function eval(id::BareInteractionId, K, extT, varT)
     if id.order[2] == 0
         if id.type == Instant
             if id.para.interactionTauNum == 1
-                return e0^2 / ϵ0 / (dot(K, K) + mass2)
+                # return e0^2 / ϵ0 / (dot(K, K) + mass2)
+                return Coulombinstant(qd)
             elseif id.para.interactionTauNum == 2
                 return interactionStatic(qd, varT[id.extT[1]], varT[id.extT[2]])
             else
@@ -282,8 +313,15 @@ function eval(id::BareInteractionId, K, extT, varT)
         order = id.order[2]
         if id.type == Instant
             if id.para.interactionTauNum == 1
-                invK = 1.0 / (dot(K, K) + mass2)
-                return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                if dim == 3
+                    invK = 1.0 / (qd^2 + mass2)
+                    return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                    # elseif dim == 2
+                    #     invK = 1.0 / sqrt(qd^2 + mass2)
+                    #     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                else
+                    error("not implemented!")
+                end
             else
                 # return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!

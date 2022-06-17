@@ -5,10 +5,11 @@ using CompositeGrids
 
 include("counterterm.jl")
 
-const beta = 50.0
+const D = 2
+const beta = 400.0
 const rs = 1.0
 # const mass2 = 0.3838^2
-const mass2 = 1e-5
+const mass2 = 1e-6
 # const Fs = -0.58545
 # const Fs = -0.20633
 const Fs = -0.0
@@ -17,7 +18,7 @@ const Fa = -0.0
 const massratio = 1.0
 const z = 1.0
 
-const para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
+const para = Parameter.rydbergUnit(1.0 / beta, rs, D, Λs=mass2)
 
 ###### constants ###########
 const kF = para.kF

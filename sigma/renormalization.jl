@@ -11,7 +11,7 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const Order = 2
+const Order = 1
 const FileName = "data.jld2"
 
 partition = [(1, 0, 0),  # order 1

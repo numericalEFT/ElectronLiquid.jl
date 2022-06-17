@@ -10,7 +10,7 @@ using StaticArrays
 using JLD2
 
 const steps = 1e6
-const Order = 2
+const Order = 1
 
 include("../common/interaction.jl")
 
@@ -124,7 +124,9 @@ end
 
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
-    K.data[:, 1] .= [kF, 0.0, 0.0]
+    K.data[:, 1] .= 0.0
+    K.data[1, 1] = kF
+    # K.data[:, 1] .= [kF, 0.0, 0.0]
     T = MCIntegration.Tau(β, β / 2.0, offset=1)
     T.data[1] = 0.0
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
@@ -153,48 +155,48 @@ function MC()
                 end
             end
 
-            write(f, "\n")
+            # write(f, "\n")
 
-            nz1, ez1 = zfactor(avg[1, :], std[1, :])
-            nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
-            nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
-            nz2, ez2 = zfactor(avg[4, :], std[4, :])
+            # nz1, ez1 = zfactor(avg[1, :], std[1, :])
+            # nzg1, ezg1 = zfactor(avg[2, :], std[2, :])
+            # nzw1, ezw1 = zfactor(avg[3, :], std[3, :])
+            # nz2, ez2 = zfactor(avg[4, :], std[4, :])
 
-            mu1, emu1 = chemicalpotential(avg[1, :], std[1, :])
-            # dmu1 = -mu1
-            dmu1 = 0.0
-            dz1 = -nz1
+            # mu1, emu1 = chemicalpotential(avg[1, :], std[1, :])
+            # # dmu1 = -mu1
+            # dmu1 = 0.0
+            # dz1 = -nz1
 
-            write(f, "# chemical potential: \n")
-            write(f, "# mu1 = $mu1 +- $emu1\n")
+            # write(f, "# chemical potential: \n")
+            # write(f, "# mu1 = $mu1 +- $emu1\n")
 
-            nmug1, emug1 = chemicalpotential(avg[2, :], std[2, :])
-            nmuw1, emuw1 = chemicalpotential(avg[3, :], std[3, :])
-            nmu2, emu2 = chemicalpotential(avg[4, :], std[4, :])
-            mu2 = nmu2 + nmuw1 + dmu1 * nmug1
-            emu2 = emu2 + emuw1 + emug1 * abs(dmu1) + abs(nmug1) * emu1
-            write(f, "# mu2 = $mu2 +- $emu2\n")
+            # nmug1, emug1 = chemicalpotential(avg[2, :], std[2, :])
+            # nmuw1, emuw1 = chemicalpotential(avg[3, :], std[3, :])
+            # nmu2, emu2 = chemicalpotential(avg[4, :], std[4, :])
+            # mu2 = nmu2 + nmuw1 + dmu1 * nmug1
+            # emu2 = emu2 + emuw1 + emug1 * abs(dmu1) + abs(nmug1) * emu1
+            # write(f, "# mu2 = $mu2 +- $emu2\n")
 
 
-            write(f, "\n")
+            # write(f, "\n")
 
-            write(f, "# zfactor: \n")
-            write(f, "# nzg1 = $nzg1 +- $ezg1\n")
-            write(f, "# nzw1 = $nzw1 +- $ezw1\n")
-            write(f, "# nz2 = $nz2 +- $ez2\n")
-            write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
-            write(f, "\n")
-            write(f, "# order 1\n")
-            write(f, "# z1 = $z1  +-  $ez1\n")
-            z2 = nz2 + nzw1 + dmu1 * nzg1
-            ez2 = ez2 + ezw1 + abs(dmu1) * ezg1 + emu1 * abs(nzg1)
-            # z2 = nz2 + nzw1 + dmu1 * nzg1 + dz1 * nz1
-            # dz2 = -z2
-            # ez2 = ez2 + ezw1 + dmu1 * ezg1 + emu1 * nzg1 + 2 * ez1 * nz1
-            write(f, "# order 2\n")
-            write(f, "# z2= $z2 +- $ez2")
-            # write(f, "$nz2  +-  $ez1\n")
-            # println("order 2: ", nz2 + nzg1*mu1 + nzw1 + nz1 * 2 * (-nz1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
+            # write(f, "# zfactor: \n")
+            # write(f, "# nzg1 = $nzg1 +- $ezg1\n")
+            # write(f, "# nzw1 = $nzw1 +- $ezw1\n")
+            # write(f, "# nz2 = $nz2 +- $ez2\n")
+            # write(f, "# dmu1 = $dmu1 +- $emu1    dz1 = $dz1 +- $ez1\n")
+            # write(f, "\n")
+            # write(f, "# order 1\n")
+            # write(f, "# z1 = $z1  +-  $ez1\n")
+            # z2 = nz2 + nzw1 + dmu1 * nzg1
+            # ez2 = ez2 + ezw1 + abs(dmu1) * ezg1 + emu1 * abs(nzg1)
+            # # z2 = nz2 + nzw1 + dmu1 * nzg1 + dz1 * nz1
+            # # dz2 = -z2
+            # # ez2 = ez2 + ezw1 + dmu1 * ezg1 + emu1 * nzg1 + 2 * ez1 * nz1
+            # write(f, "# order 2\n")
+            # write(f, "# z2= $z2 +- $ez2")
+            # # write(f, "$nz2  +-  $ez1\n")
+            # # println("order 2: ", nz2 + nzg1*mu1 + nzw1 + nz1 * 2 * (-nz1), "  +-  ", ezg1 + ezw1 + ez2 + 2 * abs(z1) * ez1)
         end
 
     end
