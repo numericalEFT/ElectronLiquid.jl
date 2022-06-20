@@ -11,7 +11,8 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const FileName = "data.jld2"
+const loadMu = false
+# const FileName = "data.jld2"
 
 function zfactor(idata)
     return (idata[2] - idata[1]) / (2π / β)
@@ -21,7 +22,7 @@ function mu(rdata)
     return rdata[1]
 end
 
-function load()
+function load(FileName)
     f = jldopen(FileName, "r")
     avg, std = f["avg"], f["std"]
     order = f["order"]
@@ -71,7 +72,10 @@ function chemicalpotential(Order, rdata)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    order, _partition, rdata, idata = load()
+
+    @assert length(ARGS) >= 1 "One argument for the data file name is required!"
+    filename = ARGS[1]
+    order, _partition, rdata, idata = load(filename)
     println("original data up to the Order = $order")
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
