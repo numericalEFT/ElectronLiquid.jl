@@ -1,8 +1,58 @@
-###############   RPA   ########################
-# beta=25, mass2=0.01 
-# z1, m1, mu1 = -0.1220, 0.1941, -1.3652  #rs=1
-# z1, m1, mu1 = -0.5616, 0.5389, -0.3114  #rs=5
+"""
+Merge interaction order and the main order
+(normal_order, G_order, W_order) --> (normal+W_order, G_order)
+"""
+function mergeInteraction(data)
+    res = Dict()
+    for (p, val) in data
+        # println(p)
+        mp = (p[1] + p[3], p[2])
+        if haskey(res, mp)
+            res[mp] += val
+        else
+            res[mp] = val
+        end
+    end
+    return res
+end
 
-# z1, m1, mu1 = 0.1220, 0.1220, 1.3652  #rs=1
-# z1, m1, mu1 = 0.5616, 0.5616, 0.3114  #rs=5
-z1, m1, mu1 = 0.2957, 0.2957, 0.7393  #rs=5
+"""
+    function chemicalpotential_renormalization(order, data, δμ)
+    
+    merge different diagrammatic orders with proper chemical potential renormalization
+
+    By definition, the chemical potential renormalization is defined as
+    Σ1 = Σ11
+    Σ2 = Σ20+Σ11*δμ1
+    Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+    Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+
+# Arguments
+order : total order
+data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+δμ    : chemical potential renormalization for each order
+"""
+function chemicalpotential_renormalization(order, data, δμ)
+    # _partition = sort([k for k in keys(rdata)])
+    # println(_partition)
+    @assert order <= 4 "Order $order hasn't been implemented!"
+    @assert length(δμ) <= order
+    d = data
+    z = Vector{eltype(values(d))}(undef, order)
+    if order >= 1
+        z[1] = d[(1, 0)]
+    end
+    if order >= 2
+        z[2] = d[(2, 0)] + δμ[1] * d[(1, 1)]
+    end
+    if order >= 3
+        # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+        z[3] = d[(3, 0)] + δμ[1] * d[(2, 1)] + δμ[1]^2 * d[(1, 2)] + δμ[2] * d[(1, 1)]
+    end
+    if order >= 4
+        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+        # z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
+        z[4] = d[(4, 0)] + δμ[2] * d[(2, 1)] + δμ[3] * d[(1, 1)]
+    end
+    return z
+end

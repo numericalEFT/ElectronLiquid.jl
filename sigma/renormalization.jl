@@ -23,24 +23,6 @@ function mu(rdata)
     return rdata[1]
 end
 
-"""
-Merge interaction order and the main order
-(tot, go, io) --> (tot+io, go)
-"""
-function mergeInteraction(data)
-    res = Dict()
-    for (p, val) in data
-        # println(p)
-        mp = (p[1] + p[3], p[2])
-        if haskey(res, mp)
-            res[mp] += val
-        else
-            res[mp] = val
-        end
-    end
-    return res
-end
-
 function load()
     f = jldopen(FileName, "r")
     avg, std = f["avg"], f["std"]
@@ -87,32 +69,6 @@ function chemicalpotential(Order, rdata)
     return μ, δμ
 end
 
-function zfactor_renorm(Order, idata, δμ)
-    # _partition = sort([k for k in keys(rdata)])
-    # println(_partition)
-    _z = Dict()
-    for (p, val) in idata
-        _z[p] = zfactor(val)
-    end
-    z = Vector{Any}(undef, Order)
-    if Order >= 1
-        z[1] = _z[(1, 0)]
-    end
-    if Order >= 2
-        z[2] = _z[(2, 0)] + δμ[1] * _z[(1, 1)]
-    end
-    if Order >= 3
-        # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-        z[3] = _z[(3, 0)] + δμ[1] * _z[(2, 1)] + δμ[1]^2 * _z[(1, 2)] + δμ[2] * _z[(1, 1)]
-    end
-    if Order >= 4
-        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        # z[4] = _z[(4, 0)] + δμ[1] * _z[(3, 1)] + δμ[1]^2 * _z[(2, 2)] + δμ[2] * _z[(2, 1)]+ (δμ[1])^3 * _z[(1, 3)] + 2 * δμ[1] * δμ[2] * _z[(1, 2)] + δμ[3] * _z[(1, 1)]
-        z[4] = _z[(4, 0)] + δμ[2] * _z[(2, 1)] + δμ[3] * _z[(1, 1)]
-    end
-    return z
-end
-
 if abspath(PROGRAM_FILE) == @__FILE__
     order, _partition, rdata, idata = load()
     println("original data up to the Order = $order")
@@ -128,7 +84,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
     _μ, δμ = chemicalpotential(order, rdata)
     println(_μ)
     println(δμ)
-    _z = zfactor_renorm(order, idata, δμ)
+
+    _z = Dict()
+    for (p, val) in idata
+        _z[p] = zfactor(val)
+    end
+    _z = chemicalpotential_renormalization(order, _z, δμ)
     println(_z)
     for o in 1:order
         println("order $o: z = ", 1 / (1 + sum(_z[1:o])))
