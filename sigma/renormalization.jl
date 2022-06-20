@@ -15,8 +15,6 @@ const FileName = "data.jld2"
 
 function zfactor(idata)
     return (idata[2] - idata[1]) / (2π / β)
-    # return imag(avg[2] - avg[1]) / (2π / β), (abs(imag(std[2])) + abs(imag(std[1]))) / (2π / β)
-    # return imag(avg[1]) / (π / β), imag(std[1]) / (π / β)
 end
 
 function mu(rdata)
@@ -47,8 +45,11 @@ function chemicalpotential(Order, rdata)
     μ = Vector{Any}(undef, Order)
     if Order >= 1
         μ[1] = _mu[(1, 0)]
-        δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
-        # δμ[1] = 0.0 #for the Fock-renormalized G scheme only
+        if isFock
+            δμ[1] = 0.0 #for the Fock-renormalized G scheme only
+        else
+            δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
+        end
     end
     if Order >= 2
         μ[2] = _mu[(2, 0)] + δμ[1] * _mu[(1, 1)]

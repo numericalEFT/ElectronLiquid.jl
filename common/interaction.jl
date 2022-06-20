@@ -7,6 +7,15 @@ using FeynmanDiagram
 include("parameter.jl")
 include("green.jl")
 
+"""
+    function lindhard(x)
+
+    Dimensionless Linhard function so that lindhard(0) = 1 for both 2D and 3D
+
+# Arguments
+
+- x : 2k/k_F
+"""
 function lindhard(x)
     if dim == 3
         if (abs(x) < 1.0e-4)
@@ -123,9 +132,6 @@ function counterKO(qgrid, τgrid, order)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
-            # Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-            #     Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)
-            # Pi[qi, ni] = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para) * massratio
             cRs1[qi, ni] = (-Rs[qi, ni])^order / (invKOinstant - Pi[qi, ni])
         end
     end
@@ -183,9 +189,6 @@ linear interpolation of data(x, y)
 
     dx0, dx1 = x - xarray[xi0], xarray[xi1] - x
     dy0, dy1 = y - yarray[yi0], yarray[yi1] - y
-
-    # d00, d01 = data[xi0, yi0], data[xi0, yi1]
-    # d10, d11 = data[xi1, yi0], data[xi1, yi1]
 
     g0 = data[xi0, yi0] * dx1 + data[xi1, yi0] * dx0
     g1 = data[xi0, yi1] * dx1 + data[xi1, yi1] * dx0
@@ -266,9 +269,12 @@ end
 function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    ϵ = k^2 / (2me * massratio) - μ
-    # fock = SelfEnergy.Fock0_ZeroTemp(k, para)-SelfEnergy.Fock0_ZeroTemp(kF, para)
-    # ϵ = k^2 / (2me * massratio) - μ + fock
+    if isFock
+        fock = SelfEnergy.Fock0_ZeroTemp(k, para) - SelfEnergy.Fock0_ZeroTemp(kF, para)
+        ϵ = k^2 / (2me * massratio) - μ + fock
+    else
+        ϵ = k^2 / (2me * massratio) - μ
+    end
     τ = τout - τin
     order = id.order[1]
     if order == 0
@@ -278,13 +284,10 @@ function eval(id::BareGreenId, K, extT, varT)
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
     elseif order == 1
-        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green2(ϵ, τ, β)
     elseif order == 2
-        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green3(ϵ, τ, β)
     elseif order == 3
-        # return counterGreen2(k, τ, β, EF, me, massratio, z1, m1, mu1)
         return green3(ϵ, τ, β)
     else
         error("not implemented!")
