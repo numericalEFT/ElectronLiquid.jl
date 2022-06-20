@@ -12,7 +12,7 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e6
-const Order = 1
+const Order = 2
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
@@ -21,11 +21,7 @@ println("Build the diagrams into an experssion tree ...")
 const _partition = partition(Order)
 println("Diagram set: ", _partition)
 
-diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
-    interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
-        Instant,
-        Dynamic
-    ]),],  #instant charge-charge interaction
+diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2, interaction=interaction,
     filter=[
     # Girreducible,
     # Proper,   #one interaction irreduble diagrams or not

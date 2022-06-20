@@ -2,6 +2,7 @@
 using StaticArrays
 using ElectronGas: Parameter
 using CompositeGrids
+using FeynmanDiagram
 
 include("counterterm.jl")
 
@@ -17,7 +18,18 @@ const Fa = -0.0
 # const massratio = 1.049
 const massratio = 1.0
 const z = 1.0
+
 const isFock = false
+
+const interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
+    Instant,
+    Dynamic
+]),]  #instant charge-charge interaction
+
+
+const paraid = Dict("D" => D, "rs" => rs, "beta" => beta, "mass2" => mass2, "Fs" => Fs,
+    "Fa" => Fa, "massratio" => massratio, "z" => z, "isFock" => isFock
+)
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, D, Λs=mass2)
 
@@ -59,6 +71,7 @@ function partition(order::Int)
     ]
     return sort([p for p in par if p[1] + p[2] + p[3] <= Order])
 end
+
 
 # println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2, NF=$NF, qTF/kF=$(qTF/kF)")
 println(para)

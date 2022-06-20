@@ -1,4 +1,9 @@
+using CSV
+using DataFrames
+
 include("io.jl")
+
+const ParaFile = "para.csv"
 
 function chemicalpotential(Order, rdata)
     # _partition = sort([k for k in keys(rdata)])
@@ -40,8 +45,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     @assert length(ARGS) >= 1 "One argument for the data file name is required!"
     filename = ARGS[1]
-    order, _partition, rdata, idata = load(filename)
-    println("original data up to the Order = $order")
+    _order, _partition, rdata, idata = loaddata(filename)
+    println("original data up to the Order = $_order")
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
@@ -51,7 +56,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
-    _μ, δμ = chemicalpotential(order, rdata)
+    _μ, δμ = chemicalpotential(_order, rdata)
     println(_μ)
     println(δμ)
 
@@ -59,11 +64,38 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for (p, val) in idata
         _z[p] = zfactor(val)
     end
-    _z = chemicalpotential_renormalization(order, _z, δμ)
+    _z = chemicalpotential_renormalization(_order, _z, δμ)
     println(_z)
-    for o in 1:order
+    for o in 1:_order
         println("order $o: z = ", 1 / (1 + sum(_z[1:o])))
     end
+
+    ############# save to csv  #################
+    df = nothing
+    if isfile(ParaFile)
+        df = DataFrame(CSV.File(ParaFile))
+    end
+
+    for o in 1:_order
+        global df
+        e = deepcopy(paraid)
+        e["order"] = o
+        e["δμ"] = δμ[o].val
+        e["δμ.err"] = δμ[o].err
+        e["δz"] = _z[o].val
+        e["δz.err"] = _z[o].err
+
+        if isnothing(df)
+            df = DataFrame(e)
+        else
+            append!(df, e)
+        end
+        df = unique(df)
+    end
+    # df = DataFrame(D=D, rs=rs, beta=beta, mass2=mass2, δμ=δμ, z=_z)
+    println(df)
+    CSV.write(ParaFile, df)
+
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
 end
