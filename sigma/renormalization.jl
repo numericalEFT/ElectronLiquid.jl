@@ -14,15 +14,16 @@ using JLD2
 const Order = 1
 const FileName = "data.jld2"
 
-partition = [(1, 0, 0),  # order 1
-    (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
-    (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
-    (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
-]
+# partition = [(1, 0, 0),  # order 1
+#     (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
+#     (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
+#     (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
+# ]
 
-partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
+# partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
+const _partition = partition(Order)
 
-println("Diagram set: ", partition)
+println("Diagram set: ", _partition)
 
 function zfactor(idata)
     return (idata[2] - idata[1]) / (2π / β)
@@ -56,7 +57,7 @@ function load()
     f = jldopen(FileName, "r")
     avg, std = f["avg"], f["std"]
     rdata, idata = Dict(), Dict()
-    for (ip, p) in enumerate(partition)
+    for (ip, p) in enumerate(_partition)
         rdata[p] = [measurement(real(avg[ip, wi]), real(std[ip, wi])) for wi in 1:length(avg[ip, :])]
         idata[p] = [measurement(imag(avg[ip, wi]), imag(std[ip, wi])) for wi in 1:length(avg[ip, :])]
     end
@@ -64,7 +65,7 @@ function load()
 end
 
 function chemicalpotential(rdata)
-    _partition = sort([k for k in keys(rdata)])
+    # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     _mu = Dict()
     for (p, val) in rdata
@@ -97,7 +98,7 @@ function chemicalpotential(rdata)
 end
 
 function zfactor_renorm(idata, δμ)
-    _partition = sort([k for k in keys(rdata)])
+    # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     _z = Dict()
     for (p, val) in idata

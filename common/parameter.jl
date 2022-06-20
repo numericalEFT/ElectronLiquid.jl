@@ -6,7 +6,7 @@ using CompositeGrids
 include("counterterm.jl")
 
 const D = 2
-const beta = 400.0
+const beta = 100.0
 const rs = 1.0
 # const mass2 = 0.3838^2
 const mass2 = 1e-6
@@ -48,6 +48,16 @@ end
 
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
+function partition(order::Int)
+    # normal order, G order, W order
+    par = [(1, 0, 0),  # order 1
+        (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
+        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
+        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
+    ]
+    return sort([p for p in par if p[1] + p[2] + p[3] <= Order])
+end
 
 # println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2, NF=$NF, qTF/kF=$(qTF/kF)")
 println(para)
