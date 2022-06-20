@@ -11,19 +11,7 @@ include("../common/parameter.jl")
 using Measurements
 using JLD2
 
-const Order = 1
 const FileName = "data.jld2"
-
-# partition = [(1, 0, 0),  # order 1
-#     (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
-#     (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
-#     (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
-# ]
-
-# partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
-const _partition = partition(Order)
-
-println("Diagram set: ", _partition)
 
 function zfactor(idata)
     return (idata[2] - idata[1]) / (2π / β)
@@ -56,15 +44,17 @@ end
 function load()
     f = jldopen(FileName, "r")
     avg, std = f["avg"], f["std"]
+    order = f["order"]
+    _partition = f["partition"]
     rdata, idata = Dict(), Dict()
     for (ip, p) in enumerate(_partition)
         rdata[p] = [measurement(real(avg[ip, wi]), real(std[ip, wi])) for wi in 1:length(avg[ip, :])]
         idata[p] = [measurement(imag(avg[ip, wi]), imag(std[ip, wi])) for wi in 1:length(avg[ip, :])]
     end
-    return rdata, idata
+    return order, _partition, rdata, idata
 end
 
-function chemicalpotential(rdata)
+function chemicalpotential(Order, rdata)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     _mu = Dict()
@@ -97,7 +87,7 @@ function chemicalpotential(rdata)
     return μ, δμ
 end
 
-function zfactor_renorm(idata, δμ)
+function zfactor_renorm(Order, idata, δμ)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     _z = Dict()
@@ -124,8 +114,8 @@ function zfactor_renorm(idata, δμ)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    rdata, idata = load()
-    println("original data: ")
+    order, _partition, rdata, idata = load()
+    println("original data up to the Order = $order")
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
@@ -135,12 +125,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
-    _μ, δμ = chemicalpotential(rdata)
+    _μ, δμ = chemicalpotential(order, rdata)
     println(_μ)
     println(δμ)
-    _z = zfactor_renorm(idata, δμ)
+    _z = zfactor_renorm(order, idata, δμ)
     println(_z)
-    for o in 1:Order
+    for o in 1:order
         println("order $o: z = ", 1 / (1 + sum(_z[1:o])))
     end
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
