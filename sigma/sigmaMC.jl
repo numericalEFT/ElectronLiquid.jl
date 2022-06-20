@@ -45,19 +45,18 @@ diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=tru
 sigma = Dict()
 for p in _partition
     d = Parquet.sigma(diagPara(p[1])).diagram
-    d = DiagTree.derivative(d, BareGreenId, p[2])
-    d = DiagTree.derivative(d, BareInteractionId, p[3])
-    sigma[p] = d
-    # if p == (1, 0, 0)
-    #     sigma[p] = d
-    # else
-    #     sigma[p] = DiagTree.removeHatreeFock!(d)
-    # end
+    d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
+    d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
+    if isFock == false
+        sigma[p] = d
+    else # remove the Fock subdiagrams
+        if p == (1, 0, 0) # the Fock diagram itself should not be removed
+            sigma[p] = d
+        else
+            sigma[p] = DiagTree.removeHatreeFock!(d)
+        end
+    end
 end
-# DiagTree.removeHatreeFock!(sigma[2, 0, 0])
-# println(sigma[2, 0, 0])
-# plot_tree(sigma[(2, 0, 0)], maxdepth=8)
-# exit(0)
 
 sigma = [sigma[p] for p in _partition]
 const diagpara = [diags[1].id.para for diags in sigma]
