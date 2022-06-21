@@ -59,6 +59,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         # display(p)
     end
     plot.plt.legend()
-    plot.plt.show()
+    # plot.plt.show()
+    plot.plt.savefig("sigmaK.pdf")
     # readline()
 end

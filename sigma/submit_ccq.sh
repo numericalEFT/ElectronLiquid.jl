@@ -57,7 +57,7 @@ module load openmpi4
 ## Just run the job
 cd $SLURM_SUBMIT_DIR
 #echo $SLURM_SUBMIT_DIR
-/mnt/home/kunchen/.julia/bin/mpiexecjl julia /mnt/home/kunchen/project/EFT_UEG/sigma/sigmaMC.jl >> output.dat
+/mnt/home/kunchen/.julia/bin/mpiexecjl julia /mnt/home/kunchen/project/EFT_UEG/sigma/sigmaK.jl >> output.dat
 #mpirun julia /mnt/home/kunchen/ceph/randomcircuit6/ConservedCircuit/evolve_2sector.jl
 #mpirun julia evolve_ancilla.jl
 #mkdir data
