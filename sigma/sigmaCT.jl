@@ -12,52 +12,16 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e6
-const Order = 2
+const Order = 1
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
-println("Build the diagrams into an experssion tree ...")
-
-const _partition = partition(Order)
-println("Diagram set: ", _partition)
-
-diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2, interaction=interaction,
-    filter=[
-    # Girreducible,
-    # Proper,   #one interaction irreduble diagrams or not
-    # NoBubble, #allow the bubble diagram or not
-    # NoFock,
-    ]
-)
-
-sigma = Dict()
-for p in _partition
-    d = Parquet.sigma(diagPara(p[1])).diagram
-    d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
-    d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
-    if isFock == false
-        sigma[p] = d
-    else # remove the Fock subdiagrams
-        if p == (1, 0, 0) # the Fock diagram itself should not be removed
-            sigma[p] = d
-        else
-            sigma[p] = DiagTree.removeHatreeFock!(d)
-        end
-    end
-end
-
-sigma = [sigma[p] for p in _partition]
-const diagpara = [diags[1].id.para for diags in sigma]
-const diag = [ExprTree.build(diags) for diags in sigma] # DiagTree to ExprTree
-const root = [d.root for d in diag] #get the list of root nodes
-#assign the external Tau to the corresponding diagrams
-const extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
-
-
-@inline function phase(varT, extT, l)
-    tin, tout = varT[extT[1]], varT[extT[2]]
-    return exp(1im * π * (2l + 1) / β * (tout - tin))
-end
+include("./sigma_diagram.jl")
+ret = sigmaDiag(Order)
+const diagpara = ret[1]
+const diag = ret[2]
+const root = ret[3]
+const extT = ret[4]
 
 function integrand(config)
     order = config.curr

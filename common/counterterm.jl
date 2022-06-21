@@ -182,8 +182,8 @@ function muCT(df::DataFrame, paraid::Dict, order::Int)
     @assert isempty(df) == false "no data exist for $paraid"
     # println(df)
 
-    δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order]
-    err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order]
+    δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order-1]
+    err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
     # err = [mu for mu in df[!, "δμ.err"]]
     return measurement.(δμ, err)
 end

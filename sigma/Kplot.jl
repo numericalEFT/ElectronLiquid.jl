@@ -53,11 +53,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
         y = [z.val for z in zko]
         e = [z.err for z in zko]
         # println(zk[o])
-        plot.plt.errorbar(kgrid.grid, y, yerr=e, color=plot.ColorList[o], label="Order $o")
+        plot.plt.errorbar(kgrid.grid, y, yerr=e, color=plot.color[o], label="Order $o")
         # println(plt)
         # p = plot(kgrid.grid, zk[o])
         # display(p)
     end
+    plot.plt.legend()
     plot.plt.show()
     # readline()
 end

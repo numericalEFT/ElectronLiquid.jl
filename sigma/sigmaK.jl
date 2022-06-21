@@ -11,14 +11,14 @@ using JLD2
 
 include("../common/interaction.jl")
 
-const steps = 1e6
+const steps = 1e7
 const Order = 2
 
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
 const Nk, korder = 4, 4
-const minK = 0.01kF
+const minK = 0.1kF
 
 const kgrid = CompositeGrid.LogDensedGrid(:cheb, [0.0, maxK], [0.0, kF], Nk, minK, korder)
 
