@@ -21,6 +21,8 @@ const z = 1.0
 
 const isFock = false
 
+const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
+
 const interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
     Instant,
     Dynamic
@@ -28,7 +30,7 @@ const interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
 
 
 const paraid = Dict("D" => D, "rs" => rs, "beta" => beta, "mass2" => mass2, "Fs" => Fs,
-    "Fa" => Fa, "massratio" => massratio, "z" => z, "isFock" => isFock
+    "Fa" => Fa, "massratio" => massratio, "z" => z, "isFock" => isFock, "interaction" => interaction
 )
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, D, Λs=mass2)

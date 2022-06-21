@@ -1,0 +1,3 @@
+D,Fa,Fs,beta,interaction,isFock,mass2,massratio,order,rs,z,δz,δz.err,δμ,δμ.err
+2,-0.0,-0.0,100.0,"Interaction(ChargeCharge, Set(AnalyticProperty[Dynamic, Instant]))",false,1.0e-6,1.0,1,1.0,1.0,0.42607901475837157,0.005743594066016344,-2.216989730945191,0.01640370796369683
+2,-0.0,-0.0,100.0,"Interaction(ChargeCharge, Set(AnalyticProperty[Dynamic, Instant]))",false,1.0e-6,1.0,2,1.0,1.0,0.06602788763901232,0.05039982002358681,0.13529239942188775,0.05626304911543967

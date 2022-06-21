@@ -72,8 +72,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     ############# save to csv  #################
     df = nothing
-    if isfile(ParaFile)
-        df = DataFrame(CSV.File(ParaFile))
+    if isfile(parafileName)
+        df = DataFrame(CSV.File(parafileName))
     end
 
     for o in 1:_order
@@ -94,7 +94,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     end
     # df = DataFrame(D=D, rs=rs, beta=beta, mass2=mass2, δμ=δμ, z=_z)
     println(df)
-    CSV.write(ParaFile, df)
+    CSV.write(parafileName, df)
+    println(interaction)
 
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
     # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
