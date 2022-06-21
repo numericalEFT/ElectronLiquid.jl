@@ -62,9 +62,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         _z[p] = zfactor(val)
     end
     _z = chemicalpotential_renormalization(_order, _z, δμ)
-    println(_z)
+    println("z factor and counterterm")
     for o in 1:_order
-        println("order $o: z = ", 1 / (1 + sum(_z[1:o])))
+        println("order $o: z = $(1 / (1 + sum(_z[1:o])))  δz = $(_z[o])")
     end
 
     ############# save to csv  #################

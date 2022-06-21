@@ -71,7 +71,7 @@ end
 """
     function chemicalpotential(order, Σ, isfock)
 
-    Derive the chemicalpotential shift and the chemical potential counterterm for each order
+    Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
 
     By definition, the chemical potential renormalization is defined as
     Σ1 = Σ11
@@ -130,17 +130,20 @@ function toFile(df, parafile=parafileName)
     writedlm(parafile, Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
 
-function compareRow(row, _dict)
-    flag = true
-    for (key, value) in _dict
-        if value isa AbstractFloat
-            flag = flag && (row[key] ≈ value)
-        else
-            flag = flag && (row[key] == value)
-        end
-    end
-    return flag
-end
+compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
+
+# function compareRow(row, _dict)
+#     flag = true
+#     for (key, value) in _dict
+#         if value isa AbstractFloat
+#             flag = flag && (row[key] ≈ value)
+#         else
+#             flag = flag && (row[key] == value)
+#         end
+#     end
+#     return 
+#     return flag
+# end
 
 function appendDict!(df, _dict)
     if isempty(filter(row -> compareRow(row, _dict), df)) == false
