@@ -49,6 +49,7 @@ function chemicalpotential_renormalization(order, data, δμ)
     @assert order <= 4 "Order $order hasn't been implemented!"
     @assert length(δμ) <= order
     d = data
+    # println("size: ", size(d[(1, 0)]))
     z = Vector{eltype(values(d))}(undef, order)
     if order >= 1
         z[1] = d[(1, 0)]
@@ -175,8 +176,10 @@ paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
 function muCT(df::DataFrame, paraid::Dict, order::Int)
+    # println(df)
     df = filter(row -> compareRow(row, paraid), df)
     sort!(df, "δμ.err") #sort error from small to large
+    @assert isempty(df) == false "no data exist for $paraid"
     # println(df)
 
     δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order]

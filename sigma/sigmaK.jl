@@ -12,7 +12,7 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e6
-const Order = 1
+const Order = 2
 
 const lgrid = [0, 1]
 const Nl = length(lgrid)
@@ -68,19 +68,7 @@ function MC()
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=64, reweight=10000)
 
     if isnothing(avg) == false
-
-        jldsave("dataK.jld2", order=Order, partition=partition(Order), avg=avg, std=std)
-
-        # open("data.dat", "w") do f
-        #     @printf(f, "#%7s %16s %16s %16s %16s\n", "freq", "real", "real err", "imag", "imag err")
-        #     for o in 1:length(dof)
-        #         write(f, "# $(_partition[o])\n")
-        #         for li in 1:Nl
-        #             @printf(f, "%8.4f %16.8f %16.8f %16.8f %16.8f\n", lgrid[li], real(avg[o, li]), real(std[o, li]), imag(avg[o, li]), imag(std[o, li]))
-        #         end
-        #     end
-        # end
-
+        jldsave("dataK.jld2", order=Order, partition=partition(Order), avg=avg, std=std, kgrid=kgrid)
     end
 
 end
