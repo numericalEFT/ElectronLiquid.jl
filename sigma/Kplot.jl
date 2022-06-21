@@ -53,11 +53,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
         y = [z.val for z in zko]
         e = [z.err for z in zko]
         # println(zk[o])
-        plot.plt.errorbar(kgrid.grid, y, yerr=e, color=plot.color[o], label="Order $o")
+        plot.plt.errorbar(kgrid.grid / kF, y, yerr=e, color=plot.color[o], label="Order $o")
         # println(plt)
         # p = plot(kgrid.grid, zk[o])
         # display(p)
     end
+    plot.plt.xlim([kgrid.grid[1] / kF, kgrid.grid[end] / kF])
+    plot.plt.xlabel("\$k/k_F\$")
+    plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     plot.plt.legend()
     # plot.plt.show()
     plot.plt.savefig("sigmaK.pdf")
