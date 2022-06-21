@@ -14,5 +14,5 @@
 *.out
 host.txt
 *.jld2
-*.history
+.history
 __pycache__
