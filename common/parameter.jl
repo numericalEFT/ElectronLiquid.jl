@@ -3,9 +3,9 @@ using StaticArrays
 using ElectronGas: Parameter
 using CompositeGrids
 using FeynmanDiagram
-using DataFrames
+# using DataFrames
 
-include("counterterm.jl")
+# include("counterterm.jl")
 
 const D = 2
 const beta = 100.0
@@ -21,8 +21,6 @@ const massratio = 1.0
 const z = 1.0
 
 const isFock = false
-
-const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
 
 const interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
     Instant,

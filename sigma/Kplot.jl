@@ -1,9 +1,9 @@
-using CSV
-using DataFrames
 using JLD2
 using Measurements
 # using Plots
 include("../common/parameter.jl")
+include("../common/counterterm.jl")
+using .CounterTerm
 
 
 function zfactor(idata)
@@ -32,8 +32,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     rdata = mergeInteraction(rdata)
     idata = mergeInteraction(idata)
 
-    # df = DataFrame(CSV.File(parafileName))
-    # println(df)
-    readDeltaMu()
+    df = fromFile()
+    δμ = muCT(df, paraid)
+    println(δμ)
 
 end
