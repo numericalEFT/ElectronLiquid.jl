@@ -39,6 +39,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     @assert length(ARGS) >= 1 "One argument for the data file name is required!"
     filename = ARGS[1]
+    isSave = false
+    if length(ARGS) >= 2 && (ARGS[2] == "s" || ARGS[2] == "-s" || ARGS[2] == "--save" || ARGS[2] == " save")
+        # the second parameter may be set to save the derived parameters
+        isSave = true
+    end
+
     _order, _partition, rdata, idata = loaddata(filename)
     println("original data up to the Order = $_order")
     for p in sort([k for k in keys(rdata)])
@@ -71,18 +77,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     df = fromFile()
     for o in 1:_order
         global df
-        e = deepcopy(paraid)
-        e["order"] = o
-        e["δμ"] = δμ[o].val
-        e["δμ.err"] = δμ[o].err
-        e["δz"] = _z[o].val
-        e["δz.err"] = _z[o].err
-
-        appendDict!(df, e)
+        df = appendDict(df, paraid, Dict("order" => o, "δμ" => δμ[o].val, "δμ.err" => δμ[o].err, "δz" => _z[o].val, "δz.err" => _z[o].err))
     end
     println(df)
-    toFile(df)
-
-    # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]), ", ", 1 / (1 + _z[2] + _z[3] + _z[4]))
-    # println(1 / (1 + _z[2]), ", ", 1 / (1 + _z[2] + _z[3]))
+    isSave && toFile(df)
 end

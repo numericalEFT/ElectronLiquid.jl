@@ -33,7 +33,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     idata = mergeInteraction(idata)
 
     df = fromFile()
-    δμ = muCT(df, paraid)
+    δμ = muCT(df, paraid, _order)
     println(δμ)
 
 end

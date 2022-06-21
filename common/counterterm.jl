@@ -4,7 +4,7 @@ using DataFrames
 using DelimitedFiles
 # using PyCall
 using Measurements
-export mergeInteraction, chemicalpotential_renormalization, fromFile, toFile, appendDict!, chemicalpotential
+export mergeInteraction, chemicalpotential_renormalization, fromFile, toFile, appendDict, chemicalpotential
 export muCT
 
 const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
@@ -121,59 +121,67 @@ function chemicalpotential(order, Σ, isfock)
 end
 
 function fromFile(parafile=parafileName)
-    data, header = readdlm(parafile, ',', header=true)
-    df = DataFrame(data, vec(header))
-    return df
+    try
+        data, header = readdlm(parafile, ',', header=true)
+        return DataFrame(data, vec(header))
+    catch e
+        println(e)
+        println("Failed to load from $parafile. We will initialize the file instead")
+        return nothing
+    end
 end
 
 function toFile(df, parafile=parafileName)
+    if isnothing(df)
+        @warn "Empty dataframe $df, nothing to save"
+        return
+    end
+    println("Save the parameters to the file $parafile")
     writedlm(parafile, Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
 
 compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
 
-# function compareRow(row, _dict)
-#     flag = true
-#     for (key, value) in _dict
-#         if value isa AbstractFloat
-#             flag = flag && (row[key] ≈ value)
-#         else
-#             flag = flag && (row[key] == value)
-#         end
-#     end
-#     return 
-#     return flag
-# end
-
-function appendDict!(df, _dict)
-    if isempty(filter(row -> compareRow(row, _dict), df)) == false
-        @warn "Already exist $_dict"
-        # _dict already exit
+function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
+    # if isempty(filter(row -> compareRow(row, paraid), df)) == false
+    #     #duplicated paraid, but may 
+    #     if replace == false
+    #         return df
+    #     end
+    #     @warn "Add new row with the existing paraid! \n $(paraid)"
+    # end
+    d = merge(paraid, data)
+    if isnothing(df) || isempty(df) || nrow(df) == 0
+        return DataFrame(d)
+    else
+        if isempty(filter(row -> compareRow(row, d), df))
+            #duplicated paraid and data, then simply skip
+            df = deepcopy(df)
+            append!(df, d)
+        end
         return df
     end
-    if isnothing(df)
-        df = DataFrame(_dict)
-    else
-        append!(df, _dict)
-    end
-    # df = unique(df)
-    return df
 end
 
 """
-    function muCT(df, paraid)
+    function muCT(df, paraid, order)
 
-    Extract the chemical potential counterterm for the given parameters
+    Extract the chemical potential counterterm for the given parameters.
+    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
 
 # Arguments
 df     : DataFrame
 paraid : Dictionary of parameter names and values
+order  : the truncation order
 """
-function muCT(df, paraid)
+function muCT(df::DataFrame, paraid::Dict, order::Int)
     df = filter(row -> compareRow(row, paraid), df)
+    sort!(df, "δμ.err") #sort error from small to large
+    # println(df)
 
-    δμ = [mu for mu in df[!, "δμ"]]
-    err = [mu for mu in df[!, "δμ.err"]]
+    δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order]
+    err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order]
+    # err = [mu for mu in df[!, "δμ.err"]]
     return measurement.(δμ, err)
 end
 
