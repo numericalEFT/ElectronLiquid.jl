@@ -62,7 +62,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     plot.plt.xlabel("\$k/k_F\$")
     plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     plot.plt.legend()
-    # plot.plt.show()
-    plot.plt.savefig("sigmaK.pdf")
+    plot.plt.show()
+    # plot.plt.savefig("sigmaK.pdf")
     # readline()
 end
