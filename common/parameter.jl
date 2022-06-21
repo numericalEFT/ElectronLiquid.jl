@@ -3,6 +3,7 @@ using StaticArrays
 using ElectronGas: Parameter
 using CompositeGrids
 using FeynmanDiagram
+using DataFrames
 
 include("counterterm.jl")
 
@@ -30,7 +31,7 @@ const interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
 
 
 const paraid = Dict("D" => D, "rs" => rs, "beta" => beta, "mass2" => mass2, "Fs" => Fs,
-    "Fa" => Fa, "massratio" => massratio, "z" => z, "isFock" => isFock, "interaction" => interaction
+    "Fa" => Fa, "massratio" => massratio, "z" => z, "isFock" => isFock, "interaction" => "$interaction"
 )
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, D, Λs=mass2)

@@ -1,3 +1,4 @@
+
 """
 Merge interaction order and the main order
 (normal_order, G_order, W_order) --> (normal+W_order, G_order)
@@ -55,4 +56,21 @@ function chemicalpotential_renormalization(order, data, δμ)
         z[4] = d[(4, 0)] + δμ[2] * d[(2, 1)] + δμ[3] * d[(1, 1)]
     end
     return z
+end
+
+function readDeltaMu(_paraid=paraid, parafile=parafileName)
+    println("read: ")
+    df = DataFrame(CSV.File(parafileName))
+    for (key, value) in _paraid
+        # println("select: ", key, ", ", value, " type, ", typeof(value))
+        # println(df)
+        if value isa Real
+            df = filter(row -> (row[key] ≈ value), df)
+        else
+            df = filter(row -> row[key] == value, df)
+        end
+    end
+    println("Selected para: ", df)
+    println(df["δμ"])
+    println(df["δμ.err"])
 end
