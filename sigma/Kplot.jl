@@ -45,11 +45,18 @@ if abspath(PROGRAM_FILE) == @__FILE__
     println("zk: ")
     zk = [zfactor(idata[o]) for o in 1:_order]
     println(size(zk[1]))
+    δz = zCT(df, paraid, _order)
+    zk[2] = zk[2] - δz[1] * zk[1]
+
+    kF_label = searchsortedfirst(kgrid.grid, kF)
+    zk[1] = zk[1] .- zk[1][kF_label]
+    zk[2] = zk[2] .- zk[2][kF_label]
 
     plot = pyimport("plot")
     for o in 1:_order
         # println(sum(zk[1:o, 1]))
-        zko = 1 ./ (1 .+ sum(zk[1:o]))
+        # zko = 1 ./ (1 .+ sum(zk[1:o]))
+        zko = zk[o]
         y = [z.val for z in zko]
         e = [z.err for z in zko]
         # println(zk[o])

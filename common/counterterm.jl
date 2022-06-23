@@ -5,7 +5,7 @@ using DelimitedFiles
 # using PyCall
 using Measurements
 export mergeInteraction, chemicalpotential_renormalization, fromFile, toFile, appendDict, chemicalpotential
-export muCT
+export muCT, zCT
 
 const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
 
@@ -70,12 +70,55 @@ function chemicalpotential_renormalization(order, data, δμ)
 end
 
 """
+    function z_renormalization(order, data, δz, nbody::Int)
+
+    By definition, the z-factor renormalization is defined as
+    DR10 = D10
+
+    DR20 = D20 + D10*δz1
+    DR11 = D11 
+
+    DR30 = D30 + D10*δz2 + D10*δz1^2 + D20*δz1
+    DR21 = D21 + D11*δz1 # D12 has two place two insert δz1
+    DR12 = D12 
+
+    By defintion, z=1+δz1+δz2+...
+
+    Then the z-factor renormalization resuffles the power series in the following way:
+    1. For the one-body vertex function
+        DR = z*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...) = D1 + (D2+D1*δz1) + (D3+D2*δz1+D1*δz2) + (D4+D3*δz1+D2*δz2+D1*δz3) + ...
+    2. For the two-body vertex function
+        DR = z^2*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...)^2 = D1 + (D2+2*D1*δz1) + (D3+2*D2*δz1+D1*(δz1^2+2*δz2) + (D4+2*D3*δz1+D2*(δz1^2+δz2)+2*D1*(δz1*δz2+δz3)) + ...
+    
+    Note that the z-factor renormalization doesn't alter the W-order and the G-order, therefore, D_{m,n,k} renormalizes just as D_{m}.
+
+# Arguments
+order : total order
+data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+δz    : z-factor renormalization for each order
+nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
+"""
+function z_renormalization(order, data, δz, nbody::Int)
+    @assert order <= 2 "Order $order hasn't been implemented!"
+
+    d = data
+    nd = Dict()
+    if order >= 1
+        nd[(1, 0)] = d[(1, 0)]
+    end
+    if order >= 2
+        nd[(2, 0)] = d[(2, 0)] + d[(1, 0)] * δz[1]
+    end
+    return nd
+end
+
+"""
     function chemicalpotential(order, Σ, isfock)
 
     Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
 
     By definition, the chemical potential renormalization is defined as
-    Σ1 = Σ11
+    Σ1 = Σ10
     Σ2 = Σ20+Σ11*δμ1
     Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
     Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
@@ -120,6 +163,7 @@ function chemicalpotential(order, Σ, isfock)
     end
     return μ, δμ
 end
+
 
 function fromFile(parafile=parafileName)
     try
@@ -176,6 +220,9 @@ paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
 function muCT(df::DataFrame, paraid::Dict, order::Int)
+    if order == 1
+        return []
+    end
     # println(df)
     df = filter(row -> compareRow(row, paraid), df)
     sort!(df, "δμ.err") #sort error from small to large
@@ -184,8 +231,36 @@ function muCT(df::DataFrame, paraid::Dict, order::Int)
 
     δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order-1]
     err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
+    # δz = [filter(r -> r["order"] == o, df)[1, ""] for o in 1:order-1]
+    # err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
     # err = [mu for mu in df[!, "δμ.err"]]
     return measurement.(δμ, err)
+end
+
+"""
+    function zCT(df, paraid, order)
+
+    Extract the z-factor counterterm for the given parameters.
+    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
+
+# Arguments
+df     : DataFrame
+paraid : Dictionary of parameter names and values
+order  : the truncation order
+"""
+function zCT(df::DataFrame, paraid::Dict, order::Int)
+    if order == 1
+        return []
+    end
+    # println(df)
+    df = filter(row -> compareRow(row, paraid), df)
+    sort!(df, "δz.err") #sort error from small to large
+    @assert isempty(df) == false "no data exist for $paraid"
+    # println(df)
+
+    δz = [filter(r -> r["order"] == o, df)[1, "δz"] for o in 1:order-1]
+    err = [filter(r -> r["order"] == o, df)[1, "δz.err"] for o in 1:order-1]
+    return measurement.(δz, err)
 end
 
 end

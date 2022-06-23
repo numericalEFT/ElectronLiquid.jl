@@ -12,7 +12,7 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e7
-const Order = 2
+const Order = 1
 
 const lgrid = [0, 1]
 const Nl = length(lgrid)
@@ -20,7 +20,7 @@ const Nl = length(lgrid)
 const Nk, korder = 4, 4
 const minK = 0.2kF
 
-const kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 3kF], [kF, ], Nk, minK, korder)
+const kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 3kF], [kF,], Nk, minK, korder)
 println(kgrid.grid)
 println(length(kgrid.grid))
 # exit(0)

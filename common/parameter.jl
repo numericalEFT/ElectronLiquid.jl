@@ -9,7 +9,7 @@ using FeynmanDiagram
 
 const D = 2
 const beta = 100.0
-const rs = 2.0
+const rs = 2
 # const mass2 = 0.3838^2
 const mass2 = 1e-5
 # const Fs = -0.58545
