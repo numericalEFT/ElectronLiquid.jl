@@ -13,8 +13,8 @@ const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
 Merge interaction order and the main order
 (normal_order, G_order, W_order) --> (normal+W_order, G_order)
 """
-function mergeInteraction(data::AbstractDict)
-    if all(x -> length(x) == 3, keys(data))
+function mergeInteraction(data)
+    if data isa Dict && all(x -> length(x) == 3, keys(data))
         res = Dict()
         for (p, val) in data
             @assert length(p) == 3
@@ -52,7 +52,7 @@ function chemicalpotential_renormalization(order, data, δμ)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     @assert order <= 4 "Order $order hasn't been implemented!"
-    @assert length(δμ) <= order
+    @assert length(δμ) + 1 >= order
     d = data
     # println("size: ", size(d[(1, 0)]))
     z = Vector{eltype(values(d))}(undef, order)
@@ -95,7 +95,6 @@ nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody
 """
 function z_renormalization(order, data, δz, nbody::Int)
     @assert order <= 2 "Order $order hasn't been implemented!"
-    @assert data isa Dict
     @assert order <= length(δz) + 1
     function addOneZ(order, data::AbstractDict, δz)
         nd = Dict()
@@ -111,6 +110,7 @@ function z_renormalization(order, data, δz, nbody::Int)
                 nd[orders] += data[lower] * δz[o]
             end
         end
+        return nd
     end
     function addOneZ(order, data::AbstractVector, δz)
         @assert order <= length(data)
@@ -121,6 +121,7 @@ function z_renormalization(order, data, δz, nbody::Int)
                 nd[_order] += data[maxO-o] * δz[o]
             end
         end
+        return nd
     end
     #nobody vertex function requires z^n factor
     for n in 1:nbody
@@ -204,7 +205,9 @@ function derive_onebody_parameter_from_sigma(order, μ, z=zeros(order); isfock=f
     μR = mergeInteraction(μ)
     zR = mergeInteraction(z)
     for o in 1:order
+        # println(zR)
         zR = z_renormalization(o, zR, δz, 1)
+        # println(zR)
         zR = chemicalpotential_renormalization(o, zR, δμ)
 
         μR = z_renormalization(o, μR, δz, 1)
