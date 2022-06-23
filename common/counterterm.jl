@@ -113,6 +113,9 @@ function z_renormalization(order, data, δz, nbody::Int)
         return nd
     end
     function addOneZ(order, data::AbstractVector, δz)
+        println(data)
+        println(length(data))
+        println(order)
         @assert order <= length(data)
         nd = deepcopy(data[1:order])
         for _order in 1:order
@@ -130,85 +133,82 @@ function z_renormalization(order, data, δz, nbody::Int)
     return data
 end
 
+# """
+#     function chemicalpotential(order, Σ, isfock)
+
+#     Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
+
+#     By definition, the chemical potential renormalization is defined as
+#     Σ1 = Σ10
+#     Σ2 = Σ20+Σ11*δμ1
+#     Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+#     Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+
+# # Arguments
+# order : total order
+# data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+# δμ    : chemical potential renormalization for each order
+# """
+# function chemicalpotential(order, Σ, isfock)
+#     @assert order <= 4 "Order $order hasn't been implemented!"
+#     Σ = mergeInteraction(Σ)
+
+#     δμ = Vector{Any}(undef, order)
+#     μ = Vector{Any}(undef, order)
+#     if order >= 1
+#         μ[1] = Σ[(1, 0)]
+#         if isfock
+#             δμ[1] = 0.0 #for the Fock-renormalized G scheme only
+#         else
+#             δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
+#         end
+#     end
+#     if order >= 2
+#         μ[2] = Σ[(2, 0)] + δμ[1] * Σ[(1, 1)]
+#         δμ[2] = -μ[2]
+#     end
+#     if order >= 3
+#         # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+#         μ[3] = Σ[(3, 0)] + δμ[1] * Σ[(2, 1)] + δμ[1]^2 * Σ[(1, 2)] + δμ[2] * Σ[(1, 1)]
+#         δμ[3] = -μ[3]
+#     end
+#     if order >= 4
+#         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+#         μ[4] = Σ[(4, 0)] + δμ[1] * Σ[(3, 1)] + δμ[1]^2 * Σ[(2, 2)] + δμ[2] * Σ[(2, 1)] + (δμ[1])^3 * Σ[(1, 3)] + 2 * δμ[1] * δμ[2] * Σ[(1, 2)] + δμ[3] * Σ[(1, 1)]
+#         # μ[4] = _mu[(4, 0)]  + δμ[2] * _mu[(2, 1)] + δμ[3] * _mu[(1, 1)]
+#         δμ[4] = -μ[4]
+#     end
+
+#     println("Chemical Potential shift and counterterm:")
+#     for o in 1:order
+#         println("order $o:  μ = $(μ[o])  δμ = $(δμ[o])")
+#     end
+#     return μ, δμ
+# end
+
 """
-    function chemicalpotential(order, Σ, isfock)
+    function derive_onebody_parameter_from_sigma(order, μ, z=Dict(key => 0.0 for key in keys(μ)); isfock=false)
 
-    Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
-
-    By definition, the chemical potential renormalization is defined as
-    Σ1 = Σ10
-    Σ2 = Σ20+Σ11*δμ1
-    Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-    Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+    Derive the chemicalpotential and z-factor counterterm for each order from the self-energy
 
 # Arguments
 order : total order
-data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+μ     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 δμ    : chemical potential renormalization for each order
 """
-function chemicalpotential(order, Σ, isfock)
-    @assert order <= 4 "Order $order hasn't been implemented!"
-    Σ = mergeInteraction(Σ)
-
-    δμ = Vector{Any}(undef, order)
-    μ = Vector{Any}(undef, order)
-    if order >= 1
-        μ[1] = Σ[(1, 0)]
-        if isfock
-            δμ[1] = 0.0 #for the Fock-renormalized G scheme only
-        else
-            δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
-        end
-    end
-    if order >= 2
-        μ[2] = Σ[(2, 0)] + δμ[1] * Σ[(1, 1)]
-        δμ[2] = -μ[2]
-    end
-    if order >= 3
-        # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-        μ[3] = Σ[(3, 0)] + δμ[1] * Σ[(2, 1)] + δμ[1]^2 * Σ[(1, 2)] + δμ[2] * Σ[(1, 1)]
-        δμ[3] = -μ[3]
-    end
-    if order >= 4
-        # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        μ[4] = Σ[(4, 0)] + δμ[1] * Σ[(3, 1)] + δμ[1]^2 * Σ[(2, 2)] + δμ[2] * Σ[(2, 1)] + (δμ[1])^3 * Σ[(1, 3)] + 2 * δμ[1] * δμ[2] * Σ[(1, 2)] + δμ[3] * Σ[(1, 1)]
-        # μ[4] = _mu[(4, 0)]  + δμ[2] * _mu[(2, 1)] + δμ[3] * _mu[(1, 1)]
-        δμ[4] = -μ[4]
-    end
-
-    println("Chemical Potential shift and counterterm:")
-    for o in 1:order
-        println("order $o:  μ = $(μ[o])  δμ = $(δμ[o])")
-    end
-    return μ, δμ
-end
-
-"""
-    function chemicalpotential(order, Σ, isfock)
-
-    Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
-
-    By definition, the chemical potential renormalization is defined as
-    Σ1 = Σ10
-    Σ2 = Σ20+Σ11*δμ1
-    Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-    Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-
-# Arguments
-order : total order
-data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
-δμ    : chemical potential renormalization for each order
-"""
-function derive_onebody_parameter_from_sigma(order, μ, z=zeros(order); isfock=false)
+function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false)
+    # println("z: ", z)
     δz = zeros(order)
     δμ = zeros(order)
-    μR = mergeInteraction(μ)
-    zR = mergeInteraction(z)
     for o in 1:order
+        # println("zR: ", zR)
+        μR = mergeInteraction(μ)
+        swR = mergeInteraction(sw)
+
+        swR = z_renormalization(o, swR, δz, 1)
         # println(zR)
-        zR = z_renormalization(o, zR, δz, 1)
-        # println(zR)
-        zR = chemicalpotential_renormalization(o, zR, δμ)
+        swR = chemicalpotential_renormalization(o, swR, δμ)
 
         μR = z_renormalization(o, μR, δz, 1)
         μR = chemicalpotential_renormalization(o, μR, δμ)
@@ -217,7 +217,7 @@ function derive_onebody_parameter_from_sigma(order, μ, z=zeros(order); isfock=f
             δz[o] = 0.0
         else
             δμ[o] = -μR[o]
-            δz[o] = zR[o]
+            δz[o] = swR[o]
         end
     end
 
