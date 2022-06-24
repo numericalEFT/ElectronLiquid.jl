@@ -15,4 +15,5 @@
 host.txt
 *.jld2
 .history
+*.pdf
 __pycache__

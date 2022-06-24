@@ -11,7 +11,7 @@ using JLD2
 
 include("../common/interaction.jl")
 
-const steps = 1e7
+const steps = 1e6
 const Order = 1
 const lgrid = [0, 1]
 const Nl = length(lgrid)

@@ -4,10 +4,11 @@ using DataFrames
 using DelimitedFiles
 # using PyCall
 using Measurements
-export mergeInteraction, chemicalpotential_renormalization, fromFile, toFile, appendDict, chemicalpotential
+export mergeInteraction, fromFile, toFile, appendDict, chemicalpotential
 export muCT, zCT
+export z_renormalization, chemicalpotential_renormalization
 export derive_onebody_parameter_from_sigma
-export getCT
+export getSigma
 
 const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
 
@@ -18,7 +19,7 @@ function partition(order::Int)
         (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
         (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
     ]
-    return sort([p for p in par if p[1] + p[2] + p[3] <= Order])
+    return sort([p for p in par if p[1] + p[2] + p[3] <= order])
 end
 
 """
@@ -211,8 +212,8 @@ sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is 
 """
 function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false)
     # println("z: ", z)
-    δz = zeros(order)
-    δμ = zeros(order)
+    δz = zeros(Measurement{Float64}, order)
+    δμ = zeros(Measurement{Float64}, order)
     for o in 1:order
         # println("zR: ", zR)
         μR = mergeInteraction(μ)
@@ -225,8 +226,8 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
         μR = z_renormalization(o, μR, δz, 1)
         μR = chemicalpotential_renormalization(o, μR, δμ)
         if isfock && o == 1
-            δμ[o] = 0.0
-            δz[o] = 0.0
+            δμ[o] = zero(Measurement{Float64})
+            δz[o] = zero(Measurement{Float64})
         else
             δμ[o] = -μR[o]
             δz[o] = swR[o]
@@ -265,7 +266,7 @@ compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[
 
 function compactOrder(orders)
     @assert length(orders) == 3
-    o1, o2, o3 = d["order"]
+    o1, o2, o3 = orders
     @assert o1 < 10 && o2 < 10 && o3 < 10
     return o1 * 100 + o2 * 10 + o3
 end
@@ -309,26 +310,35 @@ df     : DataFrame
 paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
-function getCT(df::DataFrame, paraid::Dict, order::Int)
-    if order == 1
+function getSigma(df::DataFrame, paraid::Dict, order::Int)
+    if order == 0
         return [], []
     end
-    _partition = partition(order)
+    _partition = partition(order) # to construct the counterterms, we only need to calculate order-1 sigma
     # println(df)
     df = filter(row -> compareRow(row, paraid), df)
-    sort!(df, "δμ.err") #sort error from small to large
+    sort!(df, "μ.err") #sort error from small to large
     @assert isempty(df) == false "no data exist for $paraid"
+    # println(df)
 
-    mu = [filter(r -> r["order"] == compactOrder(o), df)[1, "δμ"] for o in _partition]
-    mu_err = [filter(r -> r["order"] == compactOrder(o), df)[1, "δμ.err"] for o in _partition]
+    mu = Dict()
+    for o in _partition
+        v = filter(r -> r["order"] == compactOrder(o), df)[1, "μ"]
+        err = filter(r -> r["order"] == compactOrder(o), df)[1, "μ.err"]
+        mu[o] = measurement(v, err)
+    end
 
     sort!(df, "Σw.err") #sort error from small to large
     @assert isempty(df) == false "no data exist for $paraid"
 
-    sw = [filter(r -> r["order"] == compactOrder(o), df)[1, "Σw"] for o in _partition]
-    sw_err = [filter(r -> r["order"] == compactOrder(o), df)[1, "Σw.err"] for o in _partition]
+    sw = Dict()
+    for o in _partition
+        v = filter(r -> r["order"] == compactOrder(o), df)[1, "Σw"]
+        err = filter(r -> r["order"] == compactOrder(o), df)[1, "Σw.err"]
+        sw[o] = measurement(v, err)
+    end
 
-    return measurement.(mu, mu_err), measurement.(sw, sw_err)
+    return mu, sw
 end
 
 """

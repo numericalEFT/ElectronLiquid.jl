@@ -37,20 +37,37 @@ if abspath(PROGRAM_FILE) == @__FILE__
     idata = mergeInteraction(idata)
     println(size(idata[(1, 0)]))
 
+    zk = Dict()
+    for (key, val) in idata
+        zk[key] = zfactor(val)
+    end
+
     df = fromFile()
-    δμ = muCT(df, paraid, _order)
-    println(δμ)
-    println(keys(idata))
-    idata = chemicalpotential_renormalization(_order, idata, δμ)
-    println("zk: ")
-    zk = [zfactor(idata[o]) for o in 1:_order]
-    println(size(zk[1]))
-    δz = zCT(df, paraid, _order)
-    zk[2] = zk[2] - δz[1] * zk[1]
+    mu, sw = getSigma(df, paraid, _order - 1)
+    ############ z renormalized  ##########################
+    δμ, δz = derive_onebody_parameter_from_sigma(_order - 1, mu, sw)
+    zk = z_renormalization(_order, zk, δz, 1)
+    zk = chemicalpotential_renormalization(_order, zk, δμ)
+
+    ############ without z renormalized  ##########################
+    # δμ, δz = derive_onebody_parameter_from_sigma(_order - 1, mu)
+    # zk = chemicalpotential_renormalization(_order, zk, δμ)
+
+    # println(δμ)
+    # println(δz)
+    # δμ = muCT(df, paraid, _order)
+    # println(δμ)
+    # println(keys(idata))
+    # idata = chemicalpotential_renormalization(_order, idata, δμ)
+    # println("zk: ")
+    # zk = [zfactor(idata[o]) for o in 1:_order]
+    # println(size(zk[1]))
+    # δz = zCT(df, paraid, _order)
+    # zk[2] = zk[2] - δz[1] * zk[1]
 
     kF_label = searchsortedfirst(kgrid.grid, kF)
-    zk[1] = zk[1] .- zk[1][kF_label]
-    zk[2] = zk[2] .- zk[2][kF_label]
+    # zk[1] = zk[1] .- zk[1][kF_label]
+    # zk[2] = zk[2] .- zk[2][kF_label]
 
     plot = pyimport("plot")
     for o in 1:_order
@@ -69,7 +86,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     plot.plt.xlabel("\$k/k_F\$")
     plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     plot.plt.legend()
+    plot.plt.savefig("sigmaK_rs5_Fs0_noshift_3d.pdf")
     plot.plt.show()
-    # plot.plt.savefig("sigmaK.pdf")
     # readline()
 end

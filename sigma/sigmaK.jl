@@ -12,7 +12,7 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e7
-const Order = 1
+const Order = 2
 
 const lgrid = [0, 1]
 const Nl = length(lgrid)

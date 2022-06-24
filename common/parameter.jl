@@ -7,14 +7,14 @@ using FeynmanDiagram
 
 # include("counterterm.jl")
 
-const D = 2
+const D = 3
 const beta = 100.0
-const rs = 2
+const rs = 5
 # const mass2 = 0.3838^2
 const mass2 = 1e-5
 # const Fs = -0.58545
 # const Fs = -0.20633
-const Fs = -1.0
+const Fs = -0.0
 const Fa = -0.0
 # const massratio = 1.049
 const massratio = 1.0
@@ -70,7 +70,7 @@ function partition(order::Int)
         (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
         (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
     ]
-    return sort([p for p in par if p[1] + p[2] + p[3] <= Order])
+    return sort([p for p in par if p[1] + p[2] + p[3] <= order])
 end
 
 
