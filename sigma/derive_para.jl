@@ -50,35 +50,37 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for p in sort([k for k in keys(rdata)])
         println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
     end
-    rdata = mergeInteraction(rdata)
-    idata = mergeInteraction(idata)
-    println("merged data: ")
-    for p in sort([k for k in keys(rdata)])
-        println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
-    end
+    # rdata = mergeInteraction(rdata)
+    # idata = mergeInteraction(idata)
+    # println("merged data: ")
+    # for p in sort([k for k in keys(rdata)])
+    #     println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p]))")
+    # end
 
     _mu = Dict()
     for (p, val) in rdata
         _mu[p] = mu(val)
     end
-    _μ, δμ = chemicalpotential(_order, _mu, isFock)
-
     _z = Dict()
     for (p, val) in idata
         _z[p] = zfactor(val)
     end
-    _z = chemicalpotential_renormalization(_order, _z, δμ)
-    println("z factor and counterterm")
-    for o in 1:_order
-        println("order $o: z = $(1 / (1 + sum(_z[1:o])))  δz = $(_z[o])")
-    end
 
     ############# save to csv  #################
     df = fromFile()
-    for o in 1:_order
+    println(df)
+    for o in keys(rdata)
         global df
-        df = appendDict(df, paraid, Dict("order" => o, "δμ" => δμ[o].val, "δμ.err" => δμ[o].err, "δz" => _z[o].val, "δz.err" => _z[o].err))
+        df = appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err))
     end
     println(df)
     isSave && toFile(df)
+
+    # _μ, δμ = chemicalpotential(_order, _mu, isFock)
+    # _z = chemicalpotential_renormalization(_order, _z, δμ)
+    # println("z factor and counterterm")
+    # for o in 1:_order
+    #     println("order $o: z = $(1 / (1 + sum(_z[1:o])))  δz = $(_z[o])")
+    # end
+
 end

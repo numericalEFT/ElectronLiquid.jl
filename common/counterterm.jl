@@ -6,8 +6,20 @@ using DelimitedFiles
 using Measurements
 export mergeInteraction, chemicalpotential_renormalization, fromFile, toFile, appendDict, chemicalpotential
 export muCT, zCT
+export derive_onebody_parameter_from_sigma
+export getCT
 
 const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
+
+function partition(order::Int)
+    # normal order, G order, W order
+    par = [(1, 0, 0),  # order 1
+        (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
+        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
+        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
+    ]
+    return sort([p for p in par if p[1] + p[2] + p[3] <= Order])
+end
 
 """
 Merge interaction order and the main order
@@ -251,6 +263,13 @@ end
 
 compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
 
+function compactOrder(orders)
+    @assert length(orders) == 3
+    o1, o2, o3 = d["order"]
+    @assert o1 < 10 && o2 < 10 && o3 < 10
+    return o1 * 100 + o2 * 10 + o3
+end
+
 function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
     # if isempty(filter(row -> compareRow(row, paraid), df)) == false
     #     #duplicated paraid, but may 
@@ -260,6 +279,13 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
     #     @warn "Add new row with the existing paraid! \n $(paraid)"
     # end
     d = merge(paraid, data)
+    if haskey(d, "order")
+        if length(d["order"]) == 3
+            o1, o2, o3 = d["order"]
+            @assert o1 < 10 && o2 < 10 && o3 < 10
+            d["order"] = o1 * 100 + o2 * 10 + o3
+        end
+    end
     if isnothing(df) || isempty(df) || nrow(df) == 0
         return DataFrame(d)
     else
@@ -283,10 +309,44 @@ df     : DataFrame
 paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
+function getCT(df::DataFrame, paraid::Dict, order::Int)
+    if order == 1
+        return [], []
+    end
+    _partition = partition(order)
+    # println(df)
+    df = filter(row -> compareRow(row, paraid), df)
+    sort!(df, "δμ.err") #sort error from small to large
+    @assert isempty(df) == false "no data exist for $paraid"
+
+    mu = [filter(r -> r["order"] == compactOrder(o), df)[1, "δμ"] for o in _partition]
+    mu_err = [filter(r -> r["order"] == compactOrder(o), df)[1, "δμ.err"] for o in _partition]
+
+    sort!(df, "Σw.err") #sort error from small to large
+    @assert isempty(df) == false "no data exist for $paraid"
+
+    sw = [filter(r -> r["order"] == compactOrder(o), df)[1, "Σw"] for o in _partition]
+    sw_err = [filter(r -> r["order"] == compactOrder(o), df)[1, "Σw.err"] for o in _partition]
+
+    return measurement.(mu, mu_err), measurement.(sw, sw_err)
+end
+
+"""
+    function muCT(df, paraid, order)
+
+    Extract the chemical potential counterterm for the given parameters.
+    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
+
+# Arguments
+df     : DataFrame
+paraid : Dictionary of parameter names and values
+order  : the truncation order
+"""
 function muCT(df::DataFrame, paraid::Dict, order::Int)
     if order == 1
-        return []
+        return [], []
     end
+    _partition = partition(order)
     # println(df)
     df = filter(row -> compareRow(row, paraid), df)
     sort!(df, "δμ.err") #sort error from small to large
