@@ -12,7 +12,7 @@ using JLD2
 include("../common/interaction.jl")
 
 const steps = 1e6
-const Order = 1
+const Order = 2
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
@@ -53,7 +53,11 @@ function MC()
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
+    # ngb = neighbor(partition(Order))
+    # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb)
+
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
+
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=64, reweight=10000)
 
     if isnothing(avg) == false

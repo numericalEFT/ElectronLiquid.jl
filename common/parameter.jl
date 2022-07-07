@@ -73,6 +73,29 @@ function partition(order::Int)
     return sort([p for p in par if p[1] + p[2] + p[3] <= order])
 end
 
+function neighbor(partitions)
+    n = Vector{Vector{Int}}()
+    Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
+    for p in partitions
+        nn = Vector{Int}()
+        if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+            append!(nn, Nnorm)
+        end
+        for (idx, np) in enumerate(partitions)
+            if np == p
+                continue
+            end
+            if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1#the first index is the number of loops
+                append!(nn, idx)
+            end
+        end
+        push!(n, nn)
+    end
+    push!(n, [1,])
+    println(n)
+    return n
+end
+
 
 # println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2, NF=$NF, qTF/kF=$(qTF/kF)")
 println(para)
