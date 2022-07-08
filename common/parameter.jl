@@ -74,24 +74,21 @@ function partition(order::Int)
 end
 
 function neighbor(partitions)
-    n = Vector{Vector{Int}}()
+    n = Vector{Tuple{Int,Int}}()
     Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
-    for p in partitions
-        nn = Vector{Int}()
+    for (ip, p) in enumerate(partitions)
         if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
-            append!(nn, Nnorm)
+            push!(n, (ip, Nnorm))
         end
         for (idx, np) in enumerate(partitions)
-            if np == p
+            if idx >= ip
                 continue
             end
-            if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1#the first index is the number of loops
-                append!(nn, idx)
+            if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
+                push!(n, (ip, idx))
             end
         end
-        push!(n, nn)
     end
-    push!(n, [1,])
     println(n)
     return n
 end

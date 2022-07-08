@@ -53,10 +53,10 @@ function MC()
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
-    # ngb = neighbor(partition(Order))
-    # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb)
+    ngb = neighbor(partition(Order))
+    config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb)
 
-    config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
+    # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
     avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=64, reweight=10000)
 
