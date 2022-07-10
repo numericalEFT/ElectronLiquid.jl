@@ -9,7 +9,9 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-include("../common/interaction.jl")
+# include("../common/interaction.jl")
+include("../common/para_builder.jl")
+using .UEG
 
 const steps = 1e6
 const Order = 2

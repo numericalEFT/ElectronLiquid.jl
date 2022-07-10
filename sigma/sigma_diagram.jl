@@ -1,5 +1,6 @@
 
-diagPara(order) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2, interaction=interaction,
+diagPara(p::ParaMC) = GenericPara(diagType=SigmaDiag, innerLoopNum=p.order, hasTau=true, loopDim=p.dim, spin=p.spin, firstLoopIdx=2,
+    interaction=[FeynmanDiagram.Interaction(ChargeCharge, p.isDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
     filter=[
     # Girreducible,
     # Proper,   #one interaction irreduble diagrams or not
@@ -39,7 +40,7 @@ function sigmaDiag(order)
     return diagpara, diag, root, extT
 end
 
-@inline function phase(varT, extT, l)
+@inline function phase(varT, extT, l, β)
     tin, tout = varT[extT[1]], varT[extT[2]]
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end

@@ -1,9 +1,65 @@
+function green2(Ek, τ, beta)
+    if τ ≈ 0.0
+        τ = -1.0e-10
+    end
+
+    s = 1.0
+    if τ < 0.0
+        τ += beta
+        s = -s
+    elseif τ >= beta
+        τ -= beta
+        s = -s
+    end
+
+    if Ek > 0.0
+        c = exp(-beta * Ek)
+        green = exp(-Ek * τ) / (1.0 + c)^2 * (τ - (beta - τ) * c)
+    else
+        c = exp(beta * Ek)
+        green = exp(Ek * (beta - τ)) / (1.0 + c)^2 * (τ * c - (beta - τ))
+    end
+
+    green *= s
+    #   if (isfinite(green) == false)
+    #     ABORT("Step:" << Para.Counter << ", Green is too large! Tau=" << Tau
+    #                   << ", Ek=" << Ek << ", Green=" << green << ", Mom"
+    #                   << ToString(Mom));
+end
+
+function green3(Ek, τ, beta=β)
+    if τ ≈ 0.0
+        τ = -1.0e-10
+    end
+
+    s = 1.0
+    if τ < 0.0
+        τ += beta
+        s = -s
+    elseif τ >= beta
+        τ -= beta
+        s = -s
+    end
+
+    if (Ek > 0.0)
+        c = exp(-beta * Ek)
+        green = exp(-Ek * τ) / (1.0 + c)^3.0 * (τ^2 / 2 - (beta^2 / 2 + beta * τ - τ^2) * c + (beta - τ)^2 * c^2 / 2.0)
+    else
+        c = exp(beta * Ek)
+        green = exp(Ek * (beta - τ)) / (1.0 + c)^3 * (τ^2 * c^2 / 2.0 - (beta^2 / 2.0 + beta * τ - τ^2) * c + (beta - τ)^2 / 2.0)
+    end
+
+    green *= s
+    return green
+end
+
 ##################### propagator and interaction evaluation ##############
-function eval(id::BareGreenId, K, extT, varT)
+function eval(id::BareGreenId, K, extT, varT, p::ParaMC)
+    kF, β, me, μ, massratio = p.kF, p.β, p.me, p.μ, p.massratio
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
     if isFock
-        fock = SelfEnergy.Fock0_ZeroTemp(k, para) - SelfEnergy.Fock0_ZeroTemp(kF, para)
+        fock = SelfEnergy.Fock0_ZeroTemp(k, p.basic) - SelfEnergy.Fock0_ZeroTemp(kF, p.basic)
         ϵ = k^2 / (2me * massratio) - μ + fock
     else
         ϵ = k^2 / (2me * massratio) - μ
@@ -28,20 +84,21 @@ function eval(id::BareGreenId, K, extT, varT)
 end
 
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
-function eval(id::BareInteractionId, K, extT, varT)
+function eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
+    dim, e0, ϵ0, mass2 = p.dim, p.e0, p.ϵ0, p.mass2
     qd = sqrt(dot(K, K))
     if id.order[2] == 0
         if id.type == Instant
             if id.para.interactionTauNum == 1
                 # return e0^2 / ϵ0 / (dot(K, K) + mass2)
-                return Coulombinstant(qd)
+                return Coulombinstant(qd, p)
             elseif id.para.interactionTauNum == 2
-                return interactionStatic(qd, varT[id.extT[1]], varT[id.extT[2]])
+                return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
             else
                 error("not implemented!")
             end
         elseif id.type == Dynamic
-            return interactionDynamic(qd, varT[id.extT[1]], varT[id.extT[2]])
+            return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
         else
             error("not implemented!")
         end
@@ -63,7 +120,7 @@ function eval(id::BareInteractionId, K, extT, varT)
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
-            return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
         end
     end
 end
