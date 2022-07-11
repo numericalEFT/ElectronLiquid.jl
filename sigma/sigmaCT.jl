@@ -18,7 +18,7 @@ function integrand(config)
     l = config.var[3][1]
     varK, varT = config.var[1], config.var[2]
 
-    ExprTree.evalNaive!(diag[order], varK.data, varT.data, eval, config.para)
+    ExprTree.evalKT!(diag[order], varK.data, varT.data, config.para)
     w = sum(diag[order].node.current[r] * phase(varT, extT[order][ri], l, config.para.β) for (ri, r) in enumerate(root[order]))
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end

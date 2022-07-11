@@ -232,7 +232,8 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
 end
 
 function interactionDynamic(p::ParaMC, qd, τIn, τOut)
-    qgrid, τgrid = p.qgrid, p.τgrid
+    # @unpack qgrid, τgrid = p.qgrid, p.τgrid
+    @unpack qgrid, τgrid = p
     kF, maxK, dW0 = p.kF, p.maxK, p.dW0
 
     if qd > maxK

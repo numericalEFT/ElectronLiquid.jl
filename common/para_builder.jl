@@ -14,6 +14,9 @@ const IsDynamic = true
 const IsFock = false
 ############################################################################
 
+#specify the type of qgrid and τgrid explicitly, otherwise, there will be a type stability issue with interactionDynamic and interactionStatic
+const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64}}}
+
 @with_kw struct ParaMC
     ### fundamental parameters
     beta::Float64
@@ -26,29 +29,29 @@ const IsFock = false
     massratio::Float64 = 1.0
 
     #### derived parameters ###########
-    basic = Parameter.rydbergUnit(1.0 / beta, rs, Dim, Λs=mass2, spin=Spin)
+    basic::Parameter.Para = Parameter.rydbergUnit(1.0 / beta, rs, Dim, Λs=mass2, spin=Spin)
 
-    dim = basic.dim
-    spin = basic.spin
-    kF = basic.kF
-    EF = basic.EF
-    β = basic.β
-    maxK = 6 * basic.kF
-    me = basic.me
-    ϵ0 = basic.ϵ0
-    e0 = basic.e0
-    μ = basic.μ
-    NF = basic.NF
+    dim::Int = basic.dim
+    spin::Int = basic.spin
+    kF::Float64 = basic.kF
+    EF::Float64 = basic.EF
+    β::Float64 = basic.β
+    maxK::Float64 = 6 * basic.kF
+    me::Float64 = basic.me
+    ϵ0::Float64 = basic.ϵ0
+    e0::Float64 = basic.e0
+    μ::Float64 = basic.μ
+    NF::Float64 = basic.NF
 
-    fs = Fs / basic.NF / massratio
-    fa = Fa / basic.NF / massratio
+    fs::Float64 = Fs / basic.NF / massratio
+    fa::Float64 = Fa / basic.NF / massratio
 
     ##########   effective interaction and counterterm ###############
-    qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
-    τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
+    qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
+    τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
-    dW0 = KO(basic, qgrid, τgrid, mass2, massratio, fs, fa)
-    cRs = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
+    dW0::Matrix{Float64} = KO(basic, qgrid, τgrid, mass2, massratio, fs, fa)
+    cRs::Vector{Matrix{Float64}} = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
 end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4

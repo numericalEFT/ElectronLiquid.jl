@@ -57,7 +57,7 @@ function green3(Ek, τ, beta=β)
 end
 
 ##################### propagator and interaction evaluation ##############
-function eval(id::BareGreenId, K, extT, varT, p::ParaMC)
+function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     kF, β, me, μ, massratio = p.kF, p.β, p.me, p.μ, p.massratio
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
@@ -87,7 +87,7 @@ function eval(id::BareGreenId, K, extT, varT, p::ParaMC)
 end
 
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
-function eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
+function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
     dim, e0, ϵ0, mass2 = p.dim, p.e0, p.ϵ0, p.mass2
     qd = sqrt(dot(K, K))
     if id.order[2] == 0
