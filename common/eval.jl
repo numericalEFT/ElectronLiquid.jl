@@ -1,3 +1,6 @@
+include("./para_builder.jl")
+using .UEG
+
 function green2(Ek, τ, beta)
     if τ ≈ 0.0
         τ = -1.0e-10
@@ -58,7 +61,7 @@ function eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     kF, β, me, μ, massratio = p.kF, p.β, p.me, p.μ, p.massratio
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     k = norm(K)
-    if isFock
+    if UEG.IsFock
         fock = SelfEnergy.Fock0_ZeroTemp(k, p.basic) - SelfEnergy.Fock0_ZeroTemp(kF, p.basic)
         ϵ = k^2 / (2me * massratio) - μ + fock
     else

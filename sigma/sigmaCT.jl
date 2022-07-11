@@ -9,29 +9,17 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-# include("../common/interaction.jl")
-include("../common/para_builder.jl")
-using .UEG
-
 const steps = 1e6
-const Order = 2
-const lgrid = [0, 1]
-const Nl = length(lgrid)
 
-include("./sigma_diagram.jl")
-ret = sigmaDiag(Order)
-const diagpara = ret[1]
-const diag = ret[2]
-const root = ret[3]
-const extT = ret[4]
+include("./common.jl")
 
 function integrand(config)
     order = config.curr
     l = config.var[3][1]
     varK, varT = config.var[1], config.var[2]
 
-    ExprTree.evalNaive!(diag[order], varK.data, varT.data, eval)
-    w = sum(diag[order].node.current[r] * phase(varT, extT[order][ri], l) for (ri, r) in enumerate(root[order]))
+    ExprTree.evalNaive!(diag[order], varK.data, varT.data, eval, config.para)
+    w = sum(diag[order].node.current[r] * phase(varT, extT[order][ri], l, config.para.β) for (ri, r) in enumerate(root[order]))
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
@@ -44,7 +32,8 @@ function measure(config)
     config.observable[o, l+1] += weight / abs(weight) * factor
 end
 
-function MC()
+function MC(para::ParaMC)
+    dim, β, kF = para.dim, para.β, para.kF
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
@@ -55,8 +44,8 @@ function MC()
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
-    ngb = neighbor(partition(Order))
-    config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb)
+    ngb = UEG.neighbor(UEG.partition(Order))
+    config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb, para=p)
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
@@ -64,7 +53,7 @@ function MC()
 
     if isnothing(avg) == false
 
-        jldsave("data.jld2", order=Order, partition=partition(Order), avg=avg, std=std)
+        jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
 
         # open("data.dat", "w") do f
         #     @printf(f, "#%7s %16s %16s %16s %16s\n", "freq", "real", "real err", "imag", "imag err")
@@ -80,4 +69,5 @@ function MC()
 
 end
 
-MC()
+p = ParaMC(rs=5.0, beta=1000.0, order=Order, mass2=1e-5)
+MC(p)

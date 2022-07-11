@@ -7,6 +7,13 @@ using CompositeGrids
 export INL, INR, OUTL, OUTR, DI, EX
 export ParaMC, Weight
 
+########### constant that don't needs to be updated frequently ##############
+const Dim = 3
+const Spin = 2
+const IsDynamic = true
+const IsFock = false
+############################################################################
+
 @with_kw struct ParaMC
     ### fundamental parameters
     beta::Float64
@@ -15,18 +22,14 @@ export ParaMC, Weight
     Fs::Float64 = -0.0
     Fa::Float64 = -0.0
 
-    mass2::Float64 = 1e-5
+    mass2::Float64 = 1e-6
     massratio::Float64 = 1.0
-    dim::Int = 3
-    spin::Int = 2
-
-    #### predefined #################################
-    isFock = false
-    isDynamic = true # if true, use dynamic interaction, otherwise use instant interaction
 
     #### derived parameters ###########
-    basic = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
+    basic = Parameter.rydbergUnit(1.0 / beta, rs, Dim, Λs=mass2, spin=Spin)
 
+    dim = basic.dim
+    spin = basic.spin
     kF = basic.kF
     EF = basic.EF
     β = basic.β
@@ -34,6 +37,8 @@ export ParaMC, Weight
     me = basic.me
     ϵ0 = basic.ϵ0
     e0 = basic.e0
+    μ = basic.μ
+    NF = basic.NF
 
     fs = Fs / basic.NF / massratio
     fa = Fa / basic.NF / massratio
@@ -42,9 +47,12 @@ export ParaMC, Weight
     qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
     τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
-    dW0 = KO(basic, qgrid, τgrid, mass2, massratio, Fs, Fa)
-    cRs = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, Fs, Fa) for o in 1:order]
+    dW0 = KO(basic, qgrid, τgrid, mass2, massratio, fs, fa)
+    cRs = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
 end
+
+const INL, OUTL, INR, OUTR = 1, 2, 3, 4
+const DI, EX = 1, 2
 
 paraid(p::ParaMC) = Dict(
     "dim" => p.dim,
@@ -55,12 +63,9 @@ paraid(p::ParaMC) = Dict(
     "Fa" => p.Fa,
     "massratio" => p.massratio,
     "spin" => p.spin,
-    "isFock" => p.isFock,
-    "isDynamic" => p.isDynamic
+    "isFock" => IsFock,
+    "isDynamic" => IsDynamic
 )
-
-const INL, OUTL, INR, OUTR = 1, 2, 3, 4
-const DI, EX = 1, 2
 
 mutable struct Weight <: FieldVector{2,Float64}
     d::Float64

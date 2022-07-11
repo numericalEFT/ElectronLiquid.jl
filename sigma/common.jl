@@ -1,6 +1,11 @@
+include("../common/eval.jl")
 
-diagPara(p::ParaMC) = GenericPara(diagType=SigmaDiag, innerLoopNum=p.order, hasTau=true, loopDim=p.dim, spin=p.spin, firstLoopIdx=2,
-    interaction=[FeynmanDiagram.Interaction(ChargeCharge, p.isDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
+const Order = 2
+const lgrid = [0, 1]
+const Nl = length(lgrid)
+
+diagPara(order::Int) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=UEG.Dim, spin=UEG.Spin, firstLoopIdx=2,
+    interaction=[FeynmanDiagram.Interaction(ChargeCharge, UEG.IsDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
     filter=[
     # Girreducible,
     # Proper,   #one interaction irreduble diagrams or not
@@ -11,8 +16,7 @@ diagPara(p::ParaMC) = GenericPara(diagType=SigmaDiag, innerLoopNum=p.order, hasT
 
 function sigmaDiag(order)
     println("Build the diagrams into an experssion tree ...")
-
-    _partition = partition(order)
+    _partition = UEG.partition(order)
     println("Diagram set: ", _partition)
 
     sigma = Dict()
@@ -20,7 +24,7 @@ function sigmaDiag(order)
         d = Parquet.sigma(diagPara(p[1])).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
-        if isFock == false
+        if UEG.IsFock == false
             sigma[p] = d
         else # remove the Fock subdiagrams
             if p == (1, 0, 0) # the Fock diagram itself should not be removed
@@ -44,3 +48,9 @@ end
     tin, tout = varT[extT[1]], varT[extT[2]]
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
+
+ret = sigmaDiag(Order)
+const diagpara = ret[1]
+const diag = ret[2]
+const root = ret[3]
+const extT = ret[4]

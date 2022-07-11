@@ -3,6 +3,8 @@ import ElectronGas: Polarization
 using ElectronGas: Parameter
 using Lehmann
 
+export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
+
 """
     function lindhard(x)
 
@@ -206,7 +208,7 @@ end
 
 function counterR(p::ParaMC, qd, τIn, τOut, order)
     kF, maxK = p.kF, p.maxK
-    qgrid, τgrid = q.qgrid, q.τgrid
+    qgrid, τgrid = p.qgrid, p.τgrid
     cRs = p.cRs
 
     if qd > maxK
@@ -230,9 +232,8 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
 end
 
 function interactionDynamic(p::ParaMC, qd, τIn, τOut)
-    dim, e0, kF = p.dim, p.e0, p.kF
-    qgrid, τgrid = q.qgrid, q.τgrid
-    dW0 = p.dW0
+    qgrid, τgrid = p.qgrid, p.τgrid
+    kF, maxK, dW0 = p.kF, p.maxK, p.dW0
 
     if qd > maxK
         return 0.0
@@ -253,7 +254,6 @@ end
 
 function interactionStatic(p::ParaMC, qd, τIn, τOut)
     kF, maxK, β = p.kF, p.maxK, p.β
-    dim, e0, NF = p.dim, p.e0, p.NF
 
     if qd > maxK
         return 0.0
