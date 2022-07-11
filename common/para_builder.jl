@@ -70,6 +70,9 @@ paraid(p::ParaMC) = Dict(
     "isDynamic" => IsDynamic
 )
 
+short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")
+
+
 mutable struct Weight <: FieldVector{2,Float64}
     d::Float64
     e::Float64

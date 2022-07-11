@@ -49,11 +49,15 @@ function MC(para::ParaMC)
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
-    avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=64, reweight=10000)
+    avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
 
     if isnothing(avg) == false
 
-        jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
+        # jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
+
+        jldopen("dataCT.jld2", "a+") do f
+            f["$(UEG.short(para))"] = (para, avg, std)
+        end
 
         # open("data.dat", "w") do f
         #     @printf(f, "#%7s %16s %16s %16s %16s\n", "freq", "real", "real err", "imag", "imag err")
@@ -69,5 +73,7 @@ function MC(para::ParaMC)
 
 end
 
-p = ParaMC(rs=5.0, beta=1000.0, order=Order, mass2=1e-5)
+p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+MC(p)
+p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
 MC(p)
