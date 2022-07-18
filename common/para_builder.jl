@@ -28,6 +28,10 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     mass2::Float64 = 1e-6
     massratio::Float64 = 1.0
 
+    ### MC parameters #######
+    # seed::Int = abs(rand(Int)) % 1000000
+    # steps::Int = 1e6
+
     #### derived parameters ###########
     basic::Parameter.Para = Parameter.rydbergUnit(1.0 / beta, rs, Dim, Λs=mass2, spin=Spin)
 
@@ -67,7 +71,7 @@ paraid(p::ParaMC) = Dict(
     "massratio" => p.massratio,
     "spin" => p.spin,
     "isFock" => IsFock,
-    "isDynamic" => IsDynamic
+    "isDynamic" => IsDynamic,
 )
 
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")

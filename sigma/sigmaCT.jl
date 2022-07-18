@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e6
+const steps = 1e4
 
 include("./common.jl")
 
@@ -37,26 +37,34 @@ function MC(para::ParaMC)
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
-    T = MCIntegration.Tau(β, β / 2.0, offset=1)
+    # T = MCIntegration.Tau(β, β / 2.0, offset=1)
+    T = MCIntegration.Continuous(0.0, β, offset=1)
     T.data[1] = 0.0
-    X = MCIntegration.Discrete(lgrid[1], lgrid[end])
+    X = MCIntegration.Discrete(lgrid[1], lgrid[end], adapt=false)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(Order))
-    config = MCIntegration.Configuration(steps, (K, T, X), dof, obs, neighbor=ngb, para=p)
+    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=p)
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
-    avg, std = MCIntegration.sample(config, integrand, measure; print=0, Nblock=16, reweight=10000)
+    result = MCIntegration.sample(config, integrand, measure; neval=steps, niter=10, print=0, block=16)
 
-    if isnothing(avg) == false
+    if isnothing(result) == false
 
         # jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
+        avg, std = result.mean, result.stdev
+        println(MCIntegration.summary(result, [o -> real(o[i]) for i in 1:length(dof)]))
 
         jldopen("dataCT.jld2", "a+") do f
-            f["$(UEG.short(para))"] = (para, avg, std)
+            key = "$(UEG.short(para))"
+            if haskey(f, key)
+                @warn("replacing existing data for $key")
+                delete!(f, key)
+            end
+            f[key] = (para, avg, std)
         end
 
         # open("data.dat", "w") do f
