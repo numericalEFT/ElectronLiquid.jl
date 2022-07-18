@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1.6e6
+const steps = 2e7
 
 include("./common.jl")
 
@@ -34,7 +34,7 @@ end
 
 function MC(para::ParaMC)
     dim, β, kF = para.dim, para.β, para.kF
-    K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
+    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
@@ -46,7 +46,7 @@ function MC(para::ParaMC)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(Order))
-    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=p)
+    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=p, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0])
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
@@ -66,22 +66,11 @@ function MC(para::ParaMC)
             end
             f[key] = (para, avg, std)
         end
-
-        # open("data.dat", "w") do f
-        #     @printf(f, "#%7s %16s %16s %16s %16s\n", "freq", "real", "real err", "imag", "imag err")
-        #     for o in 1:length(dof)
-        #         write(f, "# $(_partition[o])\n")
-        #         for li in 1:Nl
-        #             @printf(f, "%8.4f %16.8f %16.8f %16.8f %16.8f\n", lgrid[li], real(avg[o, li]), real(std[o, li]), imag(avg[o, li]), imag(std[o, li]))
-        #         end
-        #     end
-        # end
-
     end
 
 end
 
-# p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
-# MC(p)
+p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+MC(p)
 p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
 MC(p)

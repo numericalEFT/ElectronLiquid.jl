@@ -43,6 +43,7 @@ end
 
 function process(FileName, isSave)
     f = jldopen(FileName, "r")
+    df = fromFile()
     for key in keys(f)
         println(key)
         value = f[key]
@@ -63,16 +64,15 @@ function process(FileName, isSave)
         end
 
         ############# save to csv  #################
-        df = fromFile()
-        println(df)
+        # println(df)
         for o in keys(rdata)
             # global df
             paraid = UEG.paraid(para)
             df = appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err))
         end
-        println(df)
-        isSave && toFile(df)
     end
+    println("new dataframe\n$df")
+    isSave && toFile(df)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

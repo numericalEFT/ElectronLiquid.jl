@@ -272,12 +272,22 @@ function compactOrder(orders)
 end
 
 function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
-    # if isempty(filter(row -> compareRow(row, paraid), df)) == false
-    #     #duplicated paraid, but may 
-    #     if replace == false
-    #         return df
+    # if isempty(existing) == false
+    #     #     #duplicated paraid, but may 
+    #     #     if replace == false
+    #     #         return df
+    #     #     end
+    #     #     @warn "Add new row with the existing paraid! \n $(paraid)"
+    #     # sort!(existing, "μ.err") #sort error from small to large
+    #     # sort!(existing, "Σw.err") #sort error from small to large
+    #     # if (data["Σw.err"] < existing["Σw.err"][end]) && (data["μ.err"] < existing["μ.err"][end])
+    #     #     delete!(existing, length(existing))
+    #     # end
+    #     for row in eachrow(existing)
+    #         if (data["Σw.err"] < existing["Σw.err"][end]) && (data["μ.err"] < existing["μ.err"][end])
+    #             delete!(existing, row)
+    #         end
     #     end
-    #     @warn "Add new row with the existing paraid! \n $(paraid)"
     # end
     d = merge(paraid, data)
     if haskey(d, "order")
@@ -290,11 +300,15 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
     if isnothing(df) || isempty(df) || nrow(df) == 0
         return DataFrame(d)
     else
-        if isempty(filter(row -> compareRow(row, d), df))
-            #duplicated paraid and data, then simply skip
-            df = deepcopy(df)
-            append!(df, d)
-        end
+        # println("data\n$d")
+        # remove the entries with larger error
+        df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+        append!(df, d)
+        # if isempty(filter(row -> compareRow(row, d), df))
+        #     df = deepcopy(df)
+        #     append!(df, d)
+        # end
+        # println("screened\n $df")
         return df
     end
 end
