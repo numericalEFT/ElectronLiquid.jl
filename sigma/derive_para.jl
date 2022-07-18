@@ -48,10 +48,7 @@ function process(FileName, isSave)
         value = f[key]
         para, avg, std = value[1], value[2], value[3]
         _order, _partition, rdata, idata = loaddata(para, avg, std)
-        for p in sort([k for k in keys(rdata)])
-            println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p], para))")
-        end
-        # println("original data up to the Order = $_order")
+
         for p in sort([k for k in keys(rdata)])
             println("$p: μ = $(mu(rdata[p]))   z = $(zfactor(idata[p], para))")
         end

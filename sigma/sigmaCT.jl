@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e4
+const steps = 1.6e6
 
 include("./common.jl")
 
@@ -38,9 +38,9 @@ function MC(para::ParaMC)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
-    T = MCIntegration.Continuous(0.0, β, offset=1)
+    T = MCIntegration.Continuous(0.0, β, offset=1, alpha=3.0)
     T.data[1] = 0.0
-    X = MCIntegration.Discrete(lgrid[1], lgrid[end], adapt=false)
+    X = MCIntegration.Discrete(lgrid[1], lgrid[end], alpha=3.0)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
@@ -81,7 +81,7 @@ function MC(para::ParaMC)
 
 end
 
-p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
-MC(p)
+# p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+# MC(p)
 p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
 MC(p)
