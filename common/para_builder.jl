@@ -56,6 +56,8 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
 
     dW0::Matrix{Float64} = KO(basic, qgrid, τgrid, mass2, massratio, fs, fa)
     cRs::Vector{Matrix{Float64}} = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
+
+    additional = Any[]
 end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4

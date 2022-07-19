@@ -46,7 +46,7 @@ function MC(para::ParaMC)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(Order))
-    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=p, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0])
+    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=para, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0])
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
