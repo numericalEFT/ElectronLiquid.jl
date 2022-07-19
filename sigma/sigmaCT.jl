@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 2e7
+const steps = 4e8
 
 include("./common.jl")
 
