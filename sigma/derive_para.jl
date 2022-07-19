@@ -26,11 +26,6 @@ function mu(rdata)
 end
 
 function loaddata(para, avg, std)
-    # f = jldopen(FileName, "r")
-    # key = UEG.short(para)
-    # p, avg, std = f[key]
-    # avg, std = f["avg"], f["std"]
-    # order = f["order"]
     order = para.order
     _partition = UEG.partition(para.order)
     rdata, idata = Dict(), Dict()

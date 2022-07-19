@@ -76,7 +76,7 @@ function MC(para::ParaMC)
                 @warn("replacing existing data for $key")
                 delete!(f, key)
             end
-            f[key] = (para, avg, std)
+            f[key] = (para, kgrid, avg, std)
         end
     end
 

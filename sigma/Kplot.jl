@@ -4,21 +4,29 @@ using Measurements
 using PyCall
 pushfirst!(PyVector(pyimport("sys")."path"), ".")
 
-include("../common/parameter.jl")
+include("../common/para_builder.jl")
+using .UEG
 include("../common/counterterm.jl")
 using .CounterTerm
 
+const filename = "dataK.jld2"
+# const Zrenorm = true    # turn on to renormalize the Z factor
+const Zrenorm = false     # turn off Z renormalization 
 
-function zfactor(idata)
-    return @. (idata[2, :] - idata[1, :]) / (2π / β)
+const para = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=2, mass2=1e-5)
+
+function zfactor(idata, para)
+    return @. (idata[2, :] - idata[1, :]) / (2π / para.β)
 end
 
-function loaddata(FileName)
+function loaddata(FileName, para)
+    key = UEG.short(para)
     f = jldopen(FileName, "r")
-    avg, std = f["avg"], f["std"]
-    order = f["order"]
-    kgrid = f["kgrid"]
-    _partition = f["partition"]
+    # println(key)
+    # println(keys(f))
+    p, kgrid, avg, std = f[key]
+    order = p.order
+    _partition = UEG.partition(para.order)
     rdata, idata = Dict(), Dict()
     for (ip, p) in enumerate(_partition)
         rdata[p] = measurement.(real(avg[ip, :, :]), real(std[ip, :, :]))
@@ -29,9 +37,9 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
-    @assert length(ARGS) >= 1 "One argument for the data file name is required!"
-    filename = ARGS[1]
-    kgrid, _order, _partition, rdata, idata = loaddata(filename)
+    dim, β, kF = para.dim, para.β, para.kF
+
+    kgrid, _order, _partition, rdata, idata = loaddata(filename, para)
 
     rdata = mergeInteraction(rdata)
     idata = mergeInteraction(idata)
@@ -39,14 +47,16 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     zk = Dict()
     for (key, val) in idata
-        zk[key] = zfactor(val)
+        zk[key] = zfactor(val, para)
     end
 
     df = fromFile()
-    mu, sw = getSigma(df, paraid, _order - 1)
+    mu, sw = getSigma(df, UEG.paraid(para), _order - 1)
     ############ z renormalized  ##########################
     δμ, δz = derive_onebody_parameter_from_sigma(_order - 1, mu, sw)
-    zk = z_renormalization(_order, zk, δz, 1)
+    if Zrenorm
+        zk = z_renormalization(_order, zk, δz, 1)
+    end
     zk = chemicalpotential_renormalization(_order, zk, δμ)
 
     ############ without z renormalized  ##########################
@@ -86,7 +96,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     plot.plt.xlabel("\$k/k_F\$")
     plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     plot.plt.legend()
-    plot.plt.savefig("sigmaK_rs5_Fs0_noshift_3d.pdf")
+    # plot.plt.savefig("sigmaK_rs5_Fs0_noshift_3d.pdf")
     plot.plt.show()
     # readline()
 end
