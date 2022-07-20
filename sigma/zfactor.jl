@@ -6,7 +6,7 @@ using .CounterTerm
 para = ParaMC(
     rs=5.0,
     Fs=-0.0,
-    beta=100.0,
+    beta=25.0,
     mass2=1e-5,
     order=2
 )
@@ -14,7 +14,13 @@ Zrenorm = false
 
 df = fromFile()
 mu, sw = getSigma(df, UEG.paraid(para), para.order)
-dmu, dz = derive_onebody_parameter_from_sigma(para.order, mu, sw)
-sw = mergeInteraction(sw)
+dmu, dz = derive_onebody_parameter_from_sigma(para.order, mu, sw, zrenorm=Zrenorm)
 z = chemicalpotential_renormalization(para.order, sw, dmu)
-println(z)
+println("dz = ", z)
+sumz = accumulate(+, z)
+if Zrenorm == false
+    z = @. 1.0 / (1.0 + sumz)
+else
+    z = @. 1.0 - sumz
+end
+println("z = ", z)
