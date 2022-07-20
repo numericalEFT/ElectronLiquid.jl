@@ -11,7 +11,7 @@ using JLD2
 
 include("./common.jl")
 
-const steps = 4e11
+const steps = 4e10
 
 # println(kgrid.grid)
 # println(length(kgrid.grid))
