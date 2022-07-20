@@ -1,4 +1,5 @@
 println("Build the diagrams into an experssion tree ...")
+include("../common/eval.jl")
 
 const Order = 1
 
@@ -6,7 +7,7 @@ KinL = KoutL = [1.0, 0, 0]
 KinR = KoutR = [0, 1.0, 0]
 legK = [KinL, KoutL, KinR, KoutR]
 
-diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true, loopDim=para.dim, spin=para.spin, firstLoopIdx=3,
+diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=Order, hasTau=true, loopDim=UEG.Dim, spin=UEG.Spin, firstLoopIdx=3,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         Dynamic
@@ -49,7 +50,7 @@ const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, r
 # exit(0)
 
 
-@inline function phase(varT, extT)
+@inline function phase(varT, extT, β, isF)
     # println(extT)
     tInL, tOutL, tInR, tOutR = varT[extT[INL]], varT[extT[OUTL]], varT[extT[INR]],
     varT[extT[OUTR]]
