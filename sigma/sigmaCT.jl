@@ -70,7 +70,9 @@ function MC(para::ParaMC)
 
 end
 
-p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+p = ParaMC(rs=5.0, beta=100.0, Fs=-0.585, order=Order, mass2=1e-5)
 MC(p)
-p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
-MC(p)
+#p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+#MC(p)
+#p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
+#MC(p)
