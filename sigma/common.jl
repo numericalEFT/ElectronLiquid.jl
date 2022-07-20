@@ -1,6 +1,6 @@
 include("../common/eval.jl")
 
-const Order = 2
+const Order = 3
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 

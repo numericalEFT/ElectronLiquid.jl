@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 4e8
+const steps = 1e10
 
 include("./common.jl")
 
@@ -46,7 +46,7 @@ function MC(para::ParaMC)
     obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(Order))
-    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=para, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0])
+    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=para, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0])
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
@@ -70,9 +70,9 @@ function MC(para::ParaMC)
 
 end
 
-p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=1e-5)
-MC(p)
-p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=1e-5)
-MC(p)
-p = ParaMC(rs=5.0, beta=25.0, Fs=-0.0, order=Order, mass2=1e-5)
+#p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=1e-5)
+#MC(p)
+#p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=1e-5)
+#MC(p)
+p = ParaMC(rs=5.0, beta=25.0, Fs=-0.0, order=Order, mass2=0.01)
 MC(p)
