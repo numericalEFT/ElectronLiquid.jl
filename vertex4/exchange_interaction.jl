@@ -75,6 +75,21 @@ function projected_exchange_interaction(l, para, interaction, verbose=1)
     return Ws0, Wa0
 end
 
+function self_consistent_F0(para::ParaMC, N=100, mix=0.2)
+    Fp, Fm = Fs, Fa
+    for i = 1:N
+        # println("iteration: $i")
+        Fp, Fm
+        nFs, nFa = projected_exchange_interaction(0, para, exchange_interaction, 0)
+        Fp = Fp * (1 - mix) + nFs * mix
+        Fm = Fm * (1 - mix) + nFa * mix
+        Fm = 0.0
+    end
+    println("Self-consistent approach: ")
+    println("Fs = ", Fp)
+    println("Fa = ", Fm)
+end
+
 const Order = 1
 
 p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=1, mass2=1e-5)
@@ -84,7 +99,9 @@ projected_exchange_interaction(0, p, exchange_interaction)
 p = ParaMC(rs=5.0, beta=100.0, Fs=-0.585, order=1, mass2=1e-5)
 projected_exchange_interaction(0, p, exchange_interaction)
 
-# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction)
-# Ws0, Wa0 = projected_exchange_interaction(0, Fs, Fa, massratio, exchange_interaction_oneloop)
-# projected_exchange_interaction(1, 0.0, 0.0, 1.0, exchange_interaction)
-# projected_exchange_interaction(1, 0.0, 0.0, 1.0, exchange_interaction_Yukawa)
+# println("Variational approach: ")
+# println("parameter Fs     optimized Fs      optimized Fa")
+# for Fp in LinRange(0.0, 4.0, 101)
+#     nFs, nFa = projected_exchange_interaction(0, para, exchange_interaction, 0)
+#     println("$Fp     $nFs       $nFa")
+# end
