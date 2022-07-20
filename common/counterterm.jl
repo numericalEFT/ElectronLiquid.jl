@@ -66,6 +66,7 @@ function chemicalpotential_renormalization(order, data, δμ)
     # println(_partition)
     @assert order <= 4 "Order $order hasn't been implemented!"
     @assert length(δμ) + 1 >= order
+    data = mergeInteraction(data)
     d = data
     # println("size: ", size(d[(1, 0)]))
     z = Vector{eltype(values(d))}(undef, order)
@@ -208,9 +209,8 @@ end
 order : total order
 μ     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
-δμ    : chemical potential renormalization for each order
 """
-function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false)
+function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false, zrenorm=false)
     # println("z: ", z)
     δz = zeros(Measurement{Float64}, order)
     δμ = zeros(Measurement{Float64}, order)
@@ -219,11 +219,15 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
         μR = mergeInteraction(μ)
         swR = mergeInteraction(sw)
 
-        swR = z_renormalization(o, swR, δz, 1)
+        if zrenorm
+            swR = z_renormalization(o, swR, δz, 1)
+        end
         # println(zR)
         swR = chemicalpotential_renormalization(o, swR, δμ)
 
-        μR = z_renormalization(o, μR, δz, 1)
+        if zrenorm
+            μR = z_renormalization(o, μR, δz, 1)
+        end
         μR = chemicalpotential_renormalization(o, μR, δμ)
         if isfock && o == 1
             δμ[o] = zero(Measurement{Float64})
@@ -245,7 +249,9 @@ end
 function fromFile(parafile=parafileName)
     try
         data, header = readdlm(parafile, ',', header=true)
-        return DataFrame(data, vec(header))
+        df = DataFrame(data, vec(header))
+        sortdata!(df)
+        return df
     catch e
         println(e)
         println("Failed to load from $parafile. We will initialize the file instead")
@@ -258,11 +264,14 @@ function toFile(df, parafile=parafileName)
         @warn "Empty dataframe $df, nothing to save"
         return
     end
+    sortdata!(df)
     println("Save the parameters to the file $parafile")
     writedlm(parafile, Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
 
 compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
+
+sortdata!(df::DataFrame) = sort!(df, ["dim", "spin", "isDynamic", "isFock", "rs", "beta", "Fs", "Fa", "mass2"])
 
 function compactOrder(orders)
     @assert length(orders) == 3
@@ -309,6 +318,7 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
         #     append!(df, d)
         # end
         # println("screened\n $df")
+        sortdata!(df)
         return df
     end
 end
