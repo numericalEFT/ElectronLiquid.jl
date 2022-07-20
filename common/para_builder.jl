@@ -46,9 +46,10 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     e0::Float64 = basic.e0
     μ::Float64 = basic.μ
     NF::Float64 = basic.NF
+    NFstar::Float64 = basic.NF * massratio
 
-    fs::Float64 = Fs / basic.NF / massratio
-    fa::Float64 = Fa / basic.NF / massratio
+    fs::Float64 = Fs / NFstar
+    fa::Float64 = Fa / NFstar
 
     ##########   effective interaction and counterterm ###############
     qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
