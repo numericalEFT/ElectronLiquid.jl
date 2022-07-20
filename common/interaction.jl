@@ -231,6 +231,23 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
     end
 end
 
+"""
+    function interactionDynamic(p::ParaMC, qd, τIn, τOut)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+δR_q = (r_q)²Π₀/(1-r_q Π₀)
+```
+
+where Π₀ is the polarization of free electrons.
+"""
 function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     # @unpack qgrid, τgrid = p.qgrid, p.τgrid
     @unpack qgrid, τgrid = p
@@ -253,6 +270,37 @@ function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     return vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
+"""
+    function interactionStatic(p::ParaMC, qd, τIn, τOut)
+    
+instant part of the renormalized interaction
+
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the instant interaction is given by 
+```math
+v_q = r_q - f
+```
+
+The current implementation involves one auxiliary time variable τOut for better sign cancellation.
+
+To show the net result is v_q, one may perform a τOut integration explicitly, then
+```math
+kostatic = r_q / (1-r_q Π₀) - f
+```
+where Π₀ is the polarization of free electrons.
+and,
+```math
+dynamic =  (r_q)²Π₀/(1-r_q Π₀)
+```
+so that,
+```math
+kostatic - dynamic = v_q
+```
+"""
 function interactionStatic(p::ParaMC, qd, τIn, τOut)
     kF, maxK, β = p.kF, p.maxK, p.β
 

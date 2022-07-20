@@ -245,7 +245,9 @@ end
 function fromFile(parafile=parafileName)
     try
         data, header = readdlm(parafile, ',', header=true)
-        return DataFrame(data, vec(header))
+        df = DataFrame(data, vec(header))
+        sortdata!(df)
+        return df
     catch e
         println(e)
         println("Failed to load from $parafile. We will initialize the file instead")
@@ -258,11 +260,14 @@ function toFile(df, parafile=parafileName)
         @warn "Empty dataframe $df, nothing to save"
         return
     end
+    sortdata!(df)
     println("Save the parameters to the file $parafile")
     writedlm(parafile, Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
 
 compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
+
+sortdata!(df::DataFrame) = sort!(df, ["dim", "spin", "isDynamic", "isFock", "rs", "beta", "Fs", "Fa", "mass2"])
 
 function compactOrder(orders)
     @assert length(orders) == 3
@@ -309,6 +314,7 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
         #     append!(df, d)
         # end
         # println("screened\n $df")
+        sortdata!(df)
         return df
     end
 end
