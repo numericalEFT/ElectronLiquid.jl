@@ -230,7 +230,7 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
             δz[o] = zero(Measurement{Float64})
         else
             δμ[o] = -μR[o]
-            δz[o] = swR[o]
+            δz[o] = -swR[o] # somehow, the current scheme misses a factor of -1 in the z-factor counterterm
         end
     end
 

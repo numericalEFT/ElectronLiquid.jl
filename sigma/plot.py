@@ -3,6 +3,7 @@ from matplotlib.container import ErrorbarContainer
 import matplotlib as mat
 # mat.use("TkAgg")
 import matplotlib.pyplot as plt
+%matplotlib inline
 plt.switch_backend("TkAgg")
 # plt.switch_backend("Qt5Agg")
 
