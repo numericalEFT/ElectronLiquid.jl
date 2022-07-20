@@ -11,7 +11,7 @@ using JLD2
 
 include("./common.jl")
 
-const steps = 1e9
+const steps = 4e11
 
 # println(kgrid.grid)
 # println(length(kgrid.grid))
@@ -82,7 +82,9 @@ function MC(para::ParaMC)
 
 end
 
-p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
+p = ParaMC(rs=5.0, beta=100.0, Fs=-0.585, order=Order, mass2=1e-5)
 MC(p)
-p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
-MC(p)
+#p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=Order, mass2=1e-5)
+#MC(p)
+# p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=Order, mass2=1e-5)
+#MC(p)
