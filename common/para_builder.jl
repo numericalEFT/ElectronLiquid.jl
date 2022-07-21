@@ -68,7 +68,7 @@ end
 
 function MCinitialize!(para::ParaMC)
     para.dW0 .= KOdynamic_T(para)
-    for o in 1:para.order
+    for o in 1:para.order-1
         push!(para.cRs, counterKO_T(para; order=o))
     end
 end

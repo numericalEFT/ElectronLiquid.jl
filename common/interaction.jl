@@ -152,8 +152,7 @@ function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massrat
 end
 
 """
-    function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,])
-    function counterKO_W(basic::Parameter.Para, qgrid, ngrid, order, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
+    function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false)
     
     calculate counter-terms of the KO interaction
 
@@ -172,11 +171,11 @@ Then, the counter-term is given by a power expansion of the form
 where f(ξ) = f1 ξ + f2 ξ^2 + ...
 
 Therefore, the counter-term is given by
-Order 2 (ξ^2)
+Order 1 (ξ^2)
 ```math
 (Rq+f1)^2 Π0
 ```
-Order 3 (ξ^3)
+Order 2 (ξ^3)
 ```math
 (Rq+f1)^3 Π0^2 + (R_q+f1)f2 Π_0
 ```
@@ -185,9 +184,6 @@ Order 3 (ξ^3)
 function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false)
     Nq, Nw = length(qgrid), length(ngrid)
     cRs1 = zeros(Float64, (Nq, Nw))
-    if order == 1 #there is no order 1 counter-term
-        return cRs1
-    end
     for (ni, n) in enumerate(ngrid)
         for (qi, q) in enumerate(qgrid)
             Pi = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio
@@ -195,10 +191,10 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
                 Rs = KO_W(q, n, para; Pi=Pi)
             end
             # Rs will be zero for the proper counter-term
-            if order == 2
+            if order == 1
                 cRs1[qi, ni] = -(Rs + para.fs)^2 * Pi
-            elseif order == 3
-                cRs1[qi, ni] = (Rs + para.fs)^3 * Pi
+            elseif order == 2
+                cRs1[qi, ni] = (Rs + para.fs)^3 * Pi^2
             else
                 error("not implemented!")
             end
