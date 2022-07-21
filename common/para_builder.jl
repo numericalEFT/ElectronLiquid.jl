@@ -24,6 +24,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     order::Int = 2
     Fs::Float64 = -0.0
     Fa::Float64 = -0.0
+    # δFs = []
 
     mass2::Float64 = 1e-6
     massratio::Float64 = 1.0
@@ -55,10 +56,21 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
     τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
-    dW0::Matrix{Float64} = KO(basic, qgrid, τgrid, mass2, massratio, fs, fa)
-    cRs::Vector{Matrix{Float64}} = [counterKO(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
+    ######### only need to be initialized for MC simulation ###########################
+    dW0::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
+    cRs::Vector{Matrix{Float64}} = []
+
+    # dW0::Matrix{Float64} = KOdynamic_T(basic, qgrid, τgrid, mass2, massratio, fs, fa)
+    # cRs::Vector{Matrix{Float64}} = [counterKO_T(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
 
     additional = Any[]
+end
+
+function MCinitialize!(para::ParaMC)
+    para.dW0 .= KOdynamic_T(para)
+    for o in 1:para.order
+        push!(para.cRs, counterKO_T(para; order=o))
+    end
 end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4

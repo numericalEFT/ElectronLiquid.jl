@@ -43,6 +43,8 @@ end
 function MC(para::ParaMC)
     dim, β, kF = para.dim, para.β, para.kF
 
+    UEG.MCinitialize!(para)
+
     ############## external kgrid ###################
     Nk, korder = 4, 4
     minK = 0.2kF

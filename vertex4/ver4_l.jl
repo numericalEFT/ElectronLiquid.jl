@@ -58,6 +58,7 @@ function measure(config)
 end
 
 function MC(para::ParaMC)
+    UEG.MCinitialize!(para)
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     K = MCIntegration.FermiK(para.dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
     K.data[:, 1] .= [kF, 0.0, 0.0]

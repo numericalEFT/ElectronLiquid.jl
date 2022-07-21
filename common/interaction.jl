@@ -91,7 +91,33 @@ end
     end
 end
 
-function KO(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
+"""
+    function KO_W(q, n, p::ParaMC)
+
+KO interaction in momentum q and the Matsubara frequency index n
+Assume
+```math
+r_q = v_q + f
+```
+then the KO interaction is
+```math
+Rq = r_q / (1 - r_q Π0) - f
+```
+"""
+function KO_W(q, n::Integer, para::ParaMC; Pi=para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio)
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    invKOinstant = 1.0 / KOinstant(q, para)
+    Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
+    return Rs
+end
+
+function KOdynamic_T(para::ParaMC)
+    return KOdynamic_T(para.basic, para.qgrid, para.τgrid, para.mass2, para.massratio, para.fs, para.fa)
+end
+
+function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
     # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
     dim, e0 = basic.dim, basic.e0
     dlr = DLRGrid(Euv=10 * basic.EF, β=basic.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
@@ -105,11 +131,6 @@ function KO(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massratio=1.0, f
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = basic.spin * Polarization.Polarization0_ZeroTemp(q, n, basic) * massratio
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
-            # if dim == 3
-            #     a = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-            #         Fs=-Fs, Fa=-Fa, massratio=massratio, regular=true)[1]
-            #     @assert abs(Rs[qi, ni] - a) < 1e-10 "$(Rs[qi, ni]) vs $a with diff = $(Rs[qi, ni]-a)"
-            # end
         end
     end
     for (qi, q) in enumerate(qgrid)
@@ -130,32 +151,68 @@ function KO(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massratio=1.0, f
     return real.(Rs)
 end
 
-# const dW0 = KO(qgrid, τgrid)
+"""
+    function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,])
+    function counterKO_W(basic::Parameter.Para, qgrid, ngrid, order, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
+    
+    calculate counter-terms of the KO interaction
 
-function counterKO(basic::Parameter.Para, qgrid, τgrid, order, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
-    # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
-    dim, e0 = basic.dim, basic.e0
-    dlr = DLRGrid(Euv=10 * basic.EF, β=basic.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
-    Nq, Nτ = length(qgrid), length(τgrid)
-    Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
-    Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
-    Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
-    cRs1 = zeros(Float64, (Nq, dlr.size))
-    for (ni, n) in enumerate(dlr.n)
+Assume
+```math
+r_q = v_q + f
+```
+and
+```math
+Rq = r_q / (1 - r_q Π0) - f
+```
+Then, the counter-term is given by a power expansion of the form
+```math
+(Rq ξ + f(ξ))/(1+(Rq ξ + f(ξ))Π0) - f(ξ)
+```
+where f(ξ) = f1 ξ + f2 ξ^2 + ...
+
+Therefore, the counter-term is given by
+Order 2 (ξ^2)
+```math
+(Rq+f1)^2 Π0
+```
+Order 3 (ξ^3)
+```math
+(Rq+f1)^3 Π0^2 + (R_q+f1)f2 Π_0
+```
+
+"""
+function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false)
+    Nq, Nw = length(qgrid), length(ngrid)
+    cRs1 = zeros(Float64, (Nq, Nw))
+    if order == 1 #there is no order 1 counter-term
+        return cRs1
+    end
+    for (ni, n) in enumerate(ngrid)
         for (qi, q) in enumerate(qgrid)
-            invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
-            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
-            Pi[qi, ni] = basic.spin * Polarization.Polarization0_ZeroTemp(q, n, basic) * massratio
-            Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
-            cRs1[qi, ni] = (-Rs[qi, ni])^order / (invKOinstant - Pi[qi, ni])
+            Pi = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio
+            if proper == false
+                Rs = KO_W(q, n, para; Pi=Pi)
+            end
+            # Rs will be zero for the proper counter-term
+            if order == 2
+                cRs1[qi, ni] = -(Rs + para.fs)^2 * Pi
+            elseif order == 3
+                cRs1[qi, ni] = (Rs + para.fs)^3 * Pi
+            else
+                error("not implemented!")
+            end
         end
     end
+    return cRs1
+end
+
+function counterKO_T(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false)
+    dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    cRs1 = counterKO_W(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
     return real.(cRs1)
 end
-
-# const cRs1 = counterKO(qgrid, τgrid, 1)
-# const cRs2 = counterKO(qgrid, τgrid, 2)
 
 """
    linear2D(data, xgrid, ygrid, x, y) 
