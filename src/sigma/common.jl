@@ -1,6 +1,6 @@
 include("../common/eval.jl")
 
-const MaxOrder = 3
+# const MaxOrder = 3
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
@@ -41,6 +41,8 @@ function sigmaDiag(order)
     root = [d.root for d in diag] #get the list of root nodes
     #assign the external Tau to the corresponding diagrams
     extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
+    # extT2 = [[diag[ri].node.object[idx].siteidx for idx in r] for (ri, r) in enumerate(root)]
+    # println(extT, " verus ", extT2)
     return diagpara, diag, root, extT
 end
 
@@ -49,8 +51,8 @@ end
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
-ret = @time sigmaDiag(MaxOrder)
-const diagpara = ret[1]
-const diag = ret[2]
-const root = ret[3]
-const extT = ret[4]
+# ret = @time sigmaDiag(MaxOrder)
+# const diagpara = ret[1]
+# const diag = ret[2]
+# const root = ret[3]
+# const extT = ret[4]

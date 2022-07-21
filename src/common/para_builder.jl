@@ -1,8 +1,8 @@
 module UEG
 using StaticArrays
 using Parameters
-using ElectronGas: Parameter
-using CompositeGrids
+using ..ElectronGas: Parameter
+using ..CompositeGrids
 
 export INL, INR, OUTL, OUTR, DI, EX
 export ParaMC, Weight

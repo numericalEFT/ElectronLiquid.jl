@@ -1,30 +1,33 @@
-# using JLD2
-
-# const steps = 1e6
-
-# include("./common.jl")
-
-function integrandFS(config)
-    diagidx = config.curr
-    diagram = diag[diagidx]
+function integrandKW(config)
+    para, diag = config.para
+    diagram = diag[config.curr]
+    weight = diagram.node.current
+    object = diagram.node.object
     l = config.var[3][1]
     varK, varT = config.var[1], config.var[2]
 
-    ExprTree.evalKT!(diagram, varK.data, varT.data, config.para)
-    w = sum(diagram.node.current[r] * phase(varT, extT[diagidx][ri], l, config.para.β) for (ri, r) in enumerate(diagram.root))
+    ExprTree.evalKT!(diagram, varK.data, varT.data, para)
+    w = sum(weight[r] * phase(varT, object[r].para.extT, l, para.β) for r in diagram.root)
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
-function measureFS(config)
+function measureKW(config)
     factor = 1.0 / config.reweight[config.curr]
     l = config.var[3][1]
+    k = config.var[4][1]
     # println(config.observable[1][1])
     o = config.curr
-    weight = integrandFS(config)
-    config.observable[o, l+1] += weight / abs(weight) * factor
+    weight = integrandKW(config)
+    config.observable[o, l+1, k] += weight / abs(weight) * factor
 end
 
-function sigmaFS(para::ParaMC, steps, print=0)
+function sigmaKW(para::ParaMC;
+    kgrid=[para.kF,],
+    ngrid=[0,],
+    neval=1e6, #number of evaluations
+    niter=10, block=16, print=0,
+    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
+)
     UEG.MCinitialize!(para)
     dim, β, kF = para.dim, para.β, para.kF
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
@@ -34,16 +37,21 @@ function sigmaFS(para::ParaMC, steps, print=0)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=3.0)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(lgrid[1], lgrid[end], alpha=3.0)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid))
 
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = zeros(ComplexF64, length(dof), Nl) # observable for the Fock diagram 
+    # println("building diagram ...")
+    @time diagpara, diag, root, extT = sigmaDiag(para.order)
 
-    ngb = UEG.neighbor(UEG.partition(Order))
-    config = MCIntegration.Configuration((K, T, X), dof, obs, neighbor=ngb, para=para, reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0])
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    obs = zeros(ComplexF64, length(dof), Nl, length(kgrid)) # observable for the Fock diagram 
 
-    # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
+    ngb = UEG.neighbor(UEG.partition(para.order))
+    config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
+        neighbor=ngb, para=(para, diag),
+        reweight_goal=reweight_goal[1:length(dof)+1]
+    )
 
-    result = MCIntegration.sample(config, integrandFS, measureFS; neval=steps, niter=10, print=0, block=16)
+    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
 
     if isnothing(result) == false
 
@@ -74,5 +82,5 @@ end
 # MC(p)
 # p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.001)
 # MC(p)
-p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.01)
-MC(p)
+# p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.01)
+# MC(p)

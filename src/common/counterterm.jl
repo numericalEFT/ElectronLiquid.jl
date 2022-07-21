@@ -3,7 +3,7 @@ module CounterTerm
 using DataFrames
 using DelimitedFiles
 # using PyCall
-using Measurements
+using ..Measurements
 export mergeInteraction, fromFile, toFile, appendDict, chemicalpotential
 export muCT, zCT
 export z_renormalization, chemicalpotential_renormalization

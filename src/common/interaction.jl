@@ -1,7 +1,7 @@
-import ElectronGas: Interaction as Inter
-import ElectronGas: Polarization
-using ElectronGas: Parameter
-using Lehmann
+import ..ElectronGas: Interaction as Inter
+import ..ElectronGas: Polarization
+using ..ElectronGas: Parameter
+using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
