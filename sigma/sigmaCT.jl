@@ -9,7 +9,7 @@ using FeynmanDiagram
 using StaticArrays
 using JLD2
 
-const steps = 1e10
+const steps = 4e10
 
 include("./common.jl")
 
@@ -74,5 +74,9 @@ end
 #MC(p)
 #p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=1e-5)
 #MC(p)
-p = ParaMC(rs=5.0, beta=25.0, Fs=-0.0, order=Order, mass2=0.01)
+p = ParaMC(rs=5.0, beta=25.0, Fs=-0.0, order=Order, mass2=0.001)
+MC(p)
+p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.001)
+MC(p)
+p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.01)
 MC(p)
