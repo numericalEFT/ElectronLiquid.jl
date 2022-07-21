@@ -7,8 +7,8 @@ para = ParaMC(
     rs=5.0,
     Fs=-0.0,
     beta=25.0,
-    mass2=1e-5,
-    order=2
+    mass2=0.01,
+    order=3
 )
 Zrenorm = false
 
