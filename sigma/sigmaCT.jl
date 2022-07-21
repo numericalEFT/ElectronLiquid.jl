@@ -1,38 +1,30 @@
-using Printf, LinearAlgebra
-using CompositeGrids
-using ElectronGas
-using Parameters, Random, DataFrames
-using MCIntegration
-using Lehmann
+# using JLD2
 
-using FeynmanDiagram
-using StaticArrays
-using JLD2
+# const steps = 1e6
 
-const steps = 1e6
+# include("./common.jl")
 
-include("./common.jl")
-
-function integrand(config)
-    order = config.curr
+function integrandFS(config)
+    diagidx = config.curr
+    diagram = diag[diagidx]
     l = config.var[3][1]
     varK, varT = config.var[1], config.var[2]
 
-    ExprTree.evalKT!(diag[order], varK.data, varT.data, config.para)
-    w = sum(diag[order].node.current[r] * phase(varT, extT[order][ri], l, config.para.β) for (ri, r) in enumerate(root[order]))
+    ExprTree.evalKT!(diagram, varK.data, varT.data, config.para)
+    w = sum(diagram.node.current[r] * phase(varT, extT[diagidx][ri], l, config.para.β) for (ri, r) in enumerate(diagram.root))
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
-function measure(config)
+function measureFS(config)
     factor = 1.0 / config.reweight[config.curr]
     l = config.var[3][1]
     # println(config.observable[1][1])
     o = config.curr
-    weight = integrand(config)
+    weight = integrandFS(config)
     config.observable[o, l+1] += weight / abs(weight) * factor
 end
 
-function MC(para::ParaMC)
+function sigmaFS(para::ParaMC, steps, print=0)
     UEG.MCinitialize!(para)
     dim, β, kF = para.dim, para.β, para.kF
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
@@ -51,22 +43,25 @@ function MC(para::ParaMC)
 
     # config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
 
-    result = MCIntegration.sample(config, integrand, measure; neval=steps, niter=10, print=0, block=16)
+    result = MCIntegration.sample(config, integrandFS, measureFS; neval=steps, niter=10, print=0, block=16)
 
     if isnothing(result) == false
 
         # jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
         avg, std = result.mean, result.stdev
-        println(MCIntegration.summary(result, [o -> real(o[i]) for i in 1:length(dof)]))
-
-        jldopen("dataCT.jld2", "a+") do f
-            key = "$(UEG.short(para))"
-            if haskey(f, key)
-                @warn("replacing existing data for $key")
-                delete!(f, key)
-            end
-            f[key] = (para, avg, std)
+        if print >= 0
+            println(MCIntegration.summary(result, [o -> real(o[i]) for i in 1:length(dof)]))
         end
+
+        # jldopen("dataCT.jld2", "a+") do f
+        #     key = "$(UEG.short(para))"
+        #     if haskey(f, key)
+        #         @warn("replacing existing data for $key")
+        #         delete!(f, key)
+        #     end
+        #     f[key] = (para, avg, std)
+        # end
+        return avg, std
     end
 
 end

@@ -1,6 +1,6 @@
 include("../common/eval.jl")
 
-const Order = 3
+const MaxOrder = 3
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
@@ -49,7 +49,7 @@ end
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
-ret = sigmaDiag(Order)
+ret = @time sigmaDiag(MaxOrder)
 const diagpara = ret[1]
 const diag = ret[2]
 const root = ret[3]
