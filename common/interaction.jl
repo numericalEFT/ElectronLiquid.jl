@@ -181,7 +181,7 @@ Order 2 (ξ^3)
 ```
 
 """
-function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false)
+function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false, bubble=true)
     Nq, Nw = length(qgrid), length(ngrid)
     cRs1 = zeros(Float64, (Nq, Nw))
     for (ni, n) in enumerate(ngrid)
@@ -189,6 +189,8 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
             Pi = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio
             if proper == false
                 Rs = KO_W(q, n, para; Pi=Pi)
+            else
+                Rs = 0.0
             end
             # Rs will be zero for the proper counter-term
             if order == 1
@@ -198,14 +200,18 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
             else
                 error("not implemented!")
             end
+
+            if bubble == false
+                cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
+            end
         end
     end
     return cRs1
 end
 
-function counterKO_T(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false)
+function counterKO_T(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false, bubble=true)
     dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
-    cRs1 = counterKO_W(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper)
+    cRs1 = counterKO_W(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper, bubble=bubble)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
     return real.(cRs1)
 end

@@ -1,3 +1,6 @@
+"""
+Calculate exchange vertex4 averged on the Fermi surface
+"""
 using Printf, LinearAlgebra
 using CompositeGrids
 using ElectronGas
@@ -98,6 +101,15 @@ function MC(para::ParaMC)
         println("A ver4: ")
         for li in 1:N
             @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
+        end
+
+        jldopen("dataF.jld2", "a+") do f
+            key = "$(UEG.short(para))"
+            if haskey(f, key)
+                @warn("replacing existing data for $key")
+                delete!(f, key)
+            end
+            f[key] = (para, avg, std)
         end
     end
 

@@ -317,11 +317,6 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
             df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]))), df)
         end
         append!(df, d)
-        # if isempty(filter(row -> compareRow(row, d), df))
-        #     df = deepcopy(df)
-        #     append!(df, d)
-        # end
-        # println("screened\n $df")
         sortdata!(df)
         return df
     end
