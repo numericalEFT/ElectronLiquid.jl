@@ -280,7 +280,7 @@ function compactOrder(orders)
     return o1 * 100 + o2 * 10 + o3
 end
 
-function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
+function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; replace=true)
     # if isempty(existing) == false
     #     #     #duplicated paraid, but may 
     #     #     if replace == false
@@ -301,9 +301,7 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
     d = merge(paraid, data)
     if haskey(d, "order")
         if length(d["order"]) == 3
-            o1, o2, o3 = d["order"]
-            @assert o1 < 10 && o2 < 10 && o3 < 10
-            d["order"] = o1 * 100 + o2 * 10 + o3
+            d["order"] = compactOrder(d["order"])
         end
     end
     if isnothing(df) || isempty(df) || nrow(df) == 0
@@ -311,7 +309,13 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict)
     else
         # println("data\n$d")
         # remove the entries with larger error
-        df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+        # df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+        if replace
+            olddf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]))), df)
+            println("replace the following rows with the new one")
+            println(olddf)
+            df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]))), df)
+        end
         append!(df, d)
         # if isempty(filter(row -> compareRow(row, d), df))
         #     df = deepcopy(df)

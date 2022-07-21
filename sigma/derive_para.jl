@@ -63,7 +63,7 @@ function process(FileName, isSave)
         for o in keys(rdata)
             # global df
             paraid = UEG.paraid(para)
-            df = appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err))
+            df = appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err); replace=true)
         end
     end
     println("new dataframe\n$df")
