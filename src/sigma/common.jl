@@ -1,9 +1,5 @@
 include("../common/eval.jl")
 
-# const MaxOrder = 3
-const lgrid = [0, 1]
-const Nl = length(lgrid)
-
 diagPara(order::Int) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=UEG.Dim, spin=UEG.Spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, UEG.IsDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
     filter=[
