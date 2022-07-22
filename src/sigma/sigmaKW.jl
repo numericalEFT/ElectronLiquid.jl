@@ -26,7 +26,7 @@ function sigmaKW(para::ParaMC;
     ngrid=[0,],
     neval=1e6, #number of evaluations
     niter=10, block=16, print=0,
-    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
+    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0], kwargs...
 )
     UEG.MCinitialize!(para)
     dim, β, kF = para.dim, para.β, para.kF
@@ -69,9 +69,25 @@ function sigmaKW(para::ParaMC;
         #     end
         #     f[key] = (para, avg, std)
         # end
-        return avg, std
+        r = measurement.(real(avg), real(std))
+        i = measurement.(imag(avg), imag(std))
+        return Complex.(r, i)
+    end
+end
+
+
+function muZ(para::ParaMC; kwargs...)
+    function zfactor(data, β)
+        return @. (imag(data[:, 2, 1]) - imag(data[:, 1, 1])) / (2π / β)
     end
 
+    function mu(data)
+        return real(data[:, 1, 1])
+    end
+
+    data = sigmaKW(para; kgrid=[para.kF,], ngrid=[0, 1], kwargs...)
+
+    return mu(data), zfactor(data, para.β)
 end
 
 #p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=1e-5)
