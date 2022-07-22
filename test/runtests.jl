@@ -1,6 +1,7 @@
 using Test
-include("../common/counterterm.jl")
-using .CounterTerm
+using ElectronLiquid
+# include("../common/counterterm.jl")
+# using .CounterTerm
 
 @testset "CounterTerm" begin
     mu = Dict()
