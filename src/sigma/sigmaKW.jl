@@ -1,13 +1,16 @@
 function integrandKW(config)
-    para, diag = config.para
+    para, diag, kgrid, ngrid = config.para
     diagram = diag[config.curr]
     weight = diagram.node.current
     object = diagram.node.object
     l = config.var[3][1]
+    k = config.var[4][1]
     varK, varT = config.var[1], config.var[2]
+    varK.data[1, 1] = kgrid[k]
+    wn = ngrid[l]
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
-    w = sum(weight[r] * phase(varT, object[r].para.extT, l, para.β) for r in diagram.root)
+    w = sum(weight[r] * phase(varT, object[r].para.extT, wn, para.β) for r in diagram.root)
     return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
@@ -18,7 +21,7 @@ function measureKW(config)
     # println(config.observable[1][1])
     o = config.curr
     weight = integrandKW(config)
-    config.observable[o, l+1, k] += weight / abs(weight) * factor
+    config.observable[o, l, k] += weight / abs(weight) * factor
 end
 
 function sigmaKW(para::ParaMC;
@@ -26,18 +29,21 @@ function sigmaKW(para::ParaMC;
     ngrid=[0,],
     neval=1e6, #number of evaluations
     niter=10, block=16, print=0,
-    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0], kwargs...
+    alpha=3.0, #learning ratio
+    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
+    kwargs...
 )
     UEG.MCinitialize!(para)
+
     dim, β, kF = para.dim, para.β, para.kF
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
-    T = MCIntegration.Continuous(0.0, β, offset=1, alpha=3.0)
+    T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
-    X = MCIntegration.Discrete(ngrid[1], ngrid[end], alpha=3.0)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid))
+    X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
     # println("building diagram ...")
     @time diagpara, diag, root, extT = sigmaDiag(para.order)
@@ -47,7 +53,7 @@ function sigmaKW(para::ParaMC;
 
     ngb = UEG.neighbor(UEG.partition(para.order))
     config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
-        neighbor=ngb, para=(para, diag),
+        neighbor=ngb, para=(para, diag, kgrid, ngrid),
         reweight_goal=reweight_goal[1:length(dof)+1]
     )
 

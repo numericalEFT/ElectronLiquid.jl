@@ -1,3 +1,4 @@
+using ElectronLiquid
 """
 By definition, the sigma renormalization is defined as
 Σ1 = Σ11
@@ -6,16 +7,16 @@ By definition, the sigma renormalization is defined as
 Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
 """
 
-include("../common/para_builder.jl")
-using .UEG
-include("../common/counterterm.jl")
-using .CounterTerm
+# include("../common/para_builder.jl")
+# using .UEG
+# include("../common/counterterm.jl")
+# using .CounterTerm
 
 using Measurements
 # using DataFrames
 using JLD2
 
-const filename = "dataCT.jld2"
+const filename = "data_Z.jld2"
 
 function zfactor(idata, para)
     return (idata[2] - idata[1]) / (2π / para.β)
