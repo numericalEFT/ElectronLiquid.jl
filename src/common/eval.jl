@@ -1,5 +1,11 @@
 # include("./para_builder.jl")
 # using .UEG
+module Propagator
+using ..FeynmanDiagram
+using ..UEG
+using ..Lehmann
+using LinearAlgebra
+using ..ElectronGas
 
 function green2(Ek, τ, beta)
     if τ ≈ 0.0
@@ -126,4 +132,6 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
             return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
         end
     end
+end
+
 end

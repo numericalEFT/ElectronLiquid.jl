@@ -1,4 +1,4 @@
-include("../common/eval.jl")
+# include("../common/eval.jl")
 
 diagPara(order::Int) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=UEG.Dim, spin=UEG.Spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, UEG.IsDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
@@ -11,7 +11,7 @@ diagPara(order::Int) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTa
 )
 
 function sigmaDiag(order)
-    println("Build the diagrams into an experssion tree ...")
+    println("Build the order $order diagrams into an experssion tree ...")
     _partition = UEG.partition(order)
     println("Diagram set: ", _partition)
 

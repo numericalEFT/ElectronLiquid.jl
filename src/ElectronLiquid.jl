@@ -14,6 +14,9 @@ include("./common/counterterm.jl")
 using .CounterTerm
 export CounterTerm
 
+include("./common/eval.jl")
+using .Propagator
+
 include("./sigma/sigma.jl")
 using .Sigma
 

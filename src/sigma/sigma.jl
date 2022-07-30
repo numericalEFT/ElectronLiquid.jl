@@ -9,8 +9,10 @@ using ..Lehmann
 using ..FeynmanDiagram
 using ..Measurements
 
-# push!(LOAD_PATH, "../common/")
 using ..UEG
+using ..Propagator
+
+# push!(LOAD_PATH, "../common/")
 include("common.jl")
 include("sigmaKW.jl")
 

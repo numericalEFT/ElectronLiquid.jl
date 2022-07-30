@@ -36,14 +36,14 @@ function sigmaKW(para::ParaMC;
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=3.0)
     T.data[1] = 0.0
-    X = MCIntegration.Discrete(lgrid[1], lgrid[end], alpha=3.0)
+    X = MCIntegration.Discrete(ngrid[1], ngrid[end], alpha=3.0)
     ExtKidx = MCIntegration.Discrete(1, length(kgrid))
 
     # println("building diagram ...")
     @time diagpara, diag, root, extT = sigmaDiag(para.order)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = zeros(ComplexF64, length(dof), Nl, length(kgrid)) # observable for the Fock diagram 
+    obs = zeros(ComplexF64, length(dof), length(ngrid), length(kgrid)) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(para.order))
     config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
