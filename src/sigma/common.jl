@@ -39,7 +39,7 @@ function sigmaDiag(order)
     extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
     # extT2 = [[diag[ri].node.object[idx].siteidx for idx in r] for (ri, r) in enumerate(root)]
     # println(extT, " verus ", extT2)
-    return diagpara, diag, root, extT
+    return _partition, diagpara, diag, root, extT
 end
 
 @inline function phase(varT, extT, l, β)

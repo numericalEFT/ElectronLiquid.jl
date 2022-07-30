@@ -46,7 +46,7 @@ function sigmaKW(para::ParaMC;
     ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
     # println("building diagram ...")
-    @time diagpara, diag, root, extT = sigmaDiag(para.order)
+    @time partition, diagpara, diag, root, extT = sigmaDiag(para.order)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), length(ngrid), length(kgrid)) # observable for the Fock diagram 
@@ -61,40 +61,36 @@ function sigmaKW(para::ParaMC;
 
     if isnothing(result) == false
 
-        # jldsave("data.jld2", order=Order, partition=UEG.partition(Order), avg=avg, std=std)
         avg, std = result.mean, result.stdev
         if print >= 0
             println(MCIntegration.summary(result, [o -> real(o[i]) for i in 1:length(dof)]))
         end
 
-        # jldopen("dataCT.jld2", "a+") do f
-        #     key = "$(UEG.short(para))"
-        #     if haskey(f, key)
-        #         @warn("replacing existing data for $key")
-        #         delete!(f, key)
-        #     end
-        #     f[key] = (para, avg, std)
-        # end
         r = measurement.(real(avg), real(std))
         i = measurement.(imag(avg), imag(std))
-        return Complex.(r, i)
+        data = Complex.(r, i)
+        datadict = Dict{eltype(partition),typeof(data[1, :, :])}()
+        for i in 1:length(dof)
+            datadict[partition[i]] = data[i, :, :]
+        end
+        return datadict
     end
 end
 
 
-function muZ(para::ParaMC; kwargs...)
-    function zfactor(data, β)
-        return @. (imag(data[:, 2, 1]) - imag(data[:, 1, 1])) / (2π / β)
-    end
+# function muZ(para::ParaMC; kwargs...)
+#     function zfactor(data, β)
+#         return @. (imag(data[:, 2, 1]) - imag(data[:, 1, 1])) / (2π / β)
+#     end
 
-    function mu(data)
-        return real(data[:, 1, 1])
-    end
+#     function mu(data)
+#         return real(data[:, 1, 1])
+#     end
 
-    data = sigmaKW(para; kgrid=[para.kF,], ngrid=[0, 1], kwargs...)
+#     data = sigmaKW(para; kgrid=[para.kF,], ngrid=[0, 1], kwargs...)
 
-    return mu(data), zfactor(data, para.β)
-end
+#     return mu(data), zfactor(data, para.β)
+# end
 
 #p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=1e-5)
 #MC(p)
