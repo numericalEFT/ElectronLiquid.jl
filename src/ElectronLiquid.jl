@@ -17,5 +17,8 @@ export CounterTerm
 include("./sigma/sigma.jl")
 using .Sigma
 
+include("./vertex4/vertex4.jl")
+using .Ver4
+
 
 end

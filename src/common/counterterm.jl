@@ -108,7 +108,7 @@ data  : Vector of data, or Dict{Order_Tuple, Actual_Data}, where Order_Tuple is 
 nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
 """
 function z_renormalization(order, data, δz, nbody::Int)
-    @assert order <= 2 "Order $order hasn't been implemented!"
+    # @assert order <= 2 "Order $order hasn't been implemented!"
     @assert order <= length(δz) + 1
     function addOneZ(order, data::AbstractDict, δz)
         nd = Dict()
