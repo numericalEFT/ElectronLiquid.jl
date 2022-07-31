@@ -1,6 +1,6 @@
 module UEG
 using StaticArrays
-using Parameters
+using ..Parameters
 using ..ElectronGas: Parameter
 using ..CompositeGrids
 

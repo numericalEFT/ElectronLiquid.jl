@@ -5,6 +5,7 @@ using FeynmanDiagram
 using CompositeGrids
 using Lehmann
 using ElectronGas
+using Parameters
 
 include("./common/para_builder.jl")
 using .UEG
@@ -19,9 +20,11 @@ using .Propagator
 
 include("./sigma/sigma.jl")
 using .Sigma
+export Sigma
 
 include("./vertex4/vertex4.jl")
 using .Ver4
+export Ver4
 
 
 end

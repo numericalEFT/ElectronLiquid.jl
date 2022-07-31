@@ -37,6 +37,14 @@ function ver4Diag(order)
             ver4[p] = DiagTree.removeHatreeFock!(d)
         end
     end
+
+    diag = [ExprTree.build(ver4[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
+    rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
+    rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
+#assign the external Tau to the corresponding diagrams
+    extTuu = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootuu)]
+    extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
+    return 
 end
 
 # const diagpara = [diagPara(o) for o in 1:Order]
@@ -47,12 +55,6 @@ end
 #different order has different set of K, T variables, thus must have different exprtrees
 # println(ver4)
 
-# const diag = [ExprTree.build(ver4[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
-# const rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
-# const rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
-# #assign the external Tau to the corresponding diagrams
-# const extTuu = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootuu)]
-# const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
 
 # exit(0)
 
