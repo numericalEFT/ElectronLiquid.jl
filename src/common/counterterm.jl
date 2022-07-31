@@ -147,59 +147,6 @@ function z_renormalization(order, data, δz, nbody::Int)
     return data
 end
 
-# """
-#     function chemicalpotential(order, Σ, isfock)
-
-#     Derive the chemicalpotential shift and the chemical potential counterterm for each order from the self-energy
-
-#     By definition, the chemical potential renormalization is defined as
-#     Σ1 = Σ10
-#     Σ2 = Σ20+Σ11*δμ1
-#     Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-#     Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-
-# # Arguments
-# order : total order
-# data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
-# δμ    : chemical potential renormalization for each order
-# """
-# function chemicalpotential(order, Σ, isfock)
-#     @assert order <= 4 "Order $order hasn't been implemented!"
-#     Σ = mergeInteraction(Σ)
-
-#     δμ = Vector{Any}(undef, order)
-#     μ = Vector{Any}(undef, order)
-#     if order >= 1
-#         μ[1] = Σ[(1, 0)]
-#         if isfock
-#             δμ[1] = 0.0 #for the Fock-renormalized G scheme only
-#         else
-#             δμ[1] = -μ[1] #for the Fock-renormalized G scheme only
-#         end
-#     end
-#     if order >= 2
-#         μ[2] = Σ[(2, 0)] + δμ[1] * Σ[(1, 1)]
-#         δμ[2] = -μ[2]
-#     end
-#     if order >= 3
-#         # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-#         μ[3] = Σ[(3, 0)] + δμ[1] * Σ[(2, 1)] + δμ[1]^2 * Σ[(1, 2)] + δμ[2] * Σ[(1, 1)]
-#         δμ[3] = -μ[3]
-#     end
-#     if order >= 4
-#         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-#         μ[4] = Σ[(4, 0)] + δμ[1] * Σ[(3, 1)] + δμ[1]^2 * Σ[(2, 2)] + δμ[2] * Σ[(2, 1)] + (δμ[1])^3 * Σ[(1, 3)] + 2 * δμ[1] * δμ[2] * Σ[(1, 2)] + δμ[3] * Σ[(1, 1)]
-#         # μ[4] = _mu[(4, 0)]  + δμ[2] * _mu[(2, 1)] + δμ[3] * _mu[(1, 1)]
-#         δμ[4] = -μ[4]
-#     end
-
-#     println("Chemical Potential shift and counterterm:")
-#     for o in 1:order
-#         println("order $o:  μ = $(μ[o])  δμ = $(δμ[o])")
-#     end
-#     return μ, δμ
-# end
-
 """
     function derive_onebody_parameter_from_sigma(order, μ, z=Dict(key => 0.0 for key in keys(μ)); isfock=false)
 
