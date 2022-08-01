@@ -326,6 +326,9 @@ function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     end
 
     vd = KOinstant(qd, p)
+    # println(qgrid)
+    # println(τgrid)
+    # exit(0)
     return vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 

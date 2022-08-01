@@ -11,6 +11,7 @@ export ParaMC, Weight
 const Dim = 3
 const Spin = 2
 const IsDynamic = true
+# const IsDynamic = false
 const IsFock = false
 ############################################################################
 
@@ -91,16 +92,6 @@ paraid(p::ParaMC) = Dict(
 
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")
 
-
-mutable struct Weight <: FieldVector{2,Float64}
-    d::Float64
-    e::Float64
-    Weight() = new(0.0, 0.0)
-    Weight(d, e) = new(d, e)
-end
-
-const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
-const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
 function partition(order::Int)
     # normal order, G order, W order

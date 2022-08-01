@@ -1,25 +1,10 @@
 """
 Calculate exchange vertex4 averged on the Fermi surface
 """
-# using Printf, LinearAlgebra
-# using CompositeGrids
-# using ElectronGas
-# using Parameters, Random, DataFrames
-# using MCIntegration
-# using Lehmann
+# const lgrid = [1, 2]
+# const Nl = length(lgrid)
 
-# using FeynmanDiagram
-# using StaticArrays
-
-# const steps = 1e6
-# const isF = false
-
-# println(dW0)
-# exit(0)
-const lgrid = [1, 2]
-const Nl = length(lgrid)
-
-function integrand(config)
+function integrand_l(config)
     kF, β = config.para.kF, config.para.β
     order = config.curr
     x = config.var[3][1]
@@ -42,7 +27,7 @@ function integrand(config)
     return Weight(wuu / β, wud / β)
 end
 
-function measure(config)
+function measure_l(config)
     factor = 1.0 / config.reweight[config.curr]
     x = config.var[3][1]
     # println(config.observable[1][1])

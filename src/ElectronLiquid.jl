@@ -1,4 +1,6 @@
 module ElectronLiquid
+
+using StaticArrays
 using Measurements
 using MCIntegration
 using FeynmanDiagram

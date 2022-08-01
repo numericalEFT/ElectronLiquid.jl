@@ -102,6 +102,7 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 # return e0^2 / ϵ0 / (dot(K, K) + mass2)
                 return Coulombinstant(qd, p)
             elseif id.para.interactionTauNum == 2
+                # println(id.extT)
                 return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
             else
                 error("not implemented!")

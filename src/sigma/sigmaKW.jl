@@ -110,6 +110,7 @@ function sigmaKW(para::ParaMC;
 
         avg, std = result.mean, result.stdev
         if print >= 0
+            MCIntegration.summary(result.config)
             println(MCIntegration.summary(result, [o -> real(o[i]) for i in 1:length(dof)]))
         end
 
