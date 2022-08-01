@@ -79,7 +79,9 @@ function KW(para::ParaMC, diagram;
     neval=1e6, #number of evaluations
     niter=10, block=16, print=0,
     alpha=3.0, #learning ratio
+    reweight_goal=nothing,
     # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
+    config=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -109,10 +111,12 @@ function KW(para::ParaMC, diagram;
     obs = zeros(ComplexF64, length(dof), 2, NkinL, NkoutL, NkinR, NwinL, NwoutL, NwinR) # observable for the Fock diagram 
 
     ngb = UEG.neighbor(UEG.partition(para.order))
-    config = MCIntegration.Configuration((K, T, vKinL, vKoutL, vKinR, vWinL, vWoutL, vWinR), dof, obs;
-        para=(para, diag, root, extT, kinL, koutL, kinR, ninL, noutL, ninR),
-        neighbor=ngb
-    )
+    if isnothing(config)
+        config = MCIntegration.Configuration((K, T, vKinL, vKoutL, vKinR, vWinL, vWoutL, vWinR), dof, obs;
+            para=(para, diag, root, extT, kinL, koutL, kinR, ninL, noutL, ninR),
+            neighbor=ngb, reweight_goal=reweight_goal
+        )
+    end
     result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
 
     # function info(idx, di)
@@ -130,7 +134,6 @@ function KW(para::ParaMC, diagram;
             MCIntegration.summary(result.config)
             MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
             MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
-            # println(MCIntegration.summary(result))
         end
 
         # println("UpUp ver4: ")
@@ -159,6 +162,7 @@ function KW(para::ParaMC, diagram;
         #     end
         #     f[key] = (para, avg, std)
         # end
+        return result
     end
 
 end

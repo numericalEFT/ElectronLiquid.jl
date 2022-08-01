@@ -121,7 +121,7 @@ function sigmaKW(para::ParaMC;
         for i in 1:length(dof)
             datadict[partition[i]] = data[i, :, :]
         end
-        return datadict
+        return datadict, result
     end
 end
 
