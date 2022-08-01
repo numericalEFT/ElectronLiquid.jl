@@ -128,10 +128,8 @@ function KW(para::ParaMC, diagram;
         if print >= 0
             # println(MCIntegration.summary(result, [o -> real(o[i, 1, 1, 1, 1, 1, 1, 1]) for i in 1:length(dof)]))
             MCIntegration.summary(result.config)
-            println("UpUp")
-            MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)])
-            println("UpDown")
-            MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)])
+            MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
+            MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
             # println(MCIntegration.summary(result))
         end
 
