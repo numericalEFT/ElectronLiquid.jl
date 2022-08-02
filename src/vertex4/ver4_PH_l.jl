@@ -10,6 +10,9 @@ function integrandPH(config)
     varK, varT = var[1], var[2]
     x = config.var[3][1]
     varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
+    # error("$(varK.data[:, 1])")
+    varL = config.var[4][1]
+    l = lgrid[varL]
 
     diagram = diag[idx]
     weight = diagram.node.current
@@ -17,38 +20,39 @@ function integrandPH(config)
     extTuu, extTud = extT[1][idx], extT[2][idx]
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
+
+    factor = 1.0
+    if l == 0
+        factor = 1.0 / 2
+    elseif l == 1
+        factor = x / 2.0
+    else
+        error("not implemented")
+    end
+
     if !isempty(rootuu)
-        wuu = sum(weight[root] * phase(varT, extTuu[ri], n, β) for (ri, root) in enumerate(rootuu))
+        wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], n, β) for (ri, root) in enumerate(rootuu))
     else
         wuu = zero(ComplexF64)
     end
     if !isempty(rootud)
-        wud = sum(weight[root] * phase(varT, extTud[ri], n, β) for (ri, root) in enumerate(rootud))
+        wud = factor * sum(weight[root] * phase(varT, extTud[ri], n, β) for (ri, root) in enumerate(rootud))
     else
         wud = zero(ComplexF64)
     end
+
     return Weight(wuu * para.NF, wud * para.NF)
 end
 
 function measurePH(config)
     factor = 1.0 / config.reweight[config.curr]
 
-    x = config.var[3][1]
     varL = config.var[4][1]
-    lgrid = config.para[6]
-    l = lgrid[varL]
 
     o = config.curr
     weight = integrandPH(config)
-    if l == 0
-        config.observable[o, 1, varL] += weight.d / 2 / abs(weight) * factor
-        config.observable[o, 2, varL] += weight.e / 2 / abs(weight) * factor
-    elseif l == 1
-        config.observable[o, 1, varL] += weight.d * x / 2 / abs(weight) * factor
-        config.observable[o, 2, varL] += weight.e * x / 2 / abs(weight) * factor
-    else
-        error("not implemented")
-    end
+    config.observable[o, 1, varL] += weight.d / abs(weight) * factor
+    config.observable[o, 2, varL] += weight.e / abs(weight) * factor
 end
 
 function PH(para::ParaMC, diagram;

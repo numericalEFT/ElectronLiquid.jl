@@ -130,6 +130,7 @@ function getK(amp, dim::Int, idx::Int=1)
     @assert 1 <= idx <= dim
     k = zeros(dim)
     k[idx] = amp
+    return k
 end
 
 include("interaction.jl")

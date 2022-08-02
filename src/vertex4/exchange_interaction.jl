@@ -7,14 +7,6 @@ function exchange_interaction(para::ParaMC)
     Wm = zeros(Float64, length(qs))
     for (qi, q) in enumerate(qs)
         Wp[qi] = KOstatic(q, para)
-        # Wp[qi], Wm[qi] = Inter.KO_total(q, 0, para;
-        #     pifunc=Polarization.Polarization0_ZeroTemp_Quasiparticle,
-        #     landaufunc=Inter.landauParameterConst,
-        #     Vinv_Bare=Inter.coulombinv,
-        #     counter_term=Inter.countertermConst,
-        #     Fs=-Fp, Fa=-Fm, Cs=-Cp, Ca=-Cm, massratio=massratio)
-        # instantS[qi] = Interaction.coulombinv(q, para)[1]
-        # println(q, " -> ", Wp[qi] * NF, ", ", Wm[qi] * NF)
     end
     # Wp *= -NF * z^2 # additional minus sign because the interaction is exchanged
     # Wm *= -NF * z^2

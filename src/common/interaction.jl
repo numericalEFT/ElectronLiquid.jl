@@ -376,7 +376,7 @@ function interactionStatic(p::ParaMC, qd, τIn, τOut)
     # return KOinstant(qd)
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
-    # return KOinstant(qd) / β
+    # return KOinstant(qd, p) / β
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
     # if qd > 50 * kF
