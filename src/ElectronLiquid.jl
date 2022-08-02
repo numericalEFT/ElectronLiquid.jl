@@ -4,6 +4,8 @@ using StaticArrays
 using Measurements
 using MCIntegration
 using FeynmanDiagram
+export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+
 using CompositeGrids
 using Lehmann
 using ElectronGas

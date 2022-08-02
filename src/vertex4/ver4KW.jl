@@ -50,7 +50,8 @@ function integrandKW(config)
     # println(idx)
     # println(wuu, ",  ", wud)
     # error("stop")
-    return Weight(wuu * para.NF, wud * para.NF)
+    # return Weight(wuu * para.NF, wud * para.NF)
+    return Weight(zero(ComplexF64), wud * para.NF)
 end
 
 function measureKW(config)
@@ -82,6 +83,7 @@ function KW(para::ParaMC, diagram;
     reweight_goal=nothing,
     # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
     config=nothing,
+    neighbor=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -110,11 +112,13 @@ function KW(para::ParaMC, diagram;
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), 2, NkinL, NkoutL, NkinR, NwinL, NwoutL, NwinR) # observable for the Fock diagram 
 
-    ngb = UEG.neighbor(UEG.partition(para.order))
+    if isnothing(neighbor)
+        neighbor = UEG.neighbor(UEG.partition(para.order))
+    end
     if isnothing(config)
         config = MCIntegration.Configuration((K, T, vKinL, vKoutL, vKinR, vWinL, vWoutL, vWinR), dof, obs;
             para=(para, diag, root, extT, kinL, koutL, kinR, ninL, noutL, ninR),
-            neighbor=ngb, reweight_goal=reweight_goal
+            neighbor=neighbor, reweight_goal=reweight_goal
         )
     end
     result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
