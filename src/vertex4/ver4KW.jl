@@ -4,14 +4,6 @@ Calculate exchange vertex4 averged on the Fermi surface
 # const lgrid = [1, 2]
 # const Nl = length(lgrid)
 
-@inline function phase(varT, extT, ninL, noutL, ninR, β)
-    # println(extT)
-    tInL, tOutL, tInR, tOutR = varT[extT[INL]], varT[extT[OUTL]], varT[extT[INR]], varT[extT[OUTR]]
-    winL, woutL, winR = π * (2ninL + 1) / β, π * (2noutL + 1) / β, π * (2ninR + 1) / β
-    woutR = winL + winR - woutL
-    return exp(-1im * (tInL * winL - tOutL * woutL + tInR * winR - tOutR * woutR))
-end
-
 function integrandKW(config)
     para, diag, root, extT, kinL, koutL, kinR, ninL, noutL, ninR = config.para
 
@@ -50,8 +42,8 @@ function integrandKW(config)
     # println(idx)
     # println(wuu, ",  ", wud)
     # error("stop")
-    # return Weight(wuu * para.NF, wud * para.NF)
-    return Weight(zero(ComplexF64), wud * para.NF)
+    return Weight(wuu * para.NF, wud * para.NF)
+    # return Weight(zero(ComplexF64), wud * para.NF)
 end
 
 function measureKW(config)
@@ -166,7 +158,15 @@ function KW(para::ParaMC, diagram;
         #     end
         #     f[key] = (para, avg, std)
         # end
-        return result
+        avg, std = result.mean, result.stdev
+        r = measurement.(real(avg), real(std))
+        i = measurement.(imag(avg), imag(std))
+        data = Complex.(r, i)
+        datadict = Dict{eltype(partition),typeof(data[1, :, :, :, :, :, :, :])}()
+        for i in 1:length(dof)
+            datadict[partition[i]] = data[i, :, :, :, :, :, :, :]
+        end
+        return datadict, result
     end
 
 end

@@ -15,14 +15,14 @@ using ..Measurements
 using ..UEG
 using ..Propagator
 
-function diagPara(order, filter, transferLoop)
-    inter = [FeynmanDiagram.Interaction(ChargeCharge, UEG.IsDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
+function diagPara(para::ParaMC, order, filter, transferLoop)
+    inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     return GenericPara(
         diagType=Ver4Diag,
         innerLoopNum=order - 1,
         hasTau=true,
-        loopDim=UEG.Dim,
-        spin=UEG.Spin,
+        loopDim=para.dim,
+        spin=para.spin,
         firstLoopIdx=4,
         interaction=inter,
         filter=filter,
@@ -30,7 +30,7 @@ function diagPara(order, filter, transferLoop)
     )
 end
 
-function diagram(_partition;
+function diagram(paramc::ParaMC, _partition::AbstractVector;
     channel=[PHr, PHEr, PPr],
     filter=[
     # Girreducible,
@@ -50,16 +50,13 @@ function diagram(_partition;
     diagpara = Vector{GenericPara}()
     partition = []
     for p in _partition
-        para = diagPara(p[1], filter, KinL - KoutL)
+        para = diagPara(paramc, p[1], filter, KinL - KoutL)
         legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
         d = Parquet.vertex4(para, legK, channel).diagram
-        # println("1 $p ", d)
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
-        # println("2 $p ", d)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
-        # println("3 $p ", d)
         if isempty(d) == false
-            if UEG.IsFock # remove the Fock subdiagrams
+            if paramc.isFock # remove the Fock subdiagrams
                 d = DiagTree.removeHatreeFock!(d)
             end
             push!(diagpara, para)
@@ -97,10 +94,25 @@ const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
 
+@inline function phase(varT, extT, ninL, noutL, ninR, β)
+    # println(extT)
+    tInL, tOutL, tInR, tOutR = varT[extT[INL]], varT[extT[OUTL]], varT[extT[INR]], varT[extT[OUTR]]
+    winL, woutL, winR = π * (2ninL + 1) / β, π * (2noutL + 1) / β, π * (2ninR + 1) / β
+    woutR = winL + winR - woutL
+    return exp(-1im * (tInL * winL - tOutL * woutL + tInR * winR - tOutR * woutR))
+end
+
+@inline function phase(varT, extT, n, β)
+    # println(extT)
+    return phase(varT, extT, n[1], n[2], n[3], β)
+end
+
 
 # include("common.jl")
 
 # include("ver4_avg.jl")
 include("ver4KW.jl")
+include("ver4_PH_l.jl")
+include("exchange_interaction.jl")
 
 end

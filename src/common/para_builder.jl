@@ -5,14 +5,14 @@ using ..ElectronGas: Parameter
 using ..CompositeGrids
 
 export INL, INR, OUTL, OUTR, DI, EX
-export ParaMC, Weight
+export ParaMC, Weight, getK
 
 ########### constant that don't needs to be updated frequently ##############
-const Dim = 3
-const Spin = 2
-const IsDynamic = true
-# const IsDynamic = false
-const IsFock = false
+# const Dim = 3
+# const Spin = 2
+# const IsDynamic = true
+# # const IsDynamic = false
+# const IsFock = false
 ############################################################################
 
 #specify the type of qgrid and τgrid explicitly, otherwise, there will be a type stability issue with interactionDynamic and interactionStatic
@@ -30,15 +30,18 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     mass2::Float64 = 1e-6
     massratio::Float64 = 1.0
 
+    dim::Int = 3
+    spin::Int = 2
+    isFock::Bool = false
+    isDynamic::Bool = false
+
     ### MC parameters #######
     # seed::Int = abs(rand(Int)) % 1000000
     # steps::Int = 1e6
 
     #### derived parameters ###########
-    basic::Parameter.Para = Parameter.rydbergUnit(1.0 / beta, rs, Dim, Λs=mass2, spin=Spin)
+    basic::Parameter.Para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2, spin=spin)
 
-    dim::Int = basic.dim
-    spin::Int = basic.spin
     kF::Float64 = basic.kF
     EF::Float64 = basic.EF
     β::Float64 = basic.β
@@ -86,8 +89,8 @@ paraid(p::ParaMC) = Dict(
     "Fa" => p.Fa,
     "massratio" => p.massratio,
     "spin" => p.spin,
-    "isFock" => IsFock,
-    "isDynamic" => IsDynamic,
+    "isFock" => p.isFock,
+    "isDynamic" => p.isDynamic,
 )
 
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")
@@ -121,6 +124,12 @@ function neighbor(partitions)
     end
     println(n)
     return n
+end
+
+function getK(amp, dim::Int, idx::Int=1)
+    @assert 1 <= idx <= dim
+    k = zeros(dim)
+    k[idx] = amp
 end
 
 include("interaction.jl")

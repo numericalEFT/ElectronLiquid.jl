@@ -1,7 +1,3 @@
-include("../common/para_builder.jl")
-using .UEG
-using CompositeGrids
-
 function exchange_interaction(para::ParaMC)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
@@ -22,8 +18,8 @@ function exchange_interaction(para::ParaMC)
     end
     # Wp *= -NF * z^2 # additional minus sign because the interaction is exchanged
     # Wm *= -NF * z^2
-    Wp *= -para.NFstar  # additional minus sign because the interaction is exchanged
-    Wm *= -para.NFstar
+    Wp *= para.NFstar  # additional minus sign because the interaction is exchanged
+    Wm *= para.NFstar
     return Wp, Wm, θgrid
 end
 
@@ -39,7 +35,7 @@ function exchange_Coulomb(para::ParaMC)
         # instantS[qi] = Interaction.coulombinv(q, para)[1]
         # println(q, " -> ", Wp[qi] * NF, ", ", Wm[qi] * NF)
     end
-    Wp *= -para.NFstar
+    Wp *= para.NFstar
     return Wp, Wm, θgrid
 end
 
@@ -50,7 +46,7 @@ function exchange_KOcounter(para::ParaMC, order, bubble)
 
     # non-proper and no bubble diagram. (MC for vertex4 doesn't include the buble contribution)
     Wp = UEG.counterKO_W(para; qgrid=qs, ngrid=[0,], order=order, proper=false, bubble=false)[:, 1]
-    Wp *= -para.NFstar
+    Wp *= para.NFstar
     Wm = zeros(Float64, length(qs))
     return Wp, Wm, θgrid
 end
@@ -111,16 +107,16 @@ const Order = 1
 # projected_exchange_interaction(0, p, exchange_interaction)
 # p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=1, mass2=1e-5)
 # projected_exchange_interaction(0, p, exchange_interaction)
-p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=1, mass2=0.001)
+# p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=1, mass2=0.001)
 # p = ParaMC(rs=5.0, beta=100.0, Fs=-0.585, order=1, mass2=1e-5)
-projected_exchange_interaction(0, p, exchange_interaction)
+# projected_exchange_interaction(0, p, exchange_interaction)
 
 ################# F2 counterterm ##########################
 # p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=1, mass2=1e-5)
 # projected_exchange_interaction(0, p, p -> exchange_KOcounter(p, 1, false))
 # p = ParaMC(rs=5.0, beta=100.0, Fs=-1.0, order=1, mass2=1e-5)
 # projected_exchange_interaction(0, p, p -> exchange_KOcounter(p, 1, false))
-projected_exchange_interaction(0, p, p -> exchange_KOcounter(p, 1, true))
+# projected_exchange_interaction(0, p, p -> exchange_KOcounter(p, 1, true))
 
 # println("Variational approach: ")
 # println("parameter Fs     optimized Fs      optimized Fa")
