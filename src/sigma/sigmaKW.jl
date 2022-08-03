@@ -84,12 +84,9 @@ function KW(para::ParaMC, diagram;
     kgrid=[para.kF,],
     ngrid=[0,],
     neval=1e6, #number of evaluations
-    niter=10, block=16, print=0,
+    print=0,
     alpha=3.0, #learning ratio
-    # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
-    reweight_goal=nothing,
     config=nothing,
-    neighbor=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -115,12 +112,14 @@ function KW(para::ParaMC, diagram;
     if isnothing(config)
         config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
             para=(para, diag, kgrid, ngrid),
-            neighbor=neighbor,
-            reweight_goal=reweight_goal
+            kwargs...
+            # neighbor=neighbor,
+            # reweight_goal=reweight_goal, kwargs...
         )
     end
 
-    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
+    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, kwargs...)
+    # niter=niter, print=print, block=block, kwargs...)
 
     if isnothing(result) == false
 
@@ -142,29 +141,3 @@ function KW(para::ParaMC, diagram;
         return nothing, nothing
     end
 end
-
-
-# function muZ(para::ParaMC; kwargs...)
-#     function zfactor(data, β)
-#         return @. (imag(data[:, 2, 1]) - imag(data[:, 1, 1])) / (2π / β)
-#     end
-
-#     function mu(data)
-#         return real(data[:, 1, 1])
-#     end
-
-#     data = sigmaKW(para; kgrid=[para.kF,], ngrid=[0, 1], kwargs...)
-
-#     return mu(data), zfactor(data, para.β)
-# end
-
-#p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=1e-5)
-#MC(p)
-#p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=1e-5)
-#MC(p)
-# p = ParaMC(rs=5.0, beta=25.0, Fs=-0.0, order=Order, mass2=0.001)
-# MC(p)
-# p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.001)
-# MC(p)
-# p = ParaMC(rs=5.0, beta=25.0, Fs=-1.0, order=Order, mass2=0.01)
-# MC(p)

@@ -70,12 +70,9 @@ function KW(para::ParaMC, diagram;
     kinR=[[para.kF, 0.0, 0.0][1:para.dim],],
     ninR=[0,],
     neval=1e6, #number of evaluations
-    niter=10, block=16, print=0,
+    print=0,
     alpha=3.0, #learning ratio
-    reweight_goal=nothing,
-    # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
     config=nothing,
-    neighbor=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -104,29 +101,16 @@ function KW(para::ParaMC, diagram;
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), 2, NkinL, NkoutL, NkinR, NwinL, NwoutL, NwinR) # observable for the Fock diagram 
 
-    # if isnothing(neighbor)
-    #     neighbor = UEG.neighbor(partition)
-    # end
     if isnothing(config)
         config = MCIntegration.Configuration((K, T, vKinL, vKoutL, vKinR, vWinL, vWoutL, vWinR), dof, obs;
             para=(para, diag, root, extT, kinL, koutL, kinR, ninL, noutL, ninR),
-            neighbor=neighbor, reweight_goal=reweight_goal
+            kwargs...
         )
     end
-    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
-
-    # function info(idx, di)
-    #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
-    # end
+    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
-        # avg, std = result.mean, result.stdev
-        # avg *= para.NFstar
-        # std *= para.NFstar
-        # N = size(avg)[1]
-        # grid = lgrid
         if print >= 0
-            # println(MCIntegration.summary(result, [o -> real(o[i, 1, 1, 1, 1, 1, 1, 1]) for i in 1:length(dof)]))
             MCIntegration.summary(result.config)
             MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
             MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
@@ -146,6 +130,3 @@ function KW(para::ParaMC, diagram;
     end
 
 end
-
-# p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=0.001)
-# MC(p)

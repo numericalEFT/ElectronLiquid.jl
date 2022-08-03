@@ -60,12 +60,9 @@ function PH(para::ParaMC, diagram;
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
-    niter=10, block=16, print=0,
+    print=0,
     alpha=3.0, #learning ratio
-    reweight_goal=nothing,
-    # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
     config=nothing,
-    neighbor=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -95,10 +92,10 @@ function PH(para::ParaMC, diagram;
     if isnothing(config)
         config = MCIntegration.Configuration((K, T, X, L), dof, obs;
             para=(para, diag, root, extT, kamp, l, n),
-            neighbor=neighbor, reweight_goal=reweight_goal
+            kwargs...
         )
     end
-    result = MCIntegration.sample(config, integrandPH, measurePH; neval=neval, niter=niter, print=print, block=block)
+    result = MCIntegration.sample(config, integrandPH, measurePH; neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -125,6 +122,3 @@ function PH(para::ParaMC, diagram;
     end
 
 end
-
-# p = ParaMC(rs=5.0, beta=25.0, Fs=-0.585, order=Order, mass2=0.001)
-# MC(p)
