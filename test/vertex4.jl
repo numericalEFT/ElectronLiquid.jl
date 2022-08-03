@@ -73,6 +73,11 @@ end
     expect = -4π * para.e0^2 / (mass2) * para.NF
     compare(real(obs[2]), expect)
 
-    ########## test l=0 RPA interaction  (Ω -> 0, q = 0) ######################
+    ########## test l=0 one-loop interaction  (Ω -> 0, q = 0) ######################
+    # para = ElectronLiquid.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
+    # diagram = Ver4.diagram(para, [p,]; filter=[Proper, NoBubble], channel=[PHr, PHEr, PPr])
+    # data, result = Ver4.PH(para, diagram; neval=1e7, print=-1, l=[0,], n=[-1, 0, 0])
+    # println(data)
+    # expect = 0.488
 
 end
