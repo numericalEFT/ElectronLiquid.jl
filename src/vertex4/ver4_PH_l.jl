@@ -89,9 +89,9 @@ function PH(para::ParaMC, diagram;
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), 2, Nl)
 
-    if isnothing(neighbor)
-        neighbor = UEG.neighbor(UEG.partition(para.order))
-    end
+    # if isnothing(neighbor)
+    #     neighbor = UEG.neighbor(partition)
+    # end
     if isnothing(config)
         config = MCIntegration.Configuration((K, T, X, L), dof, obs;
             para=(para, diag, root, extT, kamp, l, n),
@@ -106,38 +106,11 @@ function PH(para::ParaMC, diagram;
 
     if isnothing(result) == false
         if print >= 0
-            # println(MCIntegration.summary(result, [o -> real(o[i, 1, 1, 1, 1, 1, 1, 1]) for i in 1:length(dof)]))
             MCIntegration.summary(result.config)
             MCIntegration.summary(result, [o -> (real(o[i, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
             MCIntegration.summary(result, [o -> (real(o[i, 2, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
         end
 
-        # println("UpUp ver4: ")
-        # for li in 1:N
-        #     @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[li, 1], std[li, 1])
-        # end
-        # println("UpDown ver4: ")
-        # for li in 1:N
-        #     @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[li, 2], std[li, 2])
-        # end
-
-        # println("S ver4: ")
-        # for li in 1:N
-        #     @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] + avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
-        # end
-        # println("A ver4: ")
-        # for li in 1:N
-        #     @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
-        # end
-
-        # jldopen("dataF.jld2", "a+") do f
-        #     key = "$(UEG.short(para))"
-        #     if haskey(f, key)
-        #         @warn("replacing existing data for $key")
-        #         delete!(f, key)
-        #     end
-        #     f[key] = (para, avg, std)
-        # end
         avg, std = result.mean, result.stdev
         r = measurement.(real(avg), real(std))
         i = measurement.(imag(avg), imag(std))

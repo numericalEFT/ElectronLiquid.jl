@@ -19,7 +19,7 @@ for _rs in rs
         for _F in Fs
             for _beta in beta
                 for _order in order
-                    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2)
+                    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
                     kF = para.kF
 
                     if mission == "Z"
@@ -36,15 +36,24 @@ for _rs in rs
                         error("unknown mission")
                     end
 
-                    sigma = ElectronLiquid.Sigma.sigmaKW(para, kgrid=kgrid, ngrid=ngrid, neval=neval)
+                    partition = UEG.partition(_order)
+                    neighbor = UEG.neighbor(partition)
+                    diagram = Sigma.diagram(para, partition)
+                    reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
 
-                    jldopen("data_$(mission).jld2", "a+") do f
-                        key = "$(UEG.short(para))"
-                        if haskey(f, key)
-                            @warn("replacing existing data for $key")
-                            delete!(f, key)
+                    sigma, result = Sigma.KW(para, diagram;
+                        neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
+                        kgrid=kgrid, ngrid=ngrid, neval=neval)
+
+                    if isnothing(sigma) == false
+                        jldopen("data_$(mission).jld2", "a+") do f
+                            key = "$(UEG.short(para))"
+                            if haskey(f, key)
+                                @warn("replacing existing data for $key")
+                                delete!(f, key)
+                            end
+                            f[key] = (para, ngrid, kgrid, sigma)
                         end
-                        f[key] = (para, ngrid, kgrid, sigma)
                     end
                 end
             end

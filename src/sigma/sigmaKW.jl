@@ -1,43 +1,52 @@
-diagPara(order::Int) = GenericPara(diagType=SigmaDiag, innerLoopNum=order, hasTau=true, loopDim=UEG.Dim, spin=UEG.Spin, firstLoopIdx=2,
-    interaction=[FeynmanDiagram.Interaction(ChargeCharge, UEG.IsDynamic ? [Instant, Dynamic] : [Instant,]),],  #instant charge-charge interaction
+function diagPara(para::ParaMC, order::Int, filter)
+    inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
+    GenericPara(
+        diagType=SigmaDiag,
+        innerLoopNum=order,
+        hasTau=true,
+        loopDim=para.dim,
+        spin=para.spin,
+        firstLoopIdx=2,
+        interaction=inter,
+        filter=filter
+    )
+end
+
+function diagram(paramc::ParaMC, _partition::AbstractVector;
     filter=[
     # Girreducible,
     # Proper,   #one interaction irreduble diagrams or not
     # NoBubble, #allow the bubble diagram or not
-    # NoFock,
     ]
 )
-
-function sigmaDiag(order)
-    println("Build the order $order diagrams into an experssion tree ...")
-    _partition = UEG.partition(order)
+    println("Build the sigma diagrams into an experssion tree ...")
     println("Diagram set: ", _partition)
 
-    sigma = Dict()
+    sigma = []
+    diagpara = Vector{GenericPara}()
+    partition = []
     for p in _partition
-        d = Parquet.sigma(diagPara(p[1])).diagram
+        para = diagPara(paramc, p[1], filter)
+        d = Parquet.sigma(para).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
-        if UEG.IsFock == false
-            sigma[p] = d
-        else # remove the Fock subdiagrams
-            if p == (1, 0, 0) # the Fock diagram itself should not be removed
-                sigma[p] = d
-            else
-                sigma[p] = DiagTree.removeHatreeFock!(d)
+        if isempty(d) == false
+            if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
+                d = DiagTree.removeHatreeFock!(d)
             end
+            push!(diagpara, para)
+            push!(partition, p)
+            push!(sigma, d)
+        else
+            @warn("partition $p doesn't have any diagram. It will be ignored.")
         end
     end
 
-    sigma = [sigma[p] for p in _partition]
-    diagpara = [diags[1].id.para for diags in sigma]
     diag = [ExprTree.build(diags) for diags in sigma] # DiagTree to ExprTree
     root = [d.root for d in diag] #get the list of root nodes
     #assign the external Tau to the corresponding diagrams
     extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
-    # extT2 = [[diag[ri].node.object[idx].siteidx for idx in r] for (ri, r) in enumerate(root)]
-    # println(extT, " verus ", extT2)
-    return _partition, diagpara, diag, root, extT
+    return (partition, diagpara, diag, root, extT)
 end
 
 @inline function phase(varT, extT, l, β)
@@ -71,18 +80,23 @@ function measureKW(config)
     config.observable[o, l, k] += weight / abs(weight) * factor
 end
 
-function sigmaKW(para::ParaMC;
+function KW(para::ParaMC, diagram;
     kgrid=[para.kF,],
     ngrid=[0,],
     neval=1e6, #number of evaluations
     niter=10, block=16, print=0,
     alpha=3.0, #learning ratio
-    reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
+    # reweight_goal=[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0],
+    reweight_goal=nothing,
+    config=nothing,
+    neighbor=nothing,
     kwargs...
 )
     UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
+    partition, diagpara, diag, root, extT = diagram
+
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
@@ -92,17 +106,19 @@ function sigmaKW(para::ParaMC;
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
     ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
-    # println("building diagram ...")
-    @time partition, diagpara, diag, root, extT = sigmaDiag(para.order)
-
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = zeros(ComplexF64, length(dof), length(ngrid), length(kgrid)) # observable for the Fock diagram 
 
-    ngb = UEG.neighbor(UEG.partition(para.order))
-    config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
-        neighbor=ngb, para=(para, diag, kgrid, ngrid),
-        reweight_goal=reweight_goal[1:length(dof)+1]
-    )
+    # if isnothing(neighbor)
+    #     neighbor = UEG.neighbor(partition)
+    # end
+    if isnothing(config)
+        config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
+            para=(para, diag, kgrid, ngrid),
+            neighbor=neighbor,
+            reweight_goal=reweight_goal
+        )
+    end
 
     result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, niter=niter, print=print, block=block)
 
