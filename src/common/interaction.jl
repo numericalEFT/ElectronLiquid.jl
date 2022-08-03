@@ -329,6 +329,7 @@ function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     # println(qgrid)
     # println(τgrid)
     # exit(0)
+    # error("$vd, $(linear2D(dW0, qgrid, τgrid, qd, dτ))")
     return vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
