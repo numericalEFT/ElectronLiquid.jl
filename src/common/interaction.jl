@@ -39,17 +39,18 @@ end
 end
 
 @inline function Coulombinstant(q, basic, mass2=1e-6)
-    e0, dim = basic.e0, basic.dim
-    if abs(q) < 1e-6
-        q = 1e-6
-    end
-    if dim == 3
-        return 4π * e0^2 / (q^2 + mass2)
-    elseif dim == 2
-        return 2π * e0^2 / sqrt(q^2 + mass2)
-    else
-        error("not implemented!")
-    end
+    return KOinstant(q, basic, mass2, 1.0, 0.0, 0.0)
+    # e0, dim = basic.e0, basic.dim
+    # if abs(q) < 1e-6
+    #     q = 1e-6
+    # end
+    # if dim == 3
+    #     return 4π * e0^2 / (q^2 + mass2)
+    # elseif dim == 2
+    #     return 2π * e0^2 / sqrt(q^2 + mass2)
+    # else
+    #     error("not implemented!")
+    # end
 end
 
 @inline function KOinstant(q, p::ParaMC)
@@ -79,16 +80,9 @@ end
     kF, NF = basic.kF, basic.NF
 
     Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
-    if dim == 3
-        vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi) - fp
-        return vd
-    elseif dim == 2
-        qm = sqrt(q^2 + mass2)
-        vd = (2π * e0^2 + fp * qm) / ((1 - fp * Pi) * qm - 2π * e0^2 * Pi) - fp
-        return vd
-    else
-        error("not implemented!")
-    end
+    invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
+    vd = 1.0 / (invKOinstant - Pi) - fp
+    return vd
 end
 
 """
@@ -142,12 +136,7 @@ function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massrat
         staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
         @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
     end
-    # exit(0)
-    # println(Rs[:, 1])
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
-    # for (qi, q) in enumerate(qgrid)
-    #     println("$(q/kF)   $(Rs[qi, 1])")
-    # end
     return real.(Rs)
 end
 
@@ -388,8 +377,3 @@ function interactionStatic(p::ParaMC, qd, τIn, τOut)
     kostatic = KOstatic(qd, p)
     return kostatic / β - interactionDynamic(p, qd, τIn, τOut)
 end
-
-# const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
-# const τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
-# vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
-# const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
