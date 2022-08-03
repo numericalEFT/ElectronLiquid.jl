@@ -167,6 +167,8 @@ function KW(para::ParaMC, diagram;
             datadict[partition[i]] = data[i, :, :, :, :, :, :, :]
         end
         return datadict, result
+    else
+        return nothing, nothing
     end
 
 end
