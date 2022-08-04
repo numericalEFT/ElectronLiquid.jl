@@ -18,7 +18,7 @@
     z[(1, 1, 0)] = rand()
     z[(1, 0, 1)] = rand()
 
-    δμ, δz = CounterTerm.derive_onebody_parameter_from_sigma(2, mu, z)
+    δμ, δz = CounterTerm.derive_onebody_parameter_from_sigma(2, mu, z, zrenorm=true)
     @test δμ[1] ≈ -mu[(1, 0, 0)]
     @test δz[1] ≈ z[(1, 0, 0)]
     zR = Dict()

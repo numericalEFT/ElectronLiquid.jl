@@ -170,7 +170,7 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
         if zrenorm
             swR = z_renormalization(o, swR, δz, 1)
         end
-        # println(zR)
+        # println(swR)
         swR = chemicalpotential_renormalization(o, swR, δμ)
 
         if zrenorm
