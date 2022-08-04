@@ -6,13 +6,14 @@ using ElectronLiquid
 
 para = UEG.ParaMC(
     rs=5.0,
-    Fs=-0.0,
+    Fs=-0.585,
     beta=25.0,
-    mass2=0.001,
-    order=3,
+    mass2=1e-5,
+    order=2,
     isDynamic=true,
 )
 Zrenorm = false
+# Zrenorm = true
 
 df = CounterTerm.fromFile()
 mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
