@@ -127,9 +127,9 @@ function z_renormalization(order, data, δz, nbody::Int)
         return nd
     end
     function addOneZ(order, data::AbstractVector, δz)
-        println(data)
-        println(length(data))
-        println(order)
+        # println(data)
+        # println(length(data))
+        # println(order)
         @assert order <= length(data)
         nd = deepcopy(data[1:order])
         for _order in 1:order
@@ -158,9 +158,10 @@ order : total order
 sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 """
 function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false, zrenorm=false)
-    # println("z: ", z)
-    δz = zeros(Measurement{Float64}, order)
-    δμ = zeros(Measurement{Float64}, order)
+    swtype = typeof(collect(values(sw))[1])
+    mutype = typeof(collect(values(μ))[1])
+    δz = zeros(swtype, order)
+    δμ = zeros(mutype, order)
     for o in 1:order
         # println("zR: ", zR)
         μR = mergeInteraction(μ)
@@ -177,8 +178,8 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
         end
         μR = chemicalpotential_renormalization(o, μR, δμ)
         if isfock && o == 1
-            δμ[o] = zero(Measurement{Float64})
-            δz[o] = zero(Measurement{Float64})
+            δμ[o] = zero(swtype)
+            δz[o] = zero(mutype)
         else
             δμ[o] = -μR[o]
             δz[o] = swR[o] # somehow, the current scheme misses a factor of -1 in the z-factor counterterm

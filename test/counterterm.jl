@@ -9,6 +9,9 @@
     @test δμ[1] ≈ -mu[(1, 0, 0)]
     @test δμ[2] ≈ -(mu[(2, 0, 0)] + mu[(1, 0, 1)] + mu[(1, 1, 0)] * δμ[1])
 
+    rmu = CounterTerm.chemicalpotential_renormalization(2, mu, δμ)
+    @test δμ ≈ rmu .* (-1)
+
     z = Dict()
     z[(1, 0, 0)] = rand()
     z[(2, 0, 0)] = rand()
