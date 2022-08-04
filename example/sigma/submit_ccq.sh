@@ -1,6 +1,6 @@
 #!/bin/bash
 ## The computing resources we need
-#SBATCH --nodes=16
+#SBATCH --nodes=1
 ##SBATCH --ntasks-per-node=28     ## For the [ccq], [gen] and [preempt] subcluster 
 ##SBATCH --ntasks-per-node=44     ## For the [ib] subcluster
 ##SBATCH --ntasks-per-node=40     ## For the [bnl] subcluster
@@ -57,7 +57,7 @@ module load openmpi4
 ## Just run the job
 cd $SLURM_SUBMIT_DIR
 #echo $SLURM_SUBMIT_DIR
-/mnt/home/kunchen/.julia/bin/mpiexecjl julia /mnt/home/kunchen/project/EFT_UEG/sigma/sigmaCT.jl >> output.dat
+/mnt/home/kunchen/.julia/bin/mpiexecjl julia /mnt/home/kunchen/project/EFT_UEG/example/sigma/sigmaMC.jl Z >> output.dat
 #mpirun julia /mnt/home/kunchen/ceph/randomcircuit6/ConservedCircuit/evolve_2sector.jl
 #mpirun julia evolve_ancilla.jl
 #mkdir data

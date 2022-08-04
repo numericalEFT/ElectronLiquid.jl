@@ -2,12 +2,12 @@ using ElectronLiquid
 using CompositeGrids
 using JLD2
 
-rs = [5.0,]
-mass2 = [0.001,]
-Fs = [0.0,]
+rs = [1.0, ]
+mass2 = [0.01, 0.001,]
+Fs = [-0.0, ]
 beta = [25.0,]
-order = [2,]
-neval = 1e7
+order = [3,]
+neval = 1e6
 
 # mission = :Z
 # mission = :K

@@ -258,14 +258,23 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
         # println("data\n$d")
         # remove the entries with larger error
         # df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
-        if replace
-            olddf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]))), df)
-            println("replace the following rows with the new one")
-            println(olddf)
-            df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]))), df)
+        # if replace
+        olddf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]))), df)
+        if isempty(olddf)
+            # println("to save")
+            append!(df, d)
+            sortdata!(df)
+        else
+            bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+            if isempty(bigerrdf) == false
+                # replace only if the the new data has better quality for all quantitites
+                # println("to replace with the new one")
+                println(bigerrdf)
+                df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+                append!(df, d)
+                sortdata!(df)
+            end
         end
-        append!(df, d)
-        sortdata!(df)
         return df
     end
 end
