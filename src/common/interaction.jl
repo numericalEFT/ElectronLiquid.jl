@@ -40,17 +40,6 @@ end
 
 @inline function Coulombinstant(q, basic, mass2=1e-6)
     return KOinstant(q, basic, mass2, 1.0, 0.0, 0.0)
-    # e0, dim = basic.e0, basic.dim
-    # if abs(q) < 1e-6
-    #     q = 1e-6
-    # end
-    # if dim == 3
-    #     return 4π * e0^2 / (q^2 + mass2)
-    # elseif dim == 2
-    #     return 2π * e0^2 / sqrt(q^2 + mass2)
-    # else
-    #     error("not implemented!")
-    # end
 end
 
 @inline function KOinstant(q, p::ParaMC)
@@ -58,12 +47,18 @@ end
 end
 
 @inline function KOinstant(q, basic, mass2=1e-6, massratio=1.0, fp=0.0, fm=0.0)
-    e0, dim = basic.e0, basic.dim
+    e0, dim, kF = basic.e0, basic.dim, basic.kF
+    qTF = sqrt(basic.NF * 4π * e0^2)
+    # error(qTF / kF)
     if abs(q) < 1e-6
         q = 1e-6
     end
     if dim == 3
         return 4π * e0^2 / (q^2 + mass2) + fp
+        # return 4π * e0^2 / ((1 - exp(-q^2 / (kF)^2)) * q^2 + mass2) + fp
+        # return 4π * e0^2 / (sqrt(abs(q)) * qTF^1.5 + mass2) + fp
+        # return 4π * e0^2 / (q^2 * (qTF / kF)^2 * (1 - exp(-q^2 / (2kF)^2)) + q^2 * exp(-q^2 / (2kF)^2) + mass2) + fp
+        # return 4π * e0^2 / (q^2 * (1 - exp(-q^2 / (kF)^2)) + mass2 * exp(-q^2 / (kF)^2)) + fp
     elseif dim == 2
         return 2π * e0^2 / sqrt(q^2 + mass2) + fp
     else

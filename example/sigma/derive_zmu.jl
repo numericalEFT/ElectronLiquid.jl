@@ -41,7 +41,7 @@ function process(FileName, isSave)
             df = CounterTerm.appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err); replace=true)
         end
     end
-    println("new dataframe\n$df")
+    # println("new dataframe\n$df")
     isSave && CounterTerm.toFile(df)
 end
 
