@@ -3,10 +3,10 @@ using CompositeGrids
 using JLD2
 
 rs = [5.0,]
-mass2 = [0.001, 0.01, 0.1, 0.5]
+mass2 = [0.001,]
 Fs = [0.0,]
 beta = [25.0,]
-order = [1,]
+order = [2,]
 neval = 1e7
 
 # mission = :Z
