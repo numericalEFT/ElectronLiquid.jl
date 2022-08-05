@@ -23,7 +23,7 @@ end
     diagram = Ver4.diagram(para, [p,])
 
     ########## test Yukawa interaction ############
-    data, result = Ver4.KW(para, diagram; neval=1e6, print=-1)
+    data, result = Ver4.KW(para, diagram; neval=1e5, print=-1)
     obs = data[p]
     expect = 0.0
     compare(real(obs[1]), expect)
@@ -31,7 +31,7 @@ end
     compare(real(obs[2]), expect)
 
     ########## test l=0 PH averged Yukawa interaction ############
-    data, result = Ver4.PH(para, diagram; neval=1e6, print=-1, l=[0,])
+    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,])
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
@@ -49,7 +49,7 @@ end
     diagram = Ver4.diagram(para, [p,])
 
     ########## test l=0 RPA interaction  (Ω = 0, q->0) ######################
-    data, result = Ver4.PH(para, diagram; neval=1e6, print=-1, l=[0,], n=[0, 0, 0])
+    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,], n=[0, 0, 0])
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
@@ -62,7 +62,7 @@ end
 
 
     ########## test l=0 RPA interaction  (Ω -> 0, q=0) ######################
-    data, result = Ver4.PH(para, diagram; neval=1e6, print=-1, l=[0,], n=[-1, 0, 0])
+    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,], n=[-1, 0, 0])
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
