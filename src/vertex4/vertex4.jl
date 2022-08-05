@@ -33,9 +33,10 @@ end
 function diagram(paramc::ParaMC, _partition::AbstractVector;
     channel=[PHr, PHEr, PPr],
     filter=[
-    # Girreducible,
-    # Proper,   #one interaction irreduble diagrams or not
-    # NoBubble, #allow the bubble diagram or not
+        NoHatree,
+        # Girreducible,
+        # Proper,   #one interaction irreduble diagrams or not
+        # NoBubble, #allow the bubble diagram or not
     ]
 )
     println("Build the vertex4 diagrams into an experssion tree ...")

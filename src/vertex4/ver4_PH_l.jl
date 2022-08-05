@@ -13,6 +13,7 @@ function integrandPH(config)
     # error("$(varK.data[:, 1])")
     varL = config.var[4][1]
     l = lgrid[varL]
+    loopNum = config.dof[idx][1]
 
     diagram = diag[idx]
     weight = diagram.node.current
@@ -41,7 +42,8 @@ function integrandPH(config)
         wud = zero(ComplexF64)
     end
 
-    return Weight(wuu * para.NF, wud * para.NF)
+    factor = para.NF / (2π)^(para.dim * loopNum)
+    return Weight(wuu * factor, wud * factor)
 end
 
 function measurePH(config)

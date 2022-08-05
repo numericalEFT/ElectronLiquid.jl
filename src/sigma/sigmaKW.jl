@@ -14,9 +14,10 @@ end
 
 function diagram(paramc::ParaMC, _partition::AbstractVector;
     filter=[
-    # Girreducible,
-    # Proper,   #one interaction irreduble diagrams or not
-    # NoBubble, #allow the bubble diagram or not
+        NoHatree,
+        # Girreducible,
+        # Proper,   #one interaction irreduble diagrams or not
+        # NoBubble, #allow the bubble diagram or not
     ]
 )
     println("Build the sigma diagrams into an experssion tree ...")
@@ -67,7 +68,10 @@ function integrandKW(config)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
     w = sum(weight[r] * phase(varT, object[r].para.extT, wn, para.β) for r in diagram.root)
-    return w #the current implementation of sigma has an additional minus sign compared to the standard defintion
+
+    loopNum = config.dof[config.curr][1]
+    factor = 1.0 / (2π)^(para.dim * loopNum)
+    return w * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
 function measureKW(config)

@@ -11,6 +11,8 @@ function integrandKW(config)
     idx = config.curr
     var = config.var
     varK, varT = var[1], var[2]
+    loopNum = config.dof[idx][1]
+    # error(loopNum)
     _kinL, _koutL, _kinR = kinL[var[3][1]], koutL[var[4][1]], kinR[var[5][1]]
     _ninL, _noutL, _ninR = ninL[var[6][1]], noutL[var[7][1]], ninR[var[8][1]]
 
@@ -37,12 +39,8 @@ function integrandKW(config)
     else
         wud = zero(ComplexF64)
     end
-    # println(_kinL, ", ", _koutL, ", ", _kinR)
-    # println(weight[3], ", ", weight[4])
-    # println(idx)
-    # println(wuu, ",  ", wud)
-    # error("stop")
-    return Weight(wuu * para.NF, wud * para.NF)
+    factor = para.NF / (2π)^(para.dim * loopNum)
+    return Weight(wuu * factor, wud * factor)
     # return Weight(zero(ComplexF64), wud * para.NF)
 end
 
