@@ -39,7 +39,7 @@ for _rs in rs
 
                     partition = UEG.partition(_order)
                     neighbor = UEG.neighbor(partition)
-                    diagram = Sigma.diagram(para, partition)
+                    @time diagram = Sigma.diagram(para, partition)
                     reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
 
                     sigma, result = Sigma.KW(para, diagram;
