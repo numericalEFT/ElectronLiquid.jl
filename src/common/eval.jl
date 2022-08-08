@@ -98,10 +98,10 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
     qd = sqrt(dot(K, K))
     if id.order[2] == 0
         if id.type == Instant
-            if id.para.interactionTauNum == 1
+            if interactionTauNum(id.para) == 1
                 # return e0^2 / ϵ0 / (dot(K, K) + mass2)
                 return Coulombinstant(qd, p)
-            elseif id.para.interactionTauNum == 2
+            elseif interactionTauNum(id.para) == 2
                 # println(id.extT)
                 return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
             else
@@ -115,7 +115,7 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
     else # counterterm for the interaction
         order = id.order[2]
         if id.type == Instant
-            if id.para.interactionTauNum == 1
+            if interactionTauNum(id.para) == 1
                 if dim == 3
                     invK = 1.0 / (qd^2 + mass2)
                     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
@@ -131,6 +131,8 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
             end
         elseif id.type == Dynamic
             return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+        else
+            error("not implemented!")
         end
     end
 end

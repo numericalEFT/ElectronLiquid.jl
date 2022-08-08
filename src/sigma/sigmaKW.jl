@@ -28,7 +28,7 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
     partition = []
     for p in _partition
         para = diagPara(paramc, p[1], filter)
-        d = Parquet.sigma(para).diagram
+        @time d = Parquet.sigma(para).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
         if isempty(d) == false
