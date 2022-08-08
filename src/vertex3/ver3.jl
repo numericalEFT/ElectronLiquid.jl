@@ -27,7 +27,7 @@ Qin = [1.0, 0, 0, 0, 0]
 Kin = [0, 1.0, 0, 0, 0]
 legK = [Qin, Kin]
 
-diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
+diagPara(order) = DiagPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         Dynamic

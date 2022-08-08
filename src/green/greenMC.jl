@@ -32,7 +32,7 @@ partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
 
 println("Diagram set: ", partition)
 
-diagPara(order) = GenericPara(diagType=GreenDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
+diagPara(order) = DiagPara(diagType=GreenDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         # Dynamic
@@ -45,7 +45,7 @@ diagPara(order) = GenericPara(diagType=GreenDiag, innerLoopNum=order, hasTau=tru
     ]
 )
 
-# dpara = GenericPara(diagType=SigmaDiag, innerLoopNum=4, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
+# dpara = DiagPara(diagType=SigmaDiag, innerLoopNum=4, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
 #     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
 #         Instant,
 #         # Dynamic
@@ -65,7 +65,7 @@ for p in partition
     d = Parquet.green(diagPara(p[1]))
     println(p, ",", d)
     d = DiagTree.derivative(d, BareGreenId, p[2])
-    if p[3]>0
+    if p[3] > 0
         d = DiagTree.derivative(d, BareInteractionId, p[3])
     end
     if p == (1, 0, 0)
@@ -113,8 +113,8 @@ function integrand(config)
     # end
     # println(order, ": ", w)
     # exit(0)
-    return w*2/(2*π)^3*β
-     #the current implementation of sigma has an additional minus sign compared to the standard defintion
+    return w * 2 / (2 * π)^3 * β
+    #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
 function measure(config)
@@ -134,7 +134,7 @@ function MC()
     # T = MCIntegration.Tau(1.0, 1.0 / 2.0)
     # X = MCIntegration.Discrete(lgrid[1], lgrid[end])
 
-    dof = [[p.innerLoopNum+1, p.totalTauNum - 2] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum + 1, p.totalTauNum - 2] for p in diagpara] # K, T, ExtKidx
     # dof = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 3, 1]]
     # dof = [[1, 0, 1], [1, 0, 1], [1, 0, 1], [2, 1, 1]]
     # println(dof)

@@ -17,7 +17,7 @@ using ..Propagator
 
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    return GenericPara(
+    return DiagPara(
         diagType=Ver4Diag,
         innerLoopNum=order - 1,
         hasTau=true,
@@ -48,7 +48,7 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
     legK = [KinL, KoutL, KinR]
 
     ver4 = []
-    diagpara = Vector{GenericPara}()
+    diagpara = Vector{DiagPara}()
     partition = []
     for p in _partition
         para = diagPara(paramc, p[1], filter, KinL - KoutL)

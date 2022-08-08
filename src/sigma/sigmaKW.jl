@@ -1,6 +1,6 @@
 function diagPara(para::ParaMC, order::Int, filter)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    GenericPara(
+    DiagPara(
         diagType=SigmaDiag,
         innerLoopNum=order,
         hasTau=true,
@@ -24,7 +24,7 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
     println("Diagram set: ", _partition)
 
     sigma = []
-    diagpara = Vector{GenericPara}()
+    diagpara = Vector{DiagPara}()
     partition = []
     for p in _partition
         para = diagPara(paramc, p[1], filter)

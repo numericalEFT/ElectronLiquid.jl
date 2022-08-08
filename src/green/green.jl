@@ -21,7 +21,7 @@ println("Build the diagrams into an experssion tree ...")
 
 const Order = 2
 
-diagPara(order) = GenericPara(diagType=GreenDiag, innerLoopNum=order - 1, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
+diagPara(order) = DiagPara(diagType=GreenDiag, innerLoopNum=order - 1, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         Dynamic
