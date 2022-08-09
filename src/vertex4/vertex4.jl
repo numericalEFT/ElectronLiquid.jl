@@ -14,11 +14,12 @@ using ..Measurements
 # push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
+import ..ExprTreeF64
 
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     return DiagParaF64(
-        diagType=Ver4Diag,
+        type=Ver4Diag,
         innerLoopNum=order - 1,
         hasTau=true,
         loopDim=para.dim,
@@ -30,7 +31,7 @@ function diagPara(para::ParaMC, order, filter, transferLoop)
     )
 end
 
-function diagram(paramc::ParaMC, _partition::AbstractVector;
+function diagram(paramc::ParaMC, _partition::Vector{T};
     channel=[PHr, PHEr, PPr],
     filter=[
         NoHatree,
@@ -38,7 +39,7 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
     ]
-)
+) where {T}
     println("Build the vertex4 diagrams into an experssion tree ...")
     # _partition = UEG.partition(order)
     println("Diagram set: ", _partition)
@@ -47,21 +48,21 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     legK = [KinL, KoutL, KinR]
 
-    ver4 = []
-    diagpara = Vector{DiagPara}()
-    partition = []
+    diag = Vector{ExprTreeF64}()
+    diagpara = Vector{DiagParaF64}()
+    partition = Vector{T}()
     for p in _partition
         para = diagPara(paramc, p[1], filter, KinL - KoutL)
         legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
-        d = Parquet.vertex4(para, legK, channel).diagram
+        d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
         if isempty(d) == false
             if paramc.isFock # remove the Fock subdiagrams
-                d = DiagTree.removeHatreeFock!(d)
+                DiagTree.removeHatreeFock!(d)
             end
             push!(diagpara, para)
-            push!(ver4, d)
+            push!(diag, ExprTree.build(d))
             push!(partition, p)
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
@@ -73,9 +74,7 @@ function diagram(paramc::ParaMC, _partition::AbstractVector;
         # extTud = [diag.node.object[idx].para.extT for idx in rootud]
     end
 
-
-
-    diag = [ExprTree.build(d) for d in ver4]    #experssion tree representation of diagrams 
+    # diag = [ExprTree.build(d) for d in ver4]    #experssion tree representation of diagrams 
     rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
     rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
     #assign the external Tau to the corresponding diagrams

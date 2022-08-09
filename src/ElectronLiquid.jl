@@ -11,6 +11,8 @@ using Lehmann
 using ElectronGas
 using Parameters
 
+const ExprTreeF64 = ExpressionTree{ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
+
 include("./common/para_builder.jl")
 using .UEG
 export UEG

@@ -11,6 +11,7 @@ using ..Measurements
 
 using ..UEG
 using ..Propagator
+import ..ExprTreeF64
 
 include("sigmaKW.jl")
 

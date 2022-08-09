@@ -1,7 +1,7 @@
 function diagPara(para::ParaMC, order::Int, filter)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     DiagParaF64(
-        diagType=SigmaDiag,
+        type=SigmaDiag,
         innerLoopNum=order,
         hasTau=true,
         loopDim=para.dim,
@@ -12,42 +12,43 @@ function diagPara(para::ParaMC, order::Int, filter)
     )
 end
 
-function diagram(paramc::ParaMC, _partition::AbstractVector;
+function diagram(paramc::ParaMC, _partition::Vector{T};
     filter=[
         NoHatree,
         # Girreducible,
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
     ]
-)
+) where {T}
     println("Build the sigma diagrams into an experssion tree ...")
     println("Diagram set: ", _partition)
 
-    sigma = []
-    diagpara = Vector{DiagPara}()
-    partition = []
+    diag = Vector{ExprTreeF64}()
+    diagpara = Vector{DiagParaF64}()
+    partition = Vector{T}()
     for p in _partition
         para = diagPara(paramc, p[1], filter)
-        @time d = Parquet.sigma(para).diagram
-        d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
-        d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
-        if isempty(d) == false
+        sd::Vector{Diagram{Float64}} = Parquet.sigma(para).diagram
+        sdp = DiagTree.derivative(sd, BareGreenId, p[2], index=1)
+        sdpp = DiagTree.derivative(sdp, BareInteractionId, p[3], index=2)
+        if isempty(sdpp) == false
             if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
-                d = DiagTree.removeHatreeFock!(d)
+                DiagTree.removeHatreeFock!(sdpp)
             end
             push!(diagpara, para)
             push!(partition, p)
-            push!(sigma, d)
+            push!(diag, ExprTree.build(sdpp))
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end
     end
 
-    diag = [ExprTree.build(diags) for diags in sigma] # DiagTree to ExprTree
+    # @time diag = [ExprTree.build(diags) for diags in sigma] # DiagTree to ExprTree
     root = [d.root for d in diag] #get the list of root nodes
     #assign the external Tau to the corresponding diagrams
-    extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]
-    return (partition, diagpara, diag, root, extT)
+    extT = [[diag[ri].node.object[idx].para.extT::Tuple{Int,Int} for idx in r] for (ri, r) in enumerate(root)]
+    result = (partition, diagpara, diag, root, extT)
+    return result
 end
 
 @inline function phase(varT, extT, l, β)
