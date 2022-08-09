@@ -17,7 +17,7 @@ using ..Propagator
 
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    return DiagPara(
+    return DiagParaF64(
         diagType=Ver4Diag,
         innerLoopNum=order - 1,
         hasTau=true,

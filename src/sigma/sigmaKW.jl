@@ -1,6 +1,6 @@
 function diagPara(para::ParaMC, order::Int, filter)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    DiagPara(
+    DiagParaF64(
         diagType=SigmaDiag,
         innerLoopNum=order,
         hasTau=true,
