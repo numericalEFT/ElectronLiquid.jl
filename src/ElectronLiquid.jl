@@ -17,6 +17,10 @@ include("./common/para_builder.jl")
 using .UEG
 export UEG
 
+include("./common/renormalization.jl")
+using .Renorm
+export Renorm
+
 include("./common/counterterm.jl")
 using .CounterTerm
 export CounterTerm
@@ -35,9 +39,9 @@ export Ver4
 using SnoopPrecompile
 @precompile_all_calls begin
     # In here put "toy workloads" that exercise the code you want to precompile
-    para = UEG.ParaMC(rs=5.0, beta=25.0)
-    Sigma.diagram(para, [(2, 0, 0),])
-    Ver4.diagram(para, [(2, 0, 0),])
+    # para = UEG.ParaMC(rs=5.0, beta=25.0)
+    # Sigma.diagram(para, [(2, 0, 0),])
+    # Ver4.diagram(para, [(2, 0, 0),])
 end
 
 end
