@@ -6,11 +6,11 @@ using Printf
 using JLD2
 
 rs = [5.0,]
-mass2 = [0.01,]
-Fs = [-0.0,]
+mass2 = [0.01, 0.001,]
+Fs = [-0.0, ]
 beta = [25.0,]
 order = [2,]
-neval = 1e7
+neval = 1e8
 
 # mission = :Z
 # mission = :K
@@ -29,8 +29,8 @@ for _rs in rs
                     # partition = UEG.partition(_order)
                     partition = [(2, 0, 0),]
                     channel = [
-                        # PHr,
-                        # PHEr,
+                        PHr,
+                        PHEr,
                         PPr
                     ]
                     neighbor = UEG.neighbor(partition)
@@ -54,7 +54,7 @@ for _rs in rs
 
                         ver4, result = Ver4.PH(para, diagram;
                             kamp=kgrid, n=n, l=lgrid,
-                            neval=neval)
+                            neval=neval, print=-1)
 
                         # MCIntegration.summary(result)
 

@@ -1,7 +1,7 @@
-function exchange_interaction(para::ParaMC)
+function exchange_interaction(para::ParaMC, kamp=para.kF; kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
-    qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
+    qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
 
     Wp = zeros(Float64, length(qs))
     Wm = zeros(Float64, length(qs))
@@ -15,7 +15,7 @@ function exchange_interaction(para::ParaMC)
     return Wp, Wm, θgrid
 end
 
-function exchange_Coulomb(para::ParaMC)
+function exchange_Coulomb(para::ParaMC, kamp = para.kF; kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -31,7 +31,7 @@ function exchange_Coulomb(para::ParaMC)
     return Wp, Wm, θgrid
 end
 
-function exchange_KOcounter(para::ParaMC, order, bubble)
+function exchange_KOcounter(para::ParaMC, kamp = para.kF; order, bubble, kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -61,10 +61,10 @@ function exchange2direct(Wse, Wae)
     return Ws, Wa
 end
 
-function projected_exchange_interaction(l, para, interaction, verbose=1)
-    verbose > 0 && println(UEG.short(para))
+function projected_exchange_interaction(l, para, interaction; kamp = para.kF, verbose=1, kwargs...)
+    # verbose > 0 && println(UEG.short(para))
     verbose > 0 && println("l=$l:")
-    Wse, Wae, θgrid = interaction(para)
+    Wse, Wae, θgrid = interaction(para, kamp, kwargs...)
     Wse0 = Legrendre(l, Wse, θgrid)
     Wae0 = Legrendre(l, Wae, θgrid)
     verbose > 1 && println("Wse_l$l=", Wse0)
@@ -91,8 +91,6 @@ function self_consistent_F0(para::ParaMC, N=100, mix=0.2)
     println("Fs = ", Fp)
     println("Fa = ", Fm)
 end
-
-const Order = 1
 
 ######################## F1 ##########################
 # p = ParaMC(rs=5.0, beta=100.0, Fs=-0.0, order=1, mass2=1e-5)

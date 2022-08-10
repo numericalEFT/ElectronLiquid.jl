@@ -107,6 +107,8 @@ end
     return phase(varT, extT, n[1], n[2], n[3], β)
 end
 
+@inline ud2sa(Wuu, Wud) = @. (Wuu + Wud)/2, (Wuu-Wud)/2
+@inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws-Wa
 
 # include("common.jl")
 
