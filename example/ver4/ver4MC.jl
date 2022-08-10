@@ -10,7 +10,7 @@ mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
 order = [2,]
-neval = 1e6
+neval = 1e8
 
 # mission = :Z
 # mission = :K
@@ -29,12 +29,14 @@ for _rs in rs
                     # partition = UEG.partition(_order)
                     partition = [(2, 0, 0),]
                     channel = [
-                        PHEr,
-                        PPr
+                        PHr,
+                        # PHEr,
+                        # PPr
                     ]
                     neighbor = UEG.neighbor(partition)
                     filter = [NoHatree,
                         NoBubble,
+                        Proper
                     ]
                     @time diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
                     reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
