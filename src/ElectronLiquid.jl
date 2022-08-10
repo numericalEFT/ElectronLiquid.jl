@@ -32,5 +32,12 @@ include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
 
+using SnoopPrecompile
+@precompile_all_calls begin
+    # In here put "toy workloads" that exercise the code you want to precompile
+    para = UEG.ParaMC(rs=5.0, beta=25.0)
+    Sigma.diagram(para, [(2, 0, 0),])
+    Ver4.diagram(para, [(2, 0, 0),])
+end
 
 end

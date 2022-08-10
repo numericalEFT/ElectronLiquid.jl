@@ -2,18 +2,20 @@
 Calculate vertex4 averged on the Fermi surface
 """
 function integrandPH(config)
-    para, diag, root, extT, kamp, lgrid, n = config.para
+    para, diag, root, extT, kampgrid, lgrid, n = config.para
 
     kF, β = para.kF, para.β
     idx = config.curr
     var = config.var
     varK, varT = var[1], var[2]
     x = config.var[3][1]
-    varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
     # error("$(varK.data[:, 1])")
-    varL = config.var[4][1]
-    l = lgrid[varL]
+    l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
+    kamp = kampgrid[var[5][1]]
+    varK.data[1, 1], varK.data[1, 2] = kamp, kamp
+    varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
+
 
     diagram = diag[idx]
     weight = diagram.node.current
@@ -49,16 +51,17 @@ end
 function measurePH(config)
     factor = 1.0 / config.reweight[config.curr]
 
-    varL = config.var[4][1]
+    Lidx = config.var[4][1]
+    Kidx = config.var[5][1]
 
     o = config.curr
     weight = integrandPH(config)
-    config.observable[o, 1, varL] += weight.d / abs(weight) * factor
-    config.observable[o, 2, varL] += weight.e / abs(weight) * factor
+    config.observable[o, 1, Lidx, Kidx] += weight.d / abs(weight) * factor
+    config.observable[o, 2, Lidx, Kidx] += weight.e / abs(weight) * factor
 end
 
 function PH(para::ParaMC, diagram;
-    kamp=para.kF,
+    kamp=[para.kF,], #amplitude of k of four external legs
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
@@ -71,6 +74,7 @@ function PH(para::ParaMC, diagram;
 
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     Nl = length(l)
+    Nk = length(kamp)
 
     partition, diagpara, diag, root, extT = diagram
     @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
@@ -78,21 +82,22 @@ function PH(para::ParaMC, diagram;
     @assert length(extT[1]) == length(extT[2])
 
     K = MCIntegration.FermiK(para.dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
-    K.data[:, 1] .= UEG.getK(kamp, para.dim, 1)
-    K.data[:, 2] .= UEG.getK(kamp, para.dim, 1)
+    K.data[:, 1] .= UEG.getK(kamp[1], para.dim, 1)
+    K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
     X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
     L = MCIntegration.Discrete(1, Nl, alpha=alpha) # angular momentum
+    AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # angular momentum
 
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = zeros(ComplexF64, length(dof), 2, Nl)
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    obs = zeros(ComplexF64, length(dof), 2, Nl, Nk)
 
     # if isnothing(neighbor)
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration((K, T, X, L), dof, obs;
+        config = MCIntegration.Configuration((K, T, X, L, AMP), dof, obs;
             para=(para, diag, root, extT, kamp, l, n),
             kwargs...
         )
@@ -106,17 +111,17 @@ function PH(para::ParaMC, diagram;
     if isnothing(result) == false
         if print >= 0
             MCIntegration.summary(result.config)
-            MCIntegration.summary(result, [o -> (real(o[i, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
-            MCIntegration.summary(result, [o -> (real(o[i, 2, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
+            MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
+            MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
         end
 
         avg, std = result.mean, result.stdev
         r = measurement.(real(avg), real(std))
         i = measurement.(imag(avg), imag(std))
         data = Complex.(r, i)
-        datadict = Dict{eltype(partition),typeof(data[1, :, :])}()
+        datadict = Dict{eltype(partition),typeof(data[1, :, :, :])}()
         for i in 1:length(dof)
-            datadict[partition[i]] = data[i, :, :]
+            datadict[partition[i]] = data[i, :, :, :]
         end
         return datadict, result
     else
