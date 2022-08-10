@@ -10,7 +10,7 @@ mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
 order = [2,]
-neval = 1e8
+neval = 1e7
 
 # mission = :Z
 # mission = :K
@@ -29,16 +29,18 @@ for _rs in rs
                     # partition = UEG.partition(_order)
                     partition = [(2, 0, 0),]
                     channel = [
-                        PHr,
+                        # PHr,
                         # PHEr,
-                        # PPr
+                        PPr
                     ]
                     neighbor = UEG.neighbor(partition)
                     filter = [NoHatree,
                         NoBubble,
                         Proper
                     ]
-                    @time diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
+                    start = time()
+                    diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
+                    println("diagram generation takes: ", time()-start)
                     reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
 
                     if mission == "L"
@@ -63,7 +65,8 @@ for _rs in rs
                                     printstyled("l = $l\n", color=:green)
                                     @printf("%12s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "symmetric", "asymmetric")
                                     for (ki, k) in enumerate(kgrid)
-                                        d1, d2 = real(data[1, li, ki]), real(data[2, li, ki])
+                                        factor = 1.0
+                                        d1, d2 = real(data[1, li, ki])*factor, real(data[2, li, ki])*factor
                                         s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
                                         @printf("%12.6f    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$s", "$a")
                                     end
