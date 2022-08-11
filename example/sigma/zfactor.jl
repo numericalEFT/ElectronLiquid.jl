@@ -5,7 +5,7 @@
 using ElectronLiquid
 
 para = UEG.ParaMC(
-    rs=5.0,
+    rs=1.0,
     # Fs=-0.585,
     Fs=-0.0,
     beta=25.0,

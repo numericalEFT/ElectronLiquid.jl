@@ -70,6 +70,22 @@ function merge(series, idx::Int; target::Int=1)
     return renormalize(series, idx, term(target))
 end
 
+# function find_root(series::TaylorN{T}, idx::Int) where {T}
+#     series = series - const_term(series) #subtract the constant
+#     ctseries = zero(TaylorN{T})
+#     for o in 1:get_order()
+#         sub = zero(TaylorN{T})
+#         idxkey = [i == idx ? 1 : 0 for i in 1:get_numvars()]
+#         idxcoeff = get_coeff(series, idxkey)
+#         for vi in 1:get_numvars()
+
+
+#             ctseries.coeffs[o][vi] = series.coeffs[o][vi] / series.coeffs[o][idx]
+#         end
+#     end
+
+# end
+
 function dict2series(datadict::AbstractDict)
     ks = collect(keys(datadict))
     d1 = datadict[ks[1]]
