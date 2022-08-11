@@ -14,11 +14,18 @@ function set_params(; order::Int, numct::Int)
     set_variables(:ϵ; order=order, numvars=numct + 1)
 end
 
+# function set_params(; order::Int, ct::Union{AbstractVector,Tuple}=[])
+#     @assert !(:ϵ in ct) "ϵ is a reserved keyword."
+#     names =
+#         push!(ct, :ϵ)
+#     set_variables(:ϵ; order=order, numvars=numct + 1)
+# end
+
 term(idx::Int) = get_variables()[idx]
 
 function renormalize(data::TaylorN, idx::Int, series::TaylorN)
     newterm = [k == idx ? series : term(k) for k in 1:get_numvars()]
-    println("newterm:", newterm)
+    # println("newterm:", newterm)
     return evaluate(data, newterm)
 end
 

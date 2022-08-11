@@ -2,22 +2,7 @@ using TaylorSeries
 
 @testset "Renormalization" begin
     Renorm.set_params(order=2, numct=2)
-
-    function checkdict(data)
-        ks = collect(keys(data))
-        series = Renorm.dict2series(data)
-
-        for k in ks
-            if data[k] isa Number
-                @test data[k] ≈ getcoeff(series, k)
-            else
-                @test data[k][1] ≈ getcoeff(series[1], k)
-            end
-        end
-
-        mdata = Renorm.merge(data, 2; target=1)
-
-    end
+    x1, x2, x3 = get_variables()
 
     keylist = [(1, 0, 0), (2, 0, 0), (1, 1, 0), (1, 0, 1)]
 
@@ -42,6 +27,15 @@ using TaylorSeries
     mseries = Renorm.merge(series, 3; target=1)
     # println(mseries)
     @test data[(2, 0, 0)] + data[(1, 0, 1)] ≈ getcoeff(mseries, (2, 0, 0))
+    # println(mseries)
+
+    ######## check renormalization #########
+    a, b = rand(), rand()
+    rseries = Renorm.renormalize(mseries, 2, a * x1 + b * x1^2)
+    @test data[(2, 0, 0)] + data[(1, 0, 1)] + data[(1, 1, 0)] * a ≈ getcoeff(rseries, (2, 0, 0))
+    @test data[(1, 0, 0)] ≈ getcoeff(rseries, (1, 0, 0))
+    # x1, x2, x3 = get_variables()
+    # println(rseries)
 
     #####################################################################
     ############################# check array first ######################
@@ -61,6 +55,13 @@ using TaylorSeries
     ####### check merge ##################
     mseries = Renorm.merge(series, 3; target=1)
     @test data[(2, 0, 0)][1] + data[(1, 0, 1)][1] ≈ getcoeff(mseries[1], (2, 0, 0))
+
+    ######## check renormalization #########
+    rseries = Renorm.renormalize(mseries, 2, a * x1 + b * x1^2)
+    @test (data[(2, 0, 0)]+data[(1, 0, 1)]+data[(1, 1, 0)]*a)[1] ≈ getcoeff(rseries[1], (2, 0, 0))
+    @test data[(1, 0, 0)][1] ≈ getcoeff(rseries[1], (1, 0, 0))
+
+
 
 
 end
