@@ -11,7 +11,7 @@ using ..UEG
 using ..Measurements
 export mergeInteraction, fromFile, toFile, appendDict
 # export muCT, zCT
-export z_renormalization, chemicalpotential_renormalization
+export z_renormalization, chemicalpotential_renormalization, renormalization
 export sigmaCT
 export getSigma
 
@@ -48,6 +48,29 @@ function mergeInteraction(data)
     else # nothing to merge
         return data
     end
+end
+
+"""
+    function renormalization(order, data, δμ, δz=nothing; nbody=1, zrenorm=true)
+    
+    First perform the chemical potential renormalization, then perform the z-factor renormalization
+
+# Arguments
+order : total order
+data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+δμ    : chemical potential counterterm
+δz    : z-factor counterterm
+
+zrenorm : turn on or off the z-factor renormalization
+nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
+"""
+function renormalization(order, data, δμ, δz=nothing; nbody=1, zrenorm=true)
+    data = chemicalpotential_renormalization(order, data, δμ)
+    println(data)
+    if zrenorm && (isnothing(δz) == false)
+        data = z_renormalization(order, data, δz, nbody)
+    end
+    return data
 end
 
 """
@@ -115,6 +138,7 @@ nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody
 function z_renormalization(order, data, δz, nbody::Int)
     # @assert order <= 2 "Order $order hasn't been implemented!"
     @assert order <= length(δz) + 1
+    data = mergeInteraction(data)
     function addOneZ(order, data::AbstractDict, δz)
         nd = Dict()
         for orders in keys(data)

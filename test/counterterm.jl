@@ -26,6 +26,18 @@
     @test δz[2] ≈ (δzi[1]^2 - δzi[2])
     # @test δz[3] ≈ (-δzi[1]^3 + δzi[1] * δzi[2] - δzi[3])
 
+    # data = CounterTerm.renormalization(2, sw, δμ, δz; nbody=1, zrenorm=true)
+    swR = CounterTerm.chemicalpotential_renormalization(2, sw, δμ)
+    swR = [1.0, swR...]
+    # println(swR)
+    # println(δzi)
+    swRR = CounterTerm.z_renormalization(2, swR, δz, 1)
+    # expect swRR = [1.0, 0.0, 0.0, ...]
+    @test swRR[1] ≈ swR[1]
+    for o in 2:2
+        @test swRR[o] ≈ 0.0
+    end
+
 
     # δμ, δz = CounterTerm.sigmaCT(2, mu, z)
     # @test δμ[1] ≈ -mu[(1, 0, 0)]
