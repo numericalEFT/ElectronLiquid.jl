@@ -5,6 +5,7 @@ using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
+
 """
     function lindhard(x)
 
@@ -32,6 +33,14 @@ export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStati
     else
         error("not implemented!")
     end
+end
+
+@inline function polarKW(q, n::Int, para::ParaMC)
+    return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
+end
+
+@inline function polarKW(q, n::Int, basic, massratio)
+    return Polarization.Polarization0_ZeroTemp(q, n, basic) * basic.spin * massratio
 end
 
 @inline function Coulombinstant(q, p::ParaMC)
@@ -74,7 +83,8 @@ end
     e0, dim = basic.e0, basic.dim
     kF, NF = basic.kF, basic.NF
 
-    Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    Pi = polarKW(q, 0, basic, massratio)
     invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
     vd = 1.0 / (invKOinstant - Pi) - fp
     return vd
@@ -93,7 +103,7 @@ then the KO interaction is
 Rq = r_q / (1 - r_q Π0) - f
 ```
 """
-function KO_W(q, n::Integer, para::ParaMC; Pi=para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio)
+function KO_W(q, n::Integer, para::ParaMC; Pi=para.spin * polarKW(q, n, para.basic) * para.massratio)
     if abs(q) < 1e-6
         q = 1e-6
     end
@@ -118,7 +128,7 @@ function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massrat
         for (qi, q) in enumerate(qgrid)
             invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
-            Pi[qi, ni] = basic.spin * Polarization.Polarization0_ZeroTemp(q, n, basic) * massratio
+            Pi[qi, ni] = polarKW(q, n, basic, massratio)
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
         end
     end
@@ -128,7 +138,8 @@ function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massrat
         kostatic = KOstatic(q, basic, mass2, massratio, fp, fm)
         @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
         # println("$(q/kF)   $(w*NF)")
-        staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
+        # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
+        staticPi = polarKW(q, 0, basic, massratio)
         @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
     end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
@@ -170,7 +181,7 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
     cRs1 = zeros(Float64, (Nq, Nw))
     for (ni, n) in enumerate(ngrid)
         for (qi, q) in enumerate(qgrid)
-            Pi = para.spin * Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.massratio
+            Pi = polarKW(q, n, para)
             if proper == false
                 Rs = KO_W(q, n, para; Pi=Pi)
             else
