@@ -2,6 +2,7 @@ module CounterTerm
 # using CSV
 using DataFrames
 using DelimitedFiles
+using TaylorSeries
 
 # using PyCall
 using ..Measurements

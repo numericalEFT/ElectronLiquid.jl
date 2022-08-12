@@ -77,9 +77,8 @@ end
 #         sub = zero(TaylorN{T})
 #         idxkey = [i == idx ? 1 : 0 for i in 1:get_numvars()]
 #         idxcoeff = get_coeff(series, idxkey)
+#         @assert !(idxcoeff ≈ 0)
 #         for vi in 1:get_numvars()
-
-
 #             ctseries.coeffs[o][vi] = series.coeffs[o][vi] / series.coeffs[o][idx]
 #         end
 #     end
