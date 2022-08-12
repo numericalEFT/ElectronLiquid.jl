@@ -3,9 +3,10 @@
 # using .UEG
 # using .CounterTerm
 using ElectronLiquid
+using Printf
 
 para = UEG.ParaMC(
-    rs=1.0,
+    rs=3.0,
     # Fs=-0.585,
     Fs=-0.0,
     beta=25.0,
@@ -13,20 +14,26 @@ para = UEG.ParaMC(
     order=3,
     isDynamic=true,
 )
-Zrenorm = false
+# Zrenorm = false
 # Zrenorm = true
 
-df = CounterTerm.fromFile()
-mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
-dmu, dz = CounterTerm.derive_onebody_parameter_from_sigma(para.order, mu, sw, zrenorm=Zrenorm)
-z = CounterTerm.chemicalpotential_renormalization(para.order, sw, dmu)
-# z[2] *= -1
-# z[3] *= -1
-println("dz = ", z)
-sumz = accumulate(+, z)
-if Zrenorm == false
-    z = @. 1.0 / (1.0 + sumz)
-else
-    z = @. 1.0 - sumz
+mu, sw = CounterTerm.getSigma(para)
+dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
+
+# println("δz = ", dz)
+# println("δz_inverse = ", dzi)
+sumzi = accumulate(+, dzi)
+# if Zrenorm == false
+
+z1 = @. 1.0 / (1.0 + sumzi)
+# println("z without renormalization = $z")
+# else
+sumz = accumulate(+, dz)
+z2 = @. 1.0 + sumz
+# end
+# println("z with renormalization = $z")
+printstyled(UEG.short(para), color=:green)
+printstyled(@sprintf("%8s   %24s    %24s     %24s\n", "order", "chemical-potential", "no-z-renorm", "z-renorm"), color=:yellow)
+for o in 1:para.order
+    @printf("%8d   %24s   %24s     %24s\n", o, "$(dmu[o])", "$(z1[o])", "$(z2[o])")
 end
-println("z = ", z)

@@ -3,13 +3,16 @@ module CounterTerm
 using DataFrames
 using DelimitedFiles
 using TaylorSeries
+using Printf
+
+using ..UEG
 
 # using PyCall
 using ..Measurements
-export mergeInteraction, fromFile, toFile, appendDict, chemicalpotential
-export muCT, zCT
+export mergeInteraction, fromFile, toFile, appendDict
+# export muCT, zCT
 export z_renormalization, chemicalpotential_renormalization
-export derive_onebody_parameter_from_sigma
+export sigmaCT
 export getSigma
 
 const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
@@ -150,18 +153,28 @@ function z_renormalization(order, data, δz, nbody::Int)
 end
 
 """
-    function derive_onebody_parameter_from_sigma(order, μ, z=Dict(key => 0.0 for key in keys(μ)); isfock=false)
+    function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false)
 
-    Derive the chemicalpotential and z-factor counterterm for each order from the self-energy
+    Derive the chemicalpotential and z-factor counterterm for each order from the self-energy.
 
 # Arguments
 order : total order
 μ     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+
+# Return (δzi, δμ, δz)
+The convention is the following:
+δzi : 1/z = 1+δzi_1+δzi_2+... 
+δμ  : chemical_potential_shift_without_z_renormalization = δμ_1+δμ_2+...
+δz  : z = 1+δz_1+δz_2+...
+
+# Remark:
+The chemical potential shift is the chemical potential shift without z-renormalization.
 """
-function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false, zrenorm=false)
+function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false, verbose=0)
     swtype = typeof(collect(values(sw))[1])
     mutype = typeof(collect(values(μ))[1])
+    δzi = zeros(swtype, order)
     δz = zeros(swtype, order)
     δμ = zeros(mutype, order)
     for o in 1:order
@@ -169,30 +182,33 @@ function derive_onebody_parameter_from_sigma(order, μ, sw=Dict(key => 0.0 for k
         μR = mergeInteraction(μ)
         swR = mergeInteraction(sw)
 
-        if zrenorm
-            swR = z_renormalization(o, swR, δz, 1)
-        end
         # println(swR)
         swR = chemicalpotential_renormalization(o, swR, δμ)
-
-        if zrenorm
-            μR = z_renormalization(o, μR, δz, 1)
-        end
         μR = chemicalpotential_renormalization(o, μR, δμ)
+
         if isfock && o == 1
             δμ[o] = zero(swtype)
             δz[o] = zero(mutype)
+            δzi[o] = zero(mutype)
         else
             δμ[o] = -μR[o]
-            δz[o] = swR[o] # somehow, the current scheme misses a factor of -1 in the z-factor counterterm
+            # δz[o] = swR[o] # somehow, the current scheme misses a factor of -1 in the z-factor counterterm
+            δzi[o] = swR[o]
         end
     end
 
-    println("Onebody counterterm:")
-    for o in 1:order
-        println("order $o:  δμ = $(δμ[o]), δz = $(δz[o])")
+    zi = Taylor1([1.0, δzi...], order)
+    z = 1 / zi
+    δz = [getcoeff(z, o) for o in 1:order]
+
+
+    if verbose > 0
+        printstyled(@sprintf("%8s  %24s  %24s  %24s\n", "order", "δzi", "δμ", "δz"), color=:green)
+        for o in 1:order
+            @printf("%8d  %24s  %24s  %24s\n", o, "$(δzi[o])", "$(δμ[o])", "$(δz[o])")
+        end
     end
-    return δμ, δz
+    return δzi, δμ, δz
 end
 
 
@@ -282,16 +298,19 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
 end
 
 """
-    function muCT(df, paraid, order)
+    function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
 
-    Extract the chemical potential counterterm for the given parameters.
-    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
+    read self-energy parameters from the file
 
 # Arguments
 df     : DataFrame
 paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
+function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
+    df = fromFile(parafile)
+    return getSigma(df, UEG.paraid(para), order)
+end
 function getSigma(df::DataFrame, paraid::Dict, order::Int)
     if order == 0
         return [], []
@@ -323,60 +342,60 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
     return mu, sw
 end
 
-"""
-    function muCT(df, paraid, order)
+# """
+#     function muCT(df, paraid, order)
 
-    Extract the chemical potential counterterm for the given parameters.
-    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
+#     Extract the chemical potential counterterm for the given parameters.
+#     If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
 
-# Arguments
-df     : DataFrame
-paraid : Dictionary of parameter names and values
-order  : the truncation order
-"""
-function muCT(df::DataFrame, paraid::Dict, order::Int)
-    if order == 1
-        return [], []
-    end
-    _partition = partition(order)
-    # println(df)
-    df = filter(row -> compareRow(row, paraid), df)
-    sort!(df, "δμ.err") #sort error from small to large
-    @assert isempty(df) == false "no data exist for $paraid"
-    # println(df)
+# # Arguments
+# df     : DataFrame
+# paraid : Dictionary of parameter names and values
+# order  : the truncation order
+# """
+# function muCT(df::DataFrame, paraid::Dict, order::Int)
+#     if order == 1
+#         return [], []
+#     end
+#     _partition = partition(order)
+#     # println(df)
+#     df = filter(row -> compareRow(row, paraid), df)
+#     sort!(df, "δμ.err") #sort error from small to large
+#     @assert isempty(df) == false "no data exist for $paraid"
+#     # println(df)
 
-    δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order-1]
-    err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
-    # δz = [filter(r -> r["order"] == o, df)[1, ""] for o in 1:order-1]
-    # err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
-    # err = [mu for mu in df[!, "δμ.err"]]
-    return measurement.(δμ, err)
-end
+#     δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order-1]
+#     err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
+#     # δz = [filter(r -> r["order"] == o, df)[1, ""] for o in 1:order-1]
+#     # err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
+#     # err = [mu for mu in df[!, "δμ.err"]]
+#     return measurement.(δμ, err)
+# end
 
-"""
-    function zCT(df, paraid, order)
+# """
+#     function zCT(df, paraid, order)
 
-    Extract the z-factor counterterm for the given parameters.
-    If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
+#     Extract the z-factor counterterm for the given parameters.
+#     If there are multiple counterterms of the same order, then the counterterm with the smallest errorbar will be returned
 
-# Arguments
-df     : DataFrame
-paraid : Dictionary of parameter names and values
-order  : the truncation order
-"""
-function zCT(df::DataFrame, paraid::Dict, order::Int)
-    if order == 1
-        return []
-    end
-    # println(df)
-    df = filter(row -> compareRow(row, paraid), df)
-    sort!(df, "δz.err") #sort error from small to large
-    @assert isempty(df) == false "no data exist for $paraid"
-    # println(df)
+# # Arguments
+# df     : DataFrame
+# paraid : Dictionary of parameter names and values
+# order  : the truncation order
+# """
+# function zCT(df::DataFrame, paraid::Dict, order::Int)
+#     if order == 1
+#         return []
+#     end
+#     # println(df)
+#     df = filter(row -> compareRow(row, paraid), df)
+#     sort!(df, "δz.err") #sort error from small to large
+#     @assert isempty(df) == false "no data exist for $paraid"
+#     # println(df)
 
-    δz = [filter(r -> r["order"] == o, df)[1, "δz"] for o in 1:order-1]
-    err = [filter(r -> r["order"] == o, df)[1, "δz.err"] for o in 1:order-1]
-    return measurement.(δz, err)
-end
+#     δz = [filter(r -> r["order"] == o, df)[1, "δz"] for o in 1:order-1]
+#     err = [filter(r -> r["order"] == o, df)[1, "δz.err"] for o in 1:order-1]
+#     return measurement.(δz, err)
+# end
 
 end
