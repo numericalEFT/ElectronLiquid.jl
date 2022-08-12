@@ -52,6 +52,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     μ::Float64 = basic.μ
     NF::Float64 = basic.NF
     NFstar::Float64 = basic.NF * massratio
+    qTF::Float64 = basic.qTF
 
     fs::Float64 = Fs / NFstar
     fa::Float64 = Fa / NFstar
@@ -69,6 +70,10 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
 
     additional = Any[]
 end
+
+# struct TestPara
+#     e0::Float64
+# end
 
 function MCinitialize!(para::ParaMC)
     para.dW0 .= KOdynamic_T(para)

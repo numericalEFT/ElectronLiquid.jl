@@ -39,25 +39,47 @@ end
     return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
 end
 
-@inline function polarKW(q, n::Int, basic, massratio)
-    return Polarization.Polarization0_ZeroTemp(q, n, basic) * basic.spin * massratio
-end
+# @inline function polarKW(q, n::Int, basic, massratio)
+#     return Polarization.Polarization0_ZeroTemp(q, n, basic) * basic.spin * massratio
+# end
 
 @inline function Coulombinstant(q, p::ParaMC)
-    return Coulombinstant(q, p.basic, p.mass2)
+    return KOinstant(q, p)
 end
 
-@inline function Coulombinstant(q, basic, mass2=1e-6)
-    return KOinstant(q, basic, mass2, 1.0, 0.0, 0.0)
+@inline function KOinstant(q, e0, dim, mass2, fp)
+    # ba = p.basic
+    # @time ba.e0
+    # @time p.e0
+    # @time getproperty(p, :e0)
+    # e0, dim, mass2 = p.e0, p.dim, p.mass2
+    # fp = p.fs
+    # qTF = sqrt(basic.NF * 4π * e0^2)
+    # error(qTF / kF)
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    if dim == 3
+        return 4π * e0^2 / (q^2 + mass2) + fp
+        # return 4π * e0^2 / ((1 - exp(-q^2 / (kF)^2)) * q^2 + mass2) + fp
+        # return 4π * e0^2 / (sqrt(abs(q)) * qTF^1.5 + mass2) + fp
+        # return 4π * e0^2 / (q^2 * (qTF / kF)^2 * (1 - exp(-q^2 / (2kF)^2)) + q^2 * exp(-q^2 / (2kF)^2) + mass2) + fp
+        # return 4π * e0^2 / (q^2 * (1 - exp(-q^2 / (kF)^2)) + mass2 * exp(-q^2 / (kF)^2)) + fp
+    elseif dim == 2
+        return 2π * e0^2 / sqrt(q^2 + mass2) + fp
+    else
+        error("not implemented!")
+    end
 end
 
 @inline function KOinstant(q, p::ParaMC)
-    return KOinstant(q, p.basic, p.mass2, p.massratio, p.fs, p.fa)
-end
-
-@inline function KOinstant(q, basic, mass2=1e-6, massratio=1.0, fp=0.0, fm=0.0)
-    e0, dim, kF = basic.e0, basic.dim, basic.kF
-    qTF = sqrt(basic.NF * 4π * e0^2)
+    # ba = p.basic
+    # @time ba.e0
+    # @time p.e0
+    # @time getproperty(p, :e0)
+    e0, dim, mass2 = p.e0, p.dim, p.mass2
+    fp = p.fs
+    # qTF = sqrt(basic.NF * 4π * e0^2)
     # error(qTF / kF)
     if abs(q) < 1e-6
         q = 1e-6
@@ -76,16 +98,11 @@ end
 end
 
 @inline function KOstatic(q, p::ParaMC)
-    return KOstatic(q, p.basic, p.mass2, p.massratio, p.fs, p.fa)
-end
-
-@inline function KOstatic(q, basic, mass2=1e-6, massratio=1.0, fp=0.0, fm=0.0)
-    e0, dim = basic.e0, basic.dim
-    kF, NF = basic.kF, basic.NF
+    fp = p.fs
 
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
-    Pi = polarKW(q, 0, basic, massratio)
-    invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
+    Pi = polarKW(q, 0, p)
+    invKOinstant = 1.0 / KOinstant(q, p)
     vd = 1.0 / (invKOinstant - Pi) - fp
     return vd
 end
@@ -113,33 +130,29 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=para.spin * polarKW(q, n, para.bas
 end
 
 function KOdynamic_T(para::ParaMC)
-    return KOdynamic_T(para.basic, para.qgrid, para.τgrid, para.mass2, para.massratio, para.fs, para.fa)
-end
-
-function KOdynamic_T(basic::Parameter.Para, qgrid, τgrid, mass2=1.0e-6, massratio=1.0, fp=0.0, fm=0.0)
     # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
-    dim, e0 = basic.dim, basic.e0
-    dlr = DLRGrid(Euv=10 * basic.EF, β=basic.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    @unpack dim, e0, EF, β, qgrid, τgrid = para
+    dlr = DLRGrid(Euv=10 * EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     Nq, Nτ = length(qgrid), length(τgrid)
     Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
-            invKOinstant = 1.0 / KOinstant(q, basic, mass2, massratio, fp, fm)
+            invKOinstant = 1.0 / KOinstant(q, para)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
-            Pi[qi, ni] = polarKW(q, n, basic, massratio)
+            Pi[qi, ni] = polarKW(q, n, para)
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
         end
     end
     for (qi, q) in enumerate(qgrid)
         # turn on this to check consistencey between two static KO interactions
-        w = KOinstant(q, basic, mass2, massratio, fp, fm) * Rs[qi, 1] + Coulombinstant(q, basic, mass2)
-        kostatic = KOstatic(q, basic, mass2, massratio, fp, fm)
+        w = KOinstant(q, para) * Rs[qi, 1] + Coulombinstant(q, para)
+        kostatic = KOstatic(q, para)
         @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
         # println("$(q/kF)   $(w*NF)")
         # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
-        staticPi = polarKW(q, 0, basic, massratio)
+        staticPi = polarKW(q, 0, para)
         @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
     end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
