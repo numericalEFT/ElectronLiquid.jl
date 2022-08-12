@@ -284,7 +284,7 @@ where Π₀ is the polarization of free electrons.
 """
 @inline function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     # @unpack qgrid, τgrid = p.qgrid, p.τgrid
-    kF, maxK, dW0 = p.kF, p.maxK, p.dW0
+    kF, maxK = p.kF, p.maxK
 
     if qd > maxK
         return 0.0
@@ -295,7 +295,6 @@ where Π₀ is the polarization of free electrons.
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
     if qd <= 1e-6 * kF
-        # q = qgrid.grid[1] + 1.0e-6
         qd = 1e-6 * kF
     end
 
@@ -304,7 +303,7 @@ where Π₀ is the polarization of free electrons.
     # println(τgrid)
     # exit(0)
     # error("$vd, $(linear2D(dW0, qgrid, τgrid, qd, dτ))")
-    return vd * linear2D(dW0, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
+    return vd * linear2D(p.dW0, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
 """
@@ -339,14 +338,14 @@ kostatic - dynamic = v_q
 ```
 """
 @inline function interactionStatic(p::ParaMC, qd, τIn, τOut)
-    kF, maxK, β = p.kF, p.maxK, p.β
+    # kF, maxK = p.kF, p.maxK
 
-    if qd > maxK
-        return 0.0
-    end
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
-    end
+    # if qd > maxK
+    #     return 0.0
+    # end
+    # if qd <= 1e-6 * kF
+    #     qd = 1e-6 * kF
+    # end
     # if there is no dynamic interactoin
     # return KOinstant(qd)
 
@@ -360,5 +359,5 @@ kostatic - dynamic = v_q
     #     exit(0)
     # end
     kostatic = KOstatic(qd, p)
-    return kostatic / β - interactionDynamic(p, qd, τIn, τOut)
+    return kostatic / p.β - interactionDynamic(p, qd, τIn, τOut)
 end
