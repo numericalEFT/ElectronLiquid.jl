@@ -89,7 +89,7 @@ then the KO interaction is
 Rq = r_q / (1 - r_q Π0) - f
 ```
 """
-function KO_W(q, n::Integer, para::ParaMC; Pi=para.spin * polarKW(q, n, para.basic) * para.massratio)
+function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
     if abs(q) < 1e-6
         q = 1e-6
     end
