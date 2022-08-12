@@ -44,67 +44,36 @@ end
 # end
 
 @inline function Coulombinstant(q, p::ParaMC)
-    return KOinstant(q, p)
+    return KOinstant(q, p.e0, p.dim, p.mass2, 0.0)
 end
 
-@inline function KOinstant(q, e0, dim, mass2, fp)
-    # ba = p.basic
-    # @time ba.e0
-    # @time p.e0
-    # @time getproperty(p, :e0)
-    # e0, dim, mass2 = p.e0, p.dim, p.mass2
-    # fp = p.fs
-    # qTF = sqrt(basic.NF * 4π * e0^2)
-    # error(qTF / kF)
+#fast version
+@inline function KOinstant(q, e0, dim, mass2, fs)
     if abs(q) < 1e-6
         q = 1e-6
     end
     if dim == 3
-        return 4π * e0^2 / (q^2 + mass2) + fp
+        return 4π * e0^2 / (q^2 + mass2) + fs
         # return 4π * e0^2 / ((1 - exp(-q^2 / (kF)^2)) * q^2 + mass2) + fp
         # return 4π * e0^2 / (sqrt(abs(q)) * qTF^1.5 + mass2) + fp
         # return 4π * e0^2 / (q^2 * (qTF / kF)^2 * (1 - exp(-q^2 / (2kF)^2)) + q^2 * exp(-q^2 / (2kF)^2) + mass2) + fp
         # return 4π * e0^2 / (q^2 * (1 - exp(-q^2 / (kF)^2)) + mass2 * exp(-q^2 / (kF)^2)) + fp
     elseif dim == 2
-        return 2π * e0^2 / sqrt(q^2 + mass2) + fp
+        return 2π * e0^2 / sqrt(q^2 + mass2) + fs
     else
         error("not implemented!")
     end
 end
 
 @inline function KOinstant(q, p::ParaMC)
-    # ba = p.basic
-    # @time ba.e0
-    # @time p.e0
-    # @time getproperty(p, :e0)
-    e0, dim, mass2 = p.e0, p.dim, p.mass2
-    fp = p.fs
-    # qTF = sqrt(basic.NF * 4π * e0^2)
-    # error(qTF / kF)
-    if abs(q) < 1e-6
-        q = 1e-6
-    end
-    if dim == 3
-        return 4π * e0^2 / (q^2 + mass2) + fp
-        # return 4π * e0^2 / ((1 - exp(-q^2 / (kF)^2)) * q^2 + mass2) + fp
-        # return 4π * e0^2 / (sqrt(abs(q)) * qTF^1.5 + mass2) + fp
-        # return 4π * e0^2 / (q^2 * (qTF / kF)^2 * (1 - exp(-q^2 / (2kF)^2)) + q^2 * exp(-q^2 / (2kF)^2) + mass2) + fp
-        # return 4π * e0^2 / (q^2 * (1 - exp(-q^2 / (kF)^2)) + mass2 * exp(-q^2 / (kF)^2)) + fp
-    elseif dim == 2
-        return 2π * e0^2 / sqrt(q^2 + mass2) + fp
-    else
-        error("not implemented!")
-    end
+    return KOinstant(q, p.e0, p.dim, p.mass2, p.fs)
 end
 
 @inline function KOstatic(q, p::ParaMC)
-    fp = p.fs
-
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
     Pi = polarKW(q, 0, p)
     invKOinstant = 1.0 / KOinstant(q, p)
-    vd = 1.0 / (invKOinstant - Pi) - fp
-    return vd
+    return 1.0 / (invKOinstant - Pi) - p.fs
 end
 
 """
@@ -275,8 +244,6 @@ end
 
 function counterR(p::ParaMC, qd, τIn, τOut, order)
     kF, maxK = p.kF, p.maxK
-    qgrid, τgrid = p.qgrid, p.τgrid
-    cRs = p.cRs
 
     if qd > maxK
         return 0.0
@@ -292,7 +259,7 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
     end
 
     if order <= p.order
-        return linear2D(cRs[order], qgrid, τgrid, qd, dτ)
+        return linear2D(p.cRs[order], p.qgrid, p.τgrid, qd, dτ)
     else
         error("not implemented!")
     end
@@ -315,9 +282,8 @@ Then, the dynamic interaction is given by
 
 where Π₀ is the polarization of free electrons.
 """
-function interactionDynamic(p::ParaMC, qd, τIn, τOut)
+@inline function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     # @unpack qgrid, τgrid = p.qgrid, p.τgrid
-    @unpack qgrid, τgrid = p
     kF, maxK, dW0 = p.kF, p.maxK, p.dW0
 
     if qd > maxK
@@ -338,7 +304,7 @@ function interactionDynamic(p::ParaMC, qd, τIn, τOut)
     # println(τgrid)
     # exit(0)
     # error("$vd, $(linear2D(dW0, qgrid, τgrid, qd, dτ))")
-    return vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
+    return vd * linear2D(dW0, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
 """
@@ -372,7 +338,7 @@ so that,
 kostatic - dynamic = v_q
 ```
 """
-function interactionStatic(p::ParaMC, qd, τIn, τOut)
+@inline function interactionStatic(p::ParaMC, qd, τIn, τOut)
     kF, maxK, β = p.kF, p.maxK, p.β
 
     if qd > maxK
