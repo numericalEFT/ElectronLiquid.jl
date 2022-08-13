@@ -6,12 +6,12 @@ using ElectronLiquid
 using Printf
 
 para = UEG.ParaMC(
-    rs=3.0,
+    rs=5.0,
     # Fs=-0.585,
     Fs=-0.0,
-    beta=25.0,
+    beta=50.0,
     mass2=0.001,
-    order=3,
+    order=2,
     isDynamic=true,
 )
 # Zrenorm = false

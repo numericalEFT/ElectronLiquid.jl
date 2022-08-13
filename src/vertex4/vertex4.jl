@@ -40,9 +40,9 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # NoBubble, #allow the bubble diagram or not
     ]
 ) where {T}
-    println("Build the vertex4 diagrams into an experssion tree ...")
+    # println("Build the vertex4 diagrams into an experssion tree ...")
     # _partition = UEG.partition(order)
-    println("Diagram set: ", _partition)
+    # println("Diagram set: ", _partition)
 
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0

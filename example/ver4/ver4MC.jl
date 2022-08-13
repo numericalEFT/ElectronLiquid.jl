@@ -8,9 +8,9 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01, 0.001,]
 Fs = [-0.0, ]
-beta = [25.0,]
+beta = [50.0,]
 order = [2,]
-neval = 1e6
+neval = 1e7
 
 # mission = :Z
 # mission = :K
@@ -29,7 +29,7 @@ for _rs in rs
                     # partition = UEG.partition(_order)
                     partition = [(2, 0, 0),]
                     channel = [
-                        PHr,
+                        # PHr,
                         PHEr,
                         PPr
                     ]
@@ -47,28 +47,32 @@ for _rs in rs
                         ######### calcualte Z factor ######################
                         Nk, korder = 4, 4
                         minK = 0.2kF
-                        kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.1 * kF, 2kF], [kF,], Nk, minK, korder).grid
+                        # kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.1 * kF, 2kF], [kF,], Nk, minK, korder).grid
+                        # kgrid = [0.5*kF, kF, 1.5*kF]
+                        kgrid = [kF, ]
+                        # n = [0, 1, 1, 0] # q=0 and w -> 0 to measure F
                         n = [-1, 0, 0, -1] # q=0 and w -> 0 to measure F
                         # n = [0, 0, 0, 0] # q -> 0 and w = 0 to measure A
                         lgrid = [0, 1] # angular momentum
 
                         ver4, result = Ver4.PH(para, diagram;
                             kamp=kgrid, n=n, l=lgrid,
-                            neval=neval, print=-1)
+                            neval=neval, print=0)
 
                         # MCIntegration.summary(result)
 
                         if isnothing(ver4) == false
                             for (p, data) in ver4
-                                printstyled("permutation: \n", p, color=:yellow)
+                                printstyled("permutation: $p\n", color=:yellow)
                                 for (li, l) in enumerate(lgrid)
                                     printstyled("l = $l\n", color=:green)
-                                    @printf("%12s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "symmetric", "asymmetric")
+                                    @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
                                     for (ki, k) in enumerate(kgrid)
                                         factor = 1.0
                                         d1, d2 = real(data[1, li, ki])*factor, real(data[2, li, ki])*factor
                                         s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
-                                        @printf("%12.6f    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$s", "$a")
+                                        di, ex = (s-a) , (a) * 2.0
+                                        @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$di", "$ex", "$s", "$a")
                                     end
                                 end
                             end

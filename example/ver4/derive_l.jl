@@ -2,56 +2,16 @@ using ElectronLiquid
 using Measurements
 using Printf
 using JLD2
+using PrettyTables
 
 const filename = "ver4_L.jld2"
 
 rs = [5.0,]
 mass2 = [0.01, 0.001,]
 Fs = [-0.0, ]
-beta = [25.0,]
+beta = [25.0, 50.0]
 order = [2,]
-neval = 1e6
-
-function zfactor(data, β)
-    return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
-end
-
-function mu(data)
-    return real(data[1, 1])
-end
-
-function process(FileName, isSave)
-    f = jldopen(FileName, "r")
-    df = CounterTerm.fromFile()
-    for key in keys(f)
-        println(key)
-        value = f[key]
-        para, ngrid, kgrid, data = value[1], value[2], value[3], value[4]
-
-        for p in sort([k for k in keys(data)])
-            println("$p: μ = $(mu(data[p]))   z = $(zfactor(data[p], para.β))")
-        end
-
-        _mu = Dict()
-        for (p, val) in data
-            _mu[p] = mu(val)
-        end
-        _z = Dict()
-        for (p, val) in data
-            _z[p] = zfactor(val, para.β)
-        end
-
-        ############# save to csv  #################
-        # println(df)
-        for o in keys(data)
-            # global df
-            paraid = UEG.paraid(para)
-            df = CounterTerm.appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err); replace=true)
-        end
-    end
-    # println("new dataframe\n$df")
-    isSave && CounterTerm.toFile(df)
-end
+neval = 1e8
 
 function addbare!(datatuple)
     para, kgrid, lgrid, ver4 = datatuple
@@ -78,23 +38,24 @@ function process200(datatuple)
     mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
     dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
 
-    println(sw)
-    println(dz)
+    # println(sw)
+    # println(dz)
     # dz =[-0.509, ]
-    # ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
+    ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
 
     kF=para.kF
-    println(UEG.short(para))
+    printstyled("l=$(lgrid[li]) for $(UEG.short(para))\n", color=:green)
     for (p, data) in ver4
-        printstyled("permutation: $p\n", color=:yellow)
-        printstyled("l = $(lgrid[li])\n", color=:green)
-        @printf("%12s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "symmetric", "asymmetric")
+        # head = ["k/kF", "uu", "ud", "symmetric", "asymmetric"]
+
+        printstyled(@sprintf("%12s    %24s    %24s    %24s    %24s     %24s\n",
+        "k/kF", "uu", "ud", "symmetric", "asymmetric", "p: $p"), color=:yellow)
         for (ki, k) in enumerate(kgrid)
             factor = 1.0
             d1, d2 = real(data[1, li, ki])*factor, real(data[2, li, ki])*factor
             # s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
             s, a = Ver4.ud2sa(d1, d2)
-            @printf("%12.6f    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$s", "$a")
+            @printf("%12.6f    %24s    %24s    %24s    %24s\n", k / kF, "$d1", "$d2", "$s", "$a")
         end
     end
 
