@@ -3,9 +3,9 @@ using CompositeGrids
 using JLD2
 
 rs = [5.0,]
-mass2 = [0.01, 0.001]
+mass2 = [0.0001,]
 Fs = [-0.0,]
-beta = [50.0,]
+beta = [25.0, 50.0,]
 order = [2,]
 neval = 1e8
 
