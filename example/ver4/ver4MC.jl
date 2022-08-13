@@ -10,7 +10,7 @@ mass2 = [0.01, 0.001,]
 Fs = [-0.0, ]
 beta = [25.0,]
 order = [2,]
-neval = 1e8
+neval = 1e6
 
 # mission = :Z
 # mission = :K

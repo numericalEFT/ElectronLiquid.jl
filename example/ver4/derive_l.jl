@@ -10,7 +10,7 @@ mass2 = [0.01, 0.001,]
 Fs = [-0.0, ]
 beta = [25.0,]
 order = [2,]
-neval = 1e8
+neval = 1e6
 
 function zfactor(data, β)
     return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
@@ -76,12 +76,12 @@ function process200(datatuple)
 
     df = CounterTerm.fromFile()
     mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
-    dmu, dz = CounterTerm.derive_onebody_parameter_from_sigma(para.order, mu, sw, zrenorm=false)
+    dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
 
     println(sw)
     println(dz)
-    dz =[-0.509, ]
-    ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
+    # dz =[-0.509, ]
+    # ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
 
     kF=para.kF
     println(UEG.short(para))

@@ -338,14 +338,14 @@ kostatic - dynamic = v_q
 ```
 """
 @inline function interactionStatic(p::ParaMC, qd, τIn, τOut)
-    # kF, maxK = p.kF, p.maxK
+    kF, maxK = p.kF, p.maxK
 
-    # if qd > maxK
-    #     return 0.0
-    # end
-    # if qd <= 1e-6 * kF
-    #     qd = 1e-6 * kF
-    # end
+    if qd > maxK
+        return 0.0
+    end
+    if qd <= 1e-6 * kF
+        qd = 1e-6 * kF
+    end
     # if there is no dynamic interactoin
     # return KOinstant(qd)
 
