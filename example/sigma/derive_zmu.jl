@@ -5,7 +5,7 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01, ]
 Fs = [-0.0, ]
-beta = [25, ]
+beta = [100, ]
 order = [2,]
 
 const filename = "data_Z.jld2"

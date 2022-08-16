@@ -8,12 +8,12 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01, ]
 Fs = [-0.0, ]
-beta = [25, ]
+beta = [100,]
 order = [2,]
-neval = 1e8
+neval = 1e7
 
 mission = ARGS[1]
-println("mission (Z or K): ", mission)
+println("mission (Z or A): ", mission)
 # exit(0)
 
 for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
@@ -41,7 +41,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         kgrid = [kF, ]
         qgrid = [0.0, ]
         nin = [0, ]
-        nqout = [1, ]
+        nqout = (mission == "A") ? [0,] : [1, ]
 
         ver3, result = Ver3.KW(para, diagram; neighbor=neighbor,
             kin=[getK(k, dim, 1) for k in kgrid], qout =[getK(q, dim, 1) for q in qgrid],

@@ -4,6 +4,7 @@
 # using .CounterTerm
 using ElectronLiquid
 using Printf
+using Measurements
 using JLD2
 
 # Zrenorm = false
@@ -12,49 +13,68 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01, ]
 Fs = [-0.0, ]
-beta = [25, ]
+beta = [25, 50, 100]
 order = [2,]
 neval = 1e6
 
-# mission = ARGS[1]
-# println("mission (Z or K): ", mission)
-# exit(0)
+mission = ARGS[1]
+println("mission (Z or A): ", mission)
 
-filename = "ver3_Z.jld2"
+filename = "ver3_$mission.jld2"
 
 f = jldopen(filename, "r")
 
 # function addbare!(datatuple)
 #     para, kgrid, qgrid, nin, nqout, ver3 = datatuple
-    # data100 = zeros(Complex{Measurement{Float64}}, 2, length(kgrid), length(qgrid), length(nin), length(nqout))
-    # for (qi, q) in enumerate(qgrid)
-    #     for (ki, k) in enumerate(kgrid)
-    #         Ws, Wa = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp =k, verbose=0)
-    #         Wuu, Wud = Ver4.sa2ud(Ws, Wa)
-    #         data100[1, li, ki] = Ws
-    #         data100[2, li, ki] = Wa
-    #     end
-    # end
-    # ver4[(1, 0, 0)] = data100
+#     data000 = zeros(Complex{Measurement{Float64}}, 2, length(kgrid), length(qgrid), length(nin), length(nqout))
+#     for (qi, q) in enumerate(qgrid)
+#         for (ki, k) in enumerate(kgrid)
+#             for (ni, n) in enumerate(nin)
+#                 for (mi, m) in enumerate(nqout)
+#                     data100[1, ki, qi, ni, mi] = 1.0
+#                     data100[2, ki, qi, ni, mi] = 0.0
+#                 end
+#             end
+#         end
+#     end
+#     ver3[(0, 0, 0)] = data000
 # end
 
 function process(datatuple)
     para, kgrid, qgrid, nin, nqout, ver3 = datatuple
+    kF = para.kF
     # addbare!(datatuple)
 
     mu, sw = CounterTerm.getSigma(para)
     dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
 
-    _zk = Dict()
+    _z = Dict()
     for (p, val) in ver3
         #by definition, z factor expects q=0, w->0 limit
-        _zk[p] = real.(val[1, :, 1, 1, 1]+val[2, :, 1, 1, 1])  #only keep the kin dependence
+        _z[p] = real.(val[1, :, :, 1, 1]+val[2, :, :, 1, 1])  #only keep the kin and qout dependence
     end
 
-    zk = CounterTerm.chemicalpotential_renormalization(2, _zk, dmu)
+    z = CounterTerm.chemicalpotential_renormalization(para.order, _z, dmu)
 
-    println(dzi)
-    println(zk)
+
+    z = [-ones(size(z[1])), z...] #add the bare gamma3, which is one
+    println(z)
+
+    z = CounterTerm.z_renormalization(para.order+1, z, dz, 1)
+    println(z)
+
+    println(dz)
+
+    for o in 1:para.order
+        printstyled("order = $(o)\n", color=:green)
+        printstyled(@sprintf("%12s  %12s    %16s\n", "k/kF", "q/kF", "sum"), color=:yellow)
+        for (qi, q) in enumerate(qgrid)
+            for (ki, k) in enumerate(kgrid)
+                s = real(z[o+1][1, ki, qi])
+                @printf("%12.6f  %12.6f    %16s\n", k / kF, q/kF, "$s")
+            end
+        end
+    end
 
 
     # sumzi = accumulate(+, ver3)
