@@ -11,6 +11,16 @@ using Lehmann
 using ElectronGas
 using Parameters
 
+mutable struct Weight{T} <: FieldVector{2,T}
+    d::T
+    e::T
+    Weight{T}() where {T} = new{T}(0.0, 0.0)
+    Weight(d::T, e::T) where {T} = new{T}(d, e)
+end
+
+const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
+const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
 const ExprTreeF64 = ExpressionTree{ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
 
 include("./common/para_builder.jl")
@@ -35,6 +45,10 @@ export Sigma
 include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
+
+include("./vertex3/vertex3.jl")
+using .Ver3
+export Ver3
 
 using SnoopPrecompile
 @precompile_all_calls begin

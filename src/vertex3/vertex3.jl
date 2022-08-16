@@ -1,8 +1,6 @@
-module Ver4
+module Ver3
 
 using Printf, LinearAlgebra
-using ..StaticArrays
-using ..Parameters
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
@@ -11,22 +9,20 @@ using ..Lehmann
 using ..FeynmanDiagram
 using ..Measurements
 
-# push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
 import ..ExprTreeF64
-
 import ..Weight
 
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     return DiagParaF64(
-        type=Ver4Diag,
-        innerLoopNum=order - 1,
+        type=Ver3Diag,
+        innerLoopNum=order,
         hasTau=true,
         loopDim=para.dim,
         spin=para.spin,
-        firstLoopIdx=4,
+        firstLoopIdx=3,
         interaction=inter,
         filter=filter,
         transferLoop=transferLoop
@@ -34,11 +30,10 @@ function diagPara(para::ParaMC, order, filter, transferLoop)
 end
 
 function diagram(paramc::ParaMC, _partition::Vector{T};
-    channel=[PHr, PHEr, PPr],
     filter=[
         NoHatree,
         # Girreducible,
-        # Proper,   #one interaction irreduble diagrams or not
+        Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
     ]
 ) where {T}
@@ -46,17 +41,16 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     # _partition = UEG.partition(order)
     # println("Diagram set: ", _partition)
 
-    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
-    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-    legK = [KinL, KoutL, KinR]
+    Kin, Qout = zeros(16), zeros(16)
+    Qout[1], Kin[2]=1.0, 1.0
+    legK = [Qout, Kin]
 
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
     for p in _partition
-        para = diagPara(paramc, p[1], filter, KinL - KoutL)
-        legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
-        d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
+        para = diagPara(paramc, p[1], filter, Qin)
+        d::Vector{Diagram{Float64}} = Parquet.vertex3(para, legK).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
         if isempty(d) == false
@@ -69,11 +63,6 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end
-        # rootuu = [idx for idx in diag.root if diag.node.object[idx].para.response == UpUp] #select the diagram with upup
-        # rootud = [idx for idx in diag.root if diag.node.object[idx].para.response == UpDown] #select the diagram with updown
-        # #assign the external Tau to the corresponding diagrams
-        # extTuu = [diag.node.object[idx].para.extT for idx in rootuu]
-        # extTud = [diag.node.object[idx].para.extT for idx in rootud]
     end
 
     # diag = [ExprTree.build(d) for d in ver4]    #experssion tree representation of diagrams 
@@ -85,28 +74,35 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     return (partition, diagpara, diag, [rootuu, rootud], [extTuu, extTud])
 end
 
-
-@inline function phase(varT, extT, ninL, noutL, ninR, β)
+@inline function phaseF(varT, extT, nin, nout, β)
     # println(extT)
-    tInL, tOutL, tInR, tOutR = varT[extT[INL]], varT[extT[OUTL]], varT[extT[INR]], varT[extT[OUTR]]
-    winL, woutL, winR = π * (2ninL + 1) / β, π * (2noutL + 1) / β, π * (2ninR + 1) / β
-    woutR = winL + winR - woutL
-    return exp(-1im * (tInL * winL - tOutL * woutL + tInR * winR - tOutR * woutR))
+    tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    win, wout = π * (2nin + 1) / β, π * (2nout + 1) / β
+    wq = win-wout
+    return cos(tfin*win-tfout*wout-tb*wq)
+
+    # if (idx == 1)
+    #     return cos(π / β * ((2tb) - (tfin + tfout)))
+    #     # return cos(π / β * ((2tb) - 3 * tfin + tfout))
+    #     # return cos(π / β * ((2tb) - 3 * tfin + tfout))
+    # else
+    #     return cos(π / β * (tfin - tfout))
+    # end
 end
 
-@inline function phase(varT, extT, n, β)
+@inline function phaseC(varT, extT, nin, nout, β)
     # println(extT)
-    return phase(varT, extT, n[1], n[2], n[3], β)
+    tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    win, wout = π * (2nin + 1) / β, π * (2nout + 1) / β
+    wq = win-wout
+    return exp(-1im * (tfin * win - tfout * wout - tb*wq))
 end
 
-@inline ud2sa(Wuu, Wud) = @. (Wuu + Wud)/2, (Wuu-Wud)/2
-@inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws-Wa
+# @inline function phase(varT, extT, n, β)
+#     # println(extT)
+#     return phase(varT, extT, n[1], n[2], n[3], β)
+# end
 
-# include("common.jl")
-
-# include("ver4_avg.jl")
-include("ver4KW.jl")
-include("ver4_PH_l.jl")
-include("exchange_interaction.jl")
+include("ver3KW.jl")
 
 end

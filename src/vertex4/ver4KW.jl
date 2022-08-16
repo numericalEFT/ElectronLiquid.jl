@@ -1,5 +1,5 @@
 """
-Calculate exchange vertex4 averged on the Fermi surface
+Calculate exchange vertex4 with arbitrary external legs
 """
 # const lgrid = [1, 2]
 # const Nl = length(lgrid)
