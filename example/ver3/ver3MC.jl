@@ -8,9 +8,9 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01, ]
 Fs = [-0.0, ]
-beta = [100,]
+beta = [25,]
 order = [2,]
-neval = 1e7
+neval = 1e6
 
 mission = ARGS[1]
 println("mission (Z or A): ", mission)
@@ -20,11 +20,11 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
     kF, dim = para.kF, para.dim
 
-    # partition = UEG.partition(_order)
-    partition = [(1, 0, 0), (1, 1, 0), (2, 0, 0)]
+    partition = UEG.partition(_order)
+    # partition = [(1, 0, 0), (1, 1, 0), (2, 0, 0)]
     neighbor = UEG.neighbor(partition)
     filter = [NoHatree,
-        NoBubble,
+        # NoBubble,
         Proper
     ]
     start = time()

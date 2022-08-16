@@ -5,8 +5,8 @@ using JLD2
 rs = [5.0,]
 mass2 = [0.01,]
 Fs = [-0.0,]
-beta = [100.0, ]
-order = [2,]
+beta = [25.0, 50.0, 100.0, ]
+order = [1,]
 neval = 1e8
 
 # mission = :Z
