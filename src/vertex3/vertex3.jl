@@ -49,7 +49,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
     for p in _partition
-        para = diagPara(paramc, p[1], filter, Qin)
+        para = diagPara(paramc, p[1], filter, Qout)
         d::Vector{Diagram{Float64}} = Parquet.vertex3(para, legK).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
