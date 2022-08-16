@@ -311,7 +311,7 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
             if isempty(bigerrdf) == false
                 # replace only if the the new data has better quality for all quantitites
                 # println("to replace with the new one")
-                println(bigerrdf)
+                # println(bigerrdf)
                 df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
                 append!(df, d)
                 sortdata!(df)

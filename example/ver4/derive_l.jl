@@ -72,21 +72,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     f = jldopen(filename, "r")
 
-    for _rs in rs
-        for _mass2 in mass2
-            for _F in Fs
-                for _beta in beta
-                    for _order in order
-
-                        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
-                        kF = para.kF
-                        for key in keys(f)
-                            if UEG.paraid(f[key][1]) == UEG.paraid(para)
-                                process200(f[key])
-                            end
-                        end
-                    end
-                end
+    for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
+        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
+        kF = para.kF
+        for key in keys(f)
+            if UEG.paraid(f[key][1]) == UEG.paraid(para)
+                process200(f[key])
             end
         end
     end
