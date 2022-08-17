@@ -302,16 +302,16 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
         # df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
         # if replace
         olddf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]))), df)
+        order = d["order"]
         if isempty(olddf)
-            order = d["order"]
-            println("save $order for $paraid")
+            println("will save $order for $paraid")
             append!(df, d)
             sortdata!(df)
         else
             bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
             if isempty(bigerrdf) == false
                 # replace only if the the new data has better quality for all quantitites
-                println("replace $order for $paraid")
+                println("will replace $order for $paraid")
                 # println(bigerrdf)
                 df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
                 append!(df, d)
@@ -333,7 +333,9 @@ paraid : Dictionary of parameter names and values
 order  : the truncation order
 """
 function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
-    df = fromFile(parafile)
+    # println(parafile)
+    df = fromFile(parafileName)
+    @assert isnothing(df) == false "file $parafile failed to load"
     return getSigma(df, UEG.paraid(para), order)
 end
 function getSigma(df::DataFrame, paraid::Dict, order::Int)

@@ -7,9 +7,9 @@ using PrettyTables
 const filename = "ver4_L.jld2"
 
 rs = [5.0,]
-mass2 = [0.01, 0.001, 0.0001]
+mass2 = [0.01, 0.001]
 Fs = [-0.0, ]
-beta = [25.0, 50.0]
+beta = [25.0, ]
 order = [2,]
 
 function addbare!(datatuple)
@@ -41,6 +41,7 @@ function process200(datatuple)
     # println(dz)
     # dz =[-0.509, ]
     ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
+    # println(ver4)
 
     kF=para.kF
     printstyled("l=$(lgrid[li]) for $(UEG.short(para))\n", color=:green)
@@ -56,6 +57,17 @@ function process200(datatuple)
             s, a = Ver4.ud2sa(d1, d2)
             @printf("%12.6f    %24s    %24s    %24s    %24s\n", k / kF, "$d1", "$d2", "$s", "$a")
         end
+    end
+
+    printstyled("summed\n", color=:red)
+    printstyled(@sprintf("%12s    %24s    %24s    %24s    %24s\n",
+    "k/kF", "uu", "ud", "symmetric", "asymmetric"), color=:yellow)
+    for (ki, k) in enumerate(kgrid)
+        data = ver4[(1, 0)] .+ ver4[(2, 0)]
+        d1, d2 = real(data[1, li, ki]), real(data[2, li, ki])
+        # s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
+        s, a = Ver4.ud2sa(d1, d2)
+        @printf("%12.6f    %24s    %24s    %24s    %24s\n", k / kF, "$d1", "$d2", "$s", "$a")
     end
 
 end

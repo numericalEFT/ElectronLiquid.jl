@@ -4,9 +4,9 @@ using JLD2
 
 rs = [5.0,]
 mass2 = [0.01, ]
-Fs = [-0.0, ]
-beta = [100, ]
-order = [2,]
+Fs = [-0.0,]
+beta = [25.0, 50.0, 100.0, ]
+order = [1,]
 
 const filename = "data_Z.jld2"
 
@@ -41,6 +41,7 @@ function process(datatuple, isSave)
     ############# save to csv  #################
     # println(df)
     for o in keys(data)
+        # println(o)
         # global df
         paraid = UEG.paraid(para)
         df = CounterTerm.appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err); replace=true)
