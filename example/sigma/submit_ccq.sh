@@ -1,6 +1,6 @@
 #!/bin/bash
 ## The computing resources we need
-#SBATCH --nodes=1
+#SBATCH --nodes=32
 ##SBATCH --ntasks-per-node=28     ## For the [ccq], [gen] and [preempt] subcluster 
 ##SBATCH --ntasks-per-node=44     ## For the [ib] subcluster
 ##SBATCH --ntasks-per-node=40     ## For the [bnl] subcluster
