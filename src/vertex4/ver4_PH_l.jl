@@ -13,7 +13,8 @@ function integrandPH(config)
     l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
     kamp = kampgrid[var[5][1]]
-    varK.data[1, 1], varK.data[1, 2] = kamp, kamp
+    # varK.data[1, 1], varK.data[1, 2] = kamp, kamp
+    varK.data[1, 1], varK.data[1, 2] = kF, kF
     varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
 
 
@@ -82,8 +83,10 @@ function PH(para::ParaMC, diagram;
     @assert length(extT[1]) == length(extT[2])
 
     K = MCIntegration.FermiK(para.dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
-    K.data[:, 1] .= UEG.getK(kamp[1], para.dim, 1)
-    K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
+    # K.data[:, 1] .= UEG.getK(kamp[1], para.dim, 1)
+    # K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
+    K.data[:, 1] .= UEG.getK(kF, para.dim, 1)
+    K.data[:, 2] .= UEG.getK(kF, para.dim, 1)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
     X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
