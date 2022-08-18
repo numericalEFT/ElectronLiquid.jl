@@ -2,10 +2,10 @@ using ElectronLiquid
 using CompositeGrids
 using JLD2
 
-rs = [5.0,]
-mass2 = [0.01, ]
+rs = [4.0, ]
+mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
-beta = [25.0, 50.0, 100.0, ]
+beta = [25.0, 50.0]
 order = [3,]
 neval = 4e10
 

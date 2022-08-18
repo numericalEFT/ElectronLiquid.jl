@@ -15,7 +15,8 @@ export z_renormalization, chemicalpotential_renormalization, renormalization
 export sigmaCT
 export getSigma
 
-const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
+# const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
+const parafileName = "para.csv" # ROOT/common/para.csv
 
 function partition(order::Int)
     # normal order, G order, W order
@@ -237,6 +238,8 @@ end
 
 
 function fromFile(parafile=parafileName)
+
+    parafile = joinpath(@__DIR__, parafile) # ROOT/common/para.csv
     try
         data, header = readdlm(parafile, ',', header=true)
         df = DataFrame(data, vec(header))
@@ -250,6 +253,8 @@ function fromFile(parafile=parafileName)
 end
 
 function toFile(df, parafile=parafileName)
+
+    parafile = joinpath(@__DIR__, parafile) # ROOT/common/para.csv
     if isnothing(df)
         @warn "Empty dataframe $df, nothing to save"
         return
@@ -334,7 +339,7 @@ order  : the truncation order
 """
 function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
     # println(parafile)
-    df = fromFile(parafileName)
+    df = fromFile(parafile)
     @assert isnothing(df) == false "file $parafile failed to load"
     return getSigma(df, UEG.paraid(para), order)
 end

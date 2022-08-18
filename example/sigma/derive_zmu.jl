@@ -2,11 +2,11 @@ using ElectronLiquid
 using Measurements
 using JLD2
 
-rs = [5.0,]
-mass2 = [0.01, ]
+rs = [6.0,]
+mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
-beta = [25.0, 50.0, 100.0, ]
-order = [1,]
+beta = [25.0, 50.0, ]
+order = [3,]
 
 const filename = "data_Z.jld2"
 
