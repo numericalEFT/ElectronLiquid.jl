@@ -22,7 +22,7 @@ const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 export Weight
 
-const ExprTreeF64 = ExpressionTree{ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
+const ExprTreeF64 = FeynmanDiagram.ExpressionTree{FeynmanDiagram.ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
 
 include("./common/para_builder.jl")
 using .UEG

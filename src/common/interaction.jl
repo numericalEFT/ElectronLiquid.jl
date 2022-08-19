@@ -36,8 +36,8 @@ export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStati
 end
 
 @inline function polarKW(q, n::Int, para::ParaMC)
-    return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
-    # return Polarization.Polarization0_3dZeroTemp_LinearDispersion(q, n, para.basic) * para.spin * para.massratio
+    # return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
+    return Polarization.Polarization0_3dZeroTemp_LinearDispersion(q, n, para.basic) * para.spin * para.massratio
 end
 
 # @inline function polarKW(q, n::Int, basic, massratio)
