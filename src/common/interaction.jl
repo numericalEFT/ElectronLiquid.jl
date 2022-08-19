@@ -37,6 +37,7 @@ end
 
 @inline function polarKW(q, n::Int, para::ParaMC)
     return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
+    # return Polarization.Polarization0_3dZeroTemp_LinearDispersion(q, n, para.basic) * para.spin * para.massratio
 end
 
 # @inline function polarKW(q, n::Int, basic, massratio)
@@ -44,20 +45,21 @@ end
 # end
 
 @inline function Coulombinstant(q, p::ParaMC)
-    return KOinstant(q, p.e0, p.dim, p.mass2, 0.0)
+    return KOinstant(q, p.e0, p.dim, p.mass2, 0.0, p.kF)
 end
 
 #fast version
-@inline function KOinstant(q, e0, dim, mass2, fs)
+@inline function KOinstant(q, e0, dim, mass2, fs, kF)
     if abs(q) < 1e-6
         q = 1e-6
     end
     if dim == 3
         return 4π * e0^2 / (q^2 + mass2) + fs
+        # return 4π * e0^2 / (q^2 + (mass2) * exp(-q^2 / (kF)^2)) + fs
         # return 4π * e0^2 / ((1 - exp(-q^2 / (kF)^2)) * q^2 + mass2) + fp
         # return 4π * e0^2 / (sqrt(abs(q)) * qTF^1.5 + mass2) + fp
         # return 4π * e0^2 / (q^2 * (qTF / kF)^2 * (1 - exp(-q^2 / (2kF)^2)) + q^2 * exp(-q^2 / (2kF)^2) + mass2) + fp
-        # return 4π * e0^2 / (q^2 * (1 - exp(-q^2 / (kF)^2)) + mass2 * exp(-q^2 / (kF)^2)) + fp
+        # return 4π * e0^2 / ((q^2) * (1 - exp(-q^2 / (0.5 * kF)^2)) + (kF^2 + mass2) * exp(-q^2 / (0.5 * kF)^2)) + fs
     elseif dim == 2
         return 2π * e0^2 / sqrt(q^2 + mass2) + fs
     else
@@ -66,7 +68,7 @@ end
 end
 
 @inline function KOinstant(q, p::ParaMC)
-    return KOinstant(q, p.e0, p.dim, p.mass2, p.fs)
+    return KOinstant(q, p.e0, p.dim, p.mass2, p.fs, p.kF)
 end
 
 @inline function KOstatic(q, p::ParaMC)

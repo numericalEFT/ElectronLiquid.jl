@@ -72,7 +72,13 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
         ϵ = k^2 / (2me * massratio) - μ + fock
     else
         ϵ = k^2 / (2me * massratio) - μ
+        # ϵ = kF / me * (k - kF)
     end
+
+    if k < 0.4 * kF || k > kF * 1.3
+        return 0.0
+    end
+
     τ = τout - τin
     order = id.order[1]
     if order == 0
