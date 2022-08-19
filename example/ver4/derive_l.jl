@@ -7,7 +7,7 @@ using PrettyTables
 const filename = "ver4_L.jld2"
 
 rs = [5.0,]
-mass2 = [0.01, 0.001]
+mass2 = [0.01, ]
 Fs = [-0.0, ]
 beta = [25.0, ]
 order = [2,]
@@ -25,6 +25,10 @@ function addbare!(datatuple)
     end
     ver4[(1, 0, 0)] = data100
 end
+
+# function singularterm(para, kgrid, lgrid)
+
+# end
 
 function process200(datatuple)
     # z = CounterTerm.chemicalpotential_renormalization(para.order, sw, dmu)
