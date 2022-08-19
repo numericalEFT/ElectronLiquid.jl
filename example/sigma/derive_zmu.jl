@@ -1,5 +1,6 @@
 using ElectronLiquid
 using Measurements
+using Printf
 using JLD2
 
 rs = [6.0,]
@@ -21,6 +22,8 @@ end
 function process(datatuple, isSave)
     df = CounterTerm.fromFile()
     para, ngrid, kgrid, data = datatuple
+    printstyled(UEG.short(para), color=:yellow)
+    println()
 
     for p in sort([k for k in keys(data)])
         println("$p: μ = $(mu(data[p]))   z = $(zfactor(data[p], para.β))")
