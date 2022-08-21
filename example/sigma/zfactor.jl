@@ -5,11 +5,10 @@
 using ElectronLiquid
 using Printf
 
-rs = [6.0, ]
-# mass2 = [0.01, 0.001, 0.0001,]
-mass2 = [0.001, 0.0001,]
+rs = [1.0, 2.0, 3.0, 5.0, 6.0, 8.0]
+mass2 = [0.01, 0.001]
 Fs = [-0.0,]
-beta = [25.0, 50.0]
+beta = [25.0, ]
 order = [3,]
 
 const filename = "para.csv"
