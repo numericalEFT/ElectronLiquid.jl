@@ -38,6 +38,8 @@ end
 function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
     dim, e0, ϵ0, mass2 = p.dim, p.e0, p.ϵ0, p.mass2
     qd = sqrt(dot(K, K))
+    # qd = sqrt(K[2]^2 + K[3]^2)
+    # qd = sqrt(K[1]^2)
     if id.type == Instant
         if interactionTauNum(id.para) == 1
             # return e0^2 / ϵ0 / (dot(K, K) + mass2)
@@ -75,7 +77,7 @@ function integrandKW(config)
     # q = config.var[6][1]
 
     kpool[1, 1] = k
-    kpool[:, 2] .= [q * sin(theta) * cos(phi), q * sin(theta) * sin(phi), q * cos(theta)]
+    kpool[:, 2] .= [q * sin(theta) * cos(phi) + k, q * sin(theta) * sin(phi), q * cos(theta)]
 
     ExprTree.evalKT!(diagram, kpool, varT.data, para)
     w = sum(weight[r] * phase(varT, object[r].para.extT, wn, para.β) for r in diagram.root)
@@ -164,15 +166,17 @@ const para = UEG.ParaMC(beta=25.0, rs=5.0, mass2=0.00001, isDynamic=true)
 const kF = para.kF
 
 const diag = Sigma.diagram(para, [(1, 0, 0),])
+# ExprTree.showTree(diag[3][1], diag[3][1].root[1])
+# ExprTree.showTree(diag[3][1], diag[3][1].root[2])
 
-const kgrid = [0.0, kF]
+const kgrid = [0.0, 0.5kF, kF]
 
 Nk, korder = 4, 4
 minK = 0.1 * para.kF
 const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 3kF], [0.0, kF,], Nk, minK, korder)
 # const qgrid = para.qgrid
 
-data, result = sigmaKW(para, diag, qgrid; kgrid=kgrid, ngrid=[-1, 0])
+data, result = sigmaKW(para, diag, qgrid; neval=1e6, kgrid=kgrid, ngrid=[-1, 0])
 
 let
     val = data[(1, 0, 0)]
@@ -191,4 +195,5 @@ let
         p = plot!(qgrid.grid / para.kF, zz, label=L"$k/kF = %$(k/para.kF)$, $\int \frac{d Σ_q(k)}{dω}dq  = %$sw$", xlabel=L"$q/kF$", ylabel=L"$\frac{d Σ_q(k)}{dω}$", legend=:topright)
         display(p)
     end
+    savefig("sigma_locality.png")
 end
