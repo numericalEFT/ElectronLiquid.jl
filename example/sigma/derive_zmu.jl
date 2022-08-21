@@ -3,8 +3,8 @@ using Measurements
 using Printf
 using JLD2
 
-rs = [1.0, 2.0, 3.0, 5.0, 6.0, 8.0]
-mass2 = [0.01, 0.001]
+rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+mass2 = [0.0001, ]
 Fs = [-0.0,]
 beta = [25.0, ]
 order = [3,]
