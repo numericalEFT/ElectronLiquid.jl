@@ -23,7 +23,7 @@ function mu(data)
 end
 
 function process(datatuple, isSave)
-    df = CounterTerm.fromFile()
+    df = CounterTerm.fromFile(parafilename)
     para, ngrid, kgrid, data = datatuple
     printstyled(UEG.short(para), color=:yellow)
     println()
@@ -54,7 +54,7 @@ function process(datatuple, isSave)
     end
 
     # println("new dataframe\n$df")
-    isSave && CounterTerm.toFile(df, parafile = parafilename)
+    isSave && CounterTerm.toFile(df, parafilename)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

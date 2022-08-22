@@ -240,6 +240,7 @@ end
 function fromFile(parafile=parafileName)
 
     parafile = joinpath(@__DIR__, parafile) # ROOT/common/para.csv
+    println("Reading para from $parafile")
     try
         data, header = readdlm(parafile, ',', header=true)
         df = DataFrame(data, vec(header))

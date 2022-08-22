@@ -5,14 +5,14 @@
 using ElectronLiquid
 using Printf
 
-rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+rs = [3.0, ]
 mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
 beta = [25.0, ]
 order = [3,]
 
-const filename = "para.csv"
-# const filename = "para_wn_1minus0.csv"
+# const filename = "para.csv"
+const filename = "para_wn_1minus0.csv"
 
 cache =[]
 
