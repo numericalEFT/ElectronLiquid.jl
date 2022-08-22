@@ -22,7 +22,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     if mission == "Z"
         ######### calcualte Z factor ######################
         kgrid = [kF,]
-        ngrid = [-1, 0]
+        # ngrid = [-1, 0]
+        ngrid = [0, 1]
     elseif mission == "K"
         ######### calculate K dependence #####################
         Nk, korder = 4, 4

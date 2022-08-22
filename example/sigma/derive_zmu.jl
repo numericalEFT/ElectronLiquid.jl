@@ -11,6 +11,9 @@ order = [3,]
 
 const filename = "data_Z.jld2"
 
+# const parafilename = "para.csv"
+const parafilename = "para_wn_1minus0.csv"
+
 function zfactor(data, β)
     return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
 end
@@ -51,7 +54,7 @@ function process(datatuple, isSave)
     end
 
     # println("new dataframe\n$df")
-    isSave && CounterTerm.toFile(df)
+    isSave && CounterTerm.toFile(df, parafile = parafilename)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
