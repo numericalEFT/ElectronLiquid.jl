@@ -5,7 +5,7 @@
 using ElectronLiquid
 using Printf
 
-rs = [3.0, ]
+rs = [4.0, ]
 mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
 beta = [25.0, ]
