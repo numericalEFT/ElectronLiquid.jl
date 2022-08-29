@@ -1,4 +1,3 @@
-using Revise
 using MCIntegration
 using FeynmanDiagram
 using ElectronGas

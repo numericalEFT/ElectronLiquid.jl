@@ -97,7 +97,10 @@ function KW(para::ParaMC, diagram;
     obs = zeros(ComplexF64, length(dof), 2, Nkin, Nqout, Nwin, Nwqout) # observable for the Fock diagram 
 
     if isnothing(config)
-        config = MCIntegration.Configuration((K, T, vKin, vQout, vWin, vWqout), dof, obs;
+        config = MCIntegration.Configuration(
+            var=(K, T, vKin, vQout, vWin, vWqout),
+            dof=dof,
+            obs=obs,
             para=(para, diag, root, extT, kin, qout, nkin, nqout),
             kwargs...
         )

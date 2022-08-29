@@ -5,16 +5,16 @@
 using ElectronLiquid
 using Printf
 
-rs = [4.0, ]
+rs = [8.0,]
 mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
-beta = [25.0, ]
+beta = [25.0,]
 order = [3,]
 
-# const filename = "para.csv"
-const filename = "para_wn_1minus0.csv"
+const filename = "para.csv"
+# const filename = "para_wn_1minus0.csv"
 
-cache =[]
+cache = []
 
 for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
@@ -47,9 +47,9 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     end
 end
 
-b1=(cache[1]-cache[2])/(sqrt(0.01)-sqrt(0.001))
-b2=(cache[2]-cache[3])/(sqrt(0.001)-sqrt(0.0001))
-println(b1,", ", b2)
-c1, c2 = cache[2]-b1*sqrt(0.001), cache[3]-b2*sqrt(0.0001)
-println(c1,", ", c2)
-println(1.0/(1+c1),", ", 1/(1+c2))
+b1 = (cache[1] - cache[2]) / (sqrt(0.01) - sqrt(0.001))
+b2 = (cache[2] - cache[3]) / (sqrt(0.001) - sqrt(0.0001))
+println(b1, ", ", b2)
+c1, c2 = cache[2] - b1 * sqrt(0.001), cache[3] - b2 * sqrt(0.0001)
+println(c1, ", ", c2)
+println(1.0 / (1 + c1), ", ", 1 / (1 + c2))

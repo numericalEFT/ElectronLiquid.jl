@@ -100,7 +100,10 @@ function PH(para::ParaMC, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration((K, T, X, L, AMP), dof, obs;
+        config = MCIntegration.Configuration(
+            var=(K, T, X, L, AMP),
+            dof=dof,
+            obs=obs,
             para=(para, diag, root, extT, kamp, l, n),
             kwargs...
         )

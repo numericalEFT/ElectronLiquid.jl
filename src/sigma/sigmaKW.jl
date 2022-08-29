@@ -115,7 +115,9 @@ function KW(para::ParaMC, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration((K, T, X, ExtKidx), dof, obs;
+        config = MCIntegration.Configuration(; var=(K, T, X, ExtKidx),
+            dof=dof,
+            obs=obs,
             para=(para, diag, kgrid, ngrid),
             kwargs...
             # neighbor=neighbor,
@@ -123,7 +125,7 @@ function KW(para::ParaMC, diagram;
         )
     end
 
-    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, kwargs...)
+    result = MCIntegration.sample(config, integrandKW, measureKW; print=print, neval=neval, kwargs...)
     # niter=niter, print=print, block=block, kwargs...)
 
     if isnothing(result) == false
