@@ -1,9 +1,8 @@
 
 function integrandKW(config)
-    para, diag, kgrid, ngrid = config.para
+    para, diag, extT, kgrid, ngrid = config.para
     diagram = diag[config.curr]
     weight = diagram.node.current
-    object = diagram.node.object
     l = config.var[3][1]
     k = config.var[4][1]
     varK, varT = config.var[1], config.var[2]
@@ -11,7 +10,7 @@ function integrandKW(config)
     wn = ngrid[l]
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
-    w = sum(weight[r] * phase(varT, object[r].para.extT, wn, para.β) for r in diagram.root)
+    w = sum(weight[r] * phase(varT, extT[config.curr][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
 
     loopNum = config.dof[config.curr][1]
     factor = 1.0 / (2π)^(para.dim * loopNum)
@@ -19,13 +18,10 @@ function integrandKW(config)
 end
 
 function measureKW(config)
-    factor = 1.0 / config.reweight[config.curr]
     l = config.var[3][1]
     k = config.var[4][1]
-    # println(config.observable[1][1])
     o = config.curr
-    weight = integrandKW(config)
-    config.observable[o, l, k] += weight / abs(weight) * factor
+    config.observable[o, l, k] += config.relativeWeight
 end
 
 function KW(para::ParaMC, diagram;
@@ -58,10 +54,11 @@ function KW(para::ParaMC, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration(; var=(K, T, X, ExtKidx),
+        config = MCIntegration.Configuration(;
+            var=(K, T, X, ExtKidx),
             dof=dof,
             obs=obs,
-            para=(para, diag, kgrid, ngrid),
+            para=(para, diag, extT, kgrid, ngrid),
             kwargs...
             # neighbor=neighbor,
             # reweight_goal=reweight_goal, kwargs...

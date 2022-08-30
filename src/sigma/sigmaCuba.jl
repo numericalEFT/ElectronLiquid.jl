@@ -3,7 +3,7 @@ This example demonstrate how to use Cuba package to calculate the diagrams
 """
 
 function integrandCuba(x, f, userdata)
-    para, diagram, kgrid, ngrid, varK, varT, loopNum, tauNum = userdata
+    para, diagram, extT, kgrid, ngrid, varK, varT, loopNum, tauNum = userdata
     weight = diagram.node.current
     object = diagram.node.object
     # vK = reshape(view(x, 1:loopNum*para.dim), para.dim, loopNum)
@@ -19,15 +19,18 @@ function integrandCuba(x, f, userdata)
         r = x[shift+1] / (1 - x[shift+1])
         θ = x[shift+2] * π
         ϕ = x[shift+3] * 2 * π
-        varK[:, i+1] .= [r * sin(θ) * cos(ϕ), r * sin(θ) * sin(ϕ), r * cos(θ)]
+        # varK[:, i+1] .= [r * sin(θ) * cos(ϕ), r * sin(θ) * sin(ϕ), r * cos(θ)]
+        varK[1, i+1] = r * sin(θ) * cos(ϕ)
+        varK[2, i+1] = r * sin(θ) * sin(ϕ)
+        varK[3, i+1] = r * cos(θ)
         factor *= r^2 / (1 - x[shift+1])^2 * sin(θ)
     end
     ExprTree.evalKT!(diagram, varK, varT, para)
     for l in eachindex(ngrid)
         wn = ngrid[l]
         w = zero(ComplexF64)
-        for r in diagram.root
-            w += weight[r] * phase(varT, object[r].para.extT::Tuple{Int,Int}, wn, para.β)
+        for (ri, r) in enumerate(diagram.root)
+            w += weight[r] * phase(varT, extT[ri], wn, para.β)
         end
         w *= factor
         # w = factor * sum(weight[r] * phase(varT, object[r].para.extT, wn, para.β) for r in diagram.root)
@@ -42,7 +45,8 @@ function cuba(para::ParaMC, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
-    config=nothing,
+    nstart=Int(neval / 10),
+    nincrease=0,
     kwargs...
 )
     UEG.MCinitialize!(para)
@@ -65,7 +69,11 @@ function cuba(para::ParaMC, diagram;
         varT = zeros(tauNum + 1)
         ndim = para.dim * loopNum + tauNum
         ncomp = 4
-        result = vegas(integrandCuba, ndim, ncomp; maxevals=neval, userdata=(para, diag[pidx], kgrid, ngrid, varK, varT, loopNum, tauNum), kwargs...)
+        result = vegas(integrandCuba, ndim, ncomp; maxevals=neval,
+            userdata=(para, diag[pidx], extT[pidx], kgrid, ngrid, varK, varT, loopNum, tauNum),
+            nstart=nstart,
+            nincrease=nincrease,
+            kwargs...)
         # result = suave(integrandCuba, ndim, ncomp; maxevals=neval, userdata=(para, diag[pidx], kgrid, ngrid, varK, varT, loopNum, tauNum))
         # result = cuhre(integrandCuba, ndim, ncomp;
         #     maxevals=neval,
