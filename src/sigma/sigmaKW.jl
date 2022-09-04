@@ -1,5 +1,6 @@
 
 function integrandKW(idx, varK, varT, N, ExtKidx, config)
+    # function integrandKW(idx, varK, varT, config)
     para, diag, extT, kgrid, ngrid = config.userdata
     diagram = diag[idx]
     weight = diagram.node.current
@@ -14,6 +15,7 @@ function integrandKW(idx, varK, varT, N, ExtKidx, config)
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(para.dim * loopNum)
     return w * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
+    # return real(w) * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
 #for vegas algorithm
@@ -80,13 +82,15 @@ function KW(para::ParaMC, diagram;
     end
 
     result = integrate(integrandKW; config=config, measure=measureKW, print=print, neval=neval, kwargs...)
+    # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # niter=niter, print=print, block=block, kwargs...)
 
     if isnothing(result) == false
 
         if print >= 0
             report(result.config)
-            println(report(result, o -> real(first(o))))
+            println(report(result, o -> first(o)))
+            println(result)
         end
 
         # datadict = Dict{eltype(partition),Complex{Measurement{Float64}}}()
