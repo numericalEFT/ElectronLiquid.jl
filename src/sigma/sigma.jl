@@ -74,5 +74,6 @@ end
 
 include("sigmaKW.jl")
 include("sigmaCuba.jl")
+include("sigmaVegas.jl")
 
 end
