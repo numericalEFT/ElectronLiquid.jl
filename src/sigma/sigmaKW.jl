@@ -1,6 +1,7 @@
 
-function integrandKW(idx, varK, varT, N, ExtKidx, config)
+function integrandKW(idx, vars, config)
     # function integrandKW(idx, varK, varT, config)
+    varK, varT, N, ExtKidx = vars
     para, diag, extT, kgrid, ngrid = config.userdata
     diagram = diag[idx]
     weight = diagram.node.current
@@ -19,24 +20,24 @@ function integrandKW(idx, varK, varT, N, ExtKidx, config)
 end
 
 #for vegas algorithm
-function integrandKW(varK, varT, N, ExtKidx, config)
-    return integrandKW(1, varK, varT, N, ExtKidx, config)
-end
+# function integrandKW(varK, varT, N, ExtKidx, config)
+#     return integrandKW(1, varK, varT, N, ExtKidx, config)
+# end
 
-function measureKW(idx, obs, weight, config)
-    l = config.var[3][1]  #matsubara frequency
-    k = config.var[4][1]  #K
+function measureKW(idx, vars, obs, weight, config)
+    l = vars[3][1]  #matsubara frequency
+    k = vars[4][1]  #K
     obs[idx][l, k] += weight
 end
 
 #for vegas algorithm
-function measureKW(obs, weights, config)
-    l = config.var[3][1]  #matsubara frequency
-    k = config.var[4][1]  #K
-    for o in 1:config.N
-        obs[o][l, k] += weights[o]
-    end
-end
+# function measureKW(obs, weights, config)
+#     l = config.var[3][1]  #matsubara frequency
+#     k = config.var[4][1]  #K
+#     for o in 1:config.N
+#         obs[o][l, k] += weights[o]
+#     end
+# end
 
 function KW(para::ParaMC, diagram;
     kgrid=[para.kF,],

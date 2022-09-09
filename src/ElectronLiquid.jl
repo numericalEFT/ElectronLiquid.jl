@@ -3,6 +3,8 @@ module ElectronLiquid
 using StaticArrays
 using Measurements
 using MCIntegration
+export report
+
 using FeynmanDiagram
 export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 
