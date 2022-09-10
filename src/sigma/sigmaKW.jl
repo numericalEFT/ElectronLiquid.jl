@@ -48,6 +48,9 @@ function KW(para::ParaMC, diagram;
     config=nothing,
     kwargs...
 )
+    if haskey(kwargs, :solver)
+        @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
+    end
     UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
@@ -90,7 +93,11 @@ function KW(para::ParaMC, diagram;
 
         if print >= 0
             report(result.config)
-            println(report(result, o -> first(o)))
+            println(report(result, pick=o -> first(o)))
+            println(result)
+        end
+
+        if print >= -2
             println(result)
         end
 
