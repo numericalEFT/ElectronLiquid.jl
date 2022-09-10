@@ -2,16 +2,41 @@
 function integrandKWV(idx, vars, config)
     # function integrandKW(idx, varK, varT, config)
     # idx = 1
-    # R, Theta, Phi, varT, N, ExtKidx = vars
-    K, varT, N, ExtKidx = vars
+    K, T, T1, N, ExtKidx = vars
     R, Theta, Phi = K
-    para, diag, extT, kgrid, ngrid, varK = config.userdata
+    Tx, Ty = T
+    para, diag, extT, kgrid, ngrid, varK, varT = config.userdata
     diagram = diag[idx]
     weight = diagram.node.current
     loopNum = config.dof[idx][1]
+    tauNum = (config.dof[idx][2] + 1) * 2
     l = N[1]
     k = ExtKidx[1]
+
     varK[1, 1] = kgrid[k]
+
+    # varT[1] = Tx.data[1] + Ty.data[1]
+    # varT[2] = Tx.data[1] - Ty.data[1]
+    varT[1] = 0.0
+    varT[2] = T1.data[1]
+    varT[3] = Tx.data[1] + Ty.data[1]
+    varT[4] = Tx.data[1] - Ty.data[1]
+
+    for i = 3:tauNum
+        if varT[i] < -para.β / 2 || varT[i] > para.β / 2
+            return 0.0 + 0.0im
+        end
+    end
+    for i = 3:tauNum
+        varT[i] += para.β / 2
+    end
+    for i = 1:tauNum
+        @assert 0 <= varT[i] < para.β "varT[$i] = $(varT[i])"
+    end
+    # for i = 1:tauNum
+    #     varT[i] = T.data[i]
+    # end
+
     wn = ngrid[l]
 
     phifactor = 1.0
@@ -26,11 +51,11 @@ function integrandKWV(idx, vars, config)
         phifactor *= r^2 * sin(θ) / (1 - R[i])^2
     end
 
-    ExprTree.evalKT!(diagram, varK, varT.data, para)
+    ExprTree.evalKT!(diagram, varK, varT, para)
     w = sum(weight[r] * phase(varT, extT[idx][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
 
-    factor = 1.0 / (2π)^(para.dim * loopNum) * phifactor
-    return w * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
+    factor = 1.0 / (2π)^(para.dim * loopNum) * phifactor * (2)^(loopNum - 1)
+    return w * factor   #the current implementation of sigma has an additional minus sign compared to the standard defintion
     # return real(w) * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
 end
 
@@ -53,18 +78,21 @@ function KWV(para::ParaMC, diagram;
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, diag, root, extT = diagram
     varK = zeros(para.dim, 128)
+    varT = zeros(128)
 
-    R = MCIntegration.Continuous(0.0, 1.0; alpha=alpha)
-    Theta = MCIntegration.Continuous(0.0, 1π; alpha=alpha)
-    Phi = MCIntegration.Continuous(0.0, 2π; alpha=alpha)
+    R = Continuous(0.0, 1.0; alpha=alpha)
+    Theta = Continuous(0.0, 1π; alpha=alpha)
+    Phi = Continuous(0.0, 2π; alpha=alpha)
     K = CompositeVar(R, Theta, Phi)
-    T = MCIntegration.Continuous(0.0, β; offset=1, alpha=alpha)
-    T.data[1] = 0.0
-    X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    Tx = Continuous(-β / 2, β / 2; alpha=alpha)
+    Ty = Continuous(-β / 2, β / 2; alpha=alpha)
+    T = CompositeVar(Tx, Ty)
+    T1 = Continuous(0.0, β; alpha=alpha)
+    X = Discrete(1, length(ngrid), alpha=alpha)
+    ExtKidx = Discrete(1, length(kgrid), alpha=alpha)
 
     # dof = [[p.innerLoopNum, p.innerLoopNum, p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum, Int(p.totalTauNum / 2) - 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
 
     # if isnothing(neighbor)
@@ -73,11 +101,11 @@ function KWV(para::ParaMC, diagram;
     if isnothing(config)
         config = Configuration(;
             # var=(R, Theta, Phi, T, X, ExtKidx),
-            var=(K, T, X, ExtKidx),
+            var=(K, T, T1, X, ExtKidx),
             dof=dof,
             type=ComplexF64, # type of the integrand
             # obs=obs,
-            userdata=(para, diag, extT, kgrid, ngrid, varK),
+            userdata=(para, diag, extT, kgrid, ngrid, varK, varT),
             kwargs...
         )
     end
@@ -88,9 +116,11 @@ function KWV(para::ParaMC, diagram;
 
     if isnothing(result) == false
 
-        if print >= -1
+        if print > -1
             report(result.config)
-            println(report(result, o -> first(o)))
+            println(report(result; pick=o -> first(o)))
+        end
+        if print > -2
             println(result)
         end
 
