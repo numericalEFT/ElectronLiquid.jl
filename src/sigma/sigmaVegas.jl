@@ -90,7 +90,10 @@ function KWV(para::ParaMC, diagram;
 
         if print >= -1
             report(result.config)
-            println(report(result, o -> first(o)))
+            println(report(result, pick=o -> first(o)))
+            println(result)
+        end
+        if print >= -2
             println(result)
         end
 
