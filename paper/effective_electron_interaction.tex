@@ -158,49 +158,68 @@ where the symbol $\overline{\Gamma_4}$ means projecting the incoming momentum-fr
 
 The norminators $v_q+f_0^+$ and $f_0^-$ in the scattering amplitude are the fast interaction. Except the Coulomb replusion, they are regular functions parameterized by the Landau parameter in the limit $q\rightarrow 0$: $f_0^\pm \rightarrow F_0^\pm N_F^*/z^2$. The fast interaction is then renormalized by a series of particle-hole pairs. The resummation of the particle-hole pairs generates the denorminators, where $\Pi_0^*(q)=\frac{m^*}{m}\Pi_0(q)$ with $\Pi_0(q)$ the momentum-frequency dependent Lindhard function. Note that $\Pi_0^*(q)$ is nonanalytic in the limit $q\rightarrow 0$ due to the charge conservation: $\Pi_0^*(q_0=0, \bq \rightarrow 0)=0$, while $\Pi_0^*(q_0\rightarrow 0, \bq = 0)=0$. As a result, the quasiparticle interaction in the forward scattering process has two distinct types of singularity: one is from the Coulomb repulsion, another is from the Lindhard function.
 
-Landau Fermi liquid theory only specifies the forward scattering process. In Ref. \citenum{kukkonen}, Kukkonen and Overhauser propose to use a similar form as the Eq.\eqref{eq:gamma_FL} to parameterize the generic quasiparticle interactions,
+Landau Fermi liquid theory only specifies the forward scattering process. In Ref. \citenum{kukkonen}, Kukkonen and Overhauser propose to use a similar form as the Eq.\eqref{eq:gamma_FL} to parameterize the quasiparticle interactions for generic momenta and frequencies,
 \begin{equation}
     \label{eq:KO}
-    R_q = \frac{v_q+f^+}{1-(v_q+f^+)\Pi^*_0}+\frac{f^-}{1-f^-\Pi_0^*}\sigma\sigma'+ u,
+    R_q^{KO} = \frac{v_q+f^+}{1-(v_q+f^+)\Pi^*_0}+\frac{f^-}{1-f^-\Pi_0^*}\sigma\sigma'+ u,
 \end{equation}
 where the counterterm $u$ should be included because some high-order quantum effects are doubly counted in the direct and the exchange interactions. The parameters $f^\pm$ and $u$ need to be carefully chosen to best approximate the physical scattering amplitude,
 \begin{equation}
-    z^2\Gamma^4_{k_1, k_2; k_1-q, k_2+q} \approx R_q - R_{q-k_1+k_2}
+    z^2\Gamma^4_{k_1, k_2; k_1-q, k_2+q} \approx R_q^{KO} - R^{KO}_{q-k_1+k_2}
 \end{equation}
 up to the length scale $1/k_F$ and the time scale $1/E_F$.
 %    -&\text{exchange interaction with $q \leftrightarrow q-k_1+k_2$}. 
 The original Kukkonen-Overhauser (KO) formulation is a motivated by a phenomenological consideration based on the linear response theory. In literature, $f^\pm$ are parameterized as the exchange-correlation kernel $f_{xc}^\pm$ which can be extracted from the density-density and spin-spin response functions (See Fig. \ref{fig:fxc}) and the counterterm is set as $u=-f^+-f^-$. Note that such parameterization doesn't reproduce the Landau Fermi liquid theory Eq.\eqref{eq:gamma_FL} in the forward scattering process. The deviation could be significant near $r_s\approx 5.3$.
 
-To fix this problem, we will use a parameterization where the spin-symmetric interaction in the forward scattering process is perfectly matches with the physical behavior:
-\begin{equation}
-    \label{eq:renorm_f1}
-    f^+ \equiv F_0^\pm N_F^*/z^2,
-\end{equation}
-and the renormalization condition,
-\begin{equation}
-    \label{eq:renorm_f2}
-    z^2\overline{\Gamma^{4}_{k_1, k_2; k_1-q, k_2+q}}^+ \equiv \overline{R_q}^+ - \overline{R_{q-k_1+k_2}}^+,
-\end{equation}
-where symbol $+$ means only the spin-symmetric part should be matched. As indicated by Fig. \ref{fig:fxc}, the quasiparticle interactions are local within the length scale $1/2k_F$, it then makes sense to choose $f^\pm$ and $u$ to be independent of the transfer momentum and frequency. Then the above renormalization conditions uniquely fixes all three parameters (See Appendix. \ref{appendix:renormalization} for more details).
+There are general solutions to fix this problems:
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{fxc_charge.pdf}
-        %\caption{$charge$}
-        \label{fig:charge_xc}
-    \end{subfigure}
-    %\hfill
-    \begin{subfigure}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{fxc_spin.pdf}
-        %\caption{$spin$}
-        \label{fig:spin_xc}
-    \end{subfigure}
-    \caption{Exchange-correlation kernel $f_{xc}^\pm$ as a function of the transfer momentum. Left: Spin-symmetric (charge) kernel calculated by diffusive quantum Monte Carlo (DMC) and variational diagrammatic Monte Carlo (VDiagMC). Right: Spin-asymmetric (spin) kernel calculated by VDiagMC. The vertical lines in both figures are the uniform exchange-correlation kernels extracted from the ground state energy obtained by DMC. Both $f_{xc}^\pm$ are relatively flat up the momentum $2k_F$, indicating that the exchange-correlation kernel is localized within the scale $1/2k_F$.}
-    \label{fig:fxc}
-\end{figure}
+\begin{itemize}
+    \item Systematic renormalization condition approach: One first choose the parameters $f^{\pm}$ which fixes the ansatz for the non-analytic part of the scattering amplitude. Then one can use the following renormalization condition to fix the counterterm $u$,
+          \begin{align*}
+              u \equiv & \left( z^2\Gamma^4_{k_1, k_2; k_1-q, k_2+q} \right.                                                                 \\
+              -        & \left.\frac{v_q+f_0^+}{1-(v_q+f_0^+)\Pi^*_0}+\frac{f_0^-}{1-f_0^-\Pi_0^*}\sigma\sigma' + exch.\right)_{k_1=k_2=q=0}
+          \end{align*}
+          where we first take the physical scattering amplitude, subtracting the leading non-analytic contributions in both direct and exchange channels, then keep the most important constant term of the remaining contributions. This makes sense because the remaining contributions are mostly regular function within the entire Fermi volume.
+    \item Approximation approach: According to Fermi liquid theory, the regular part of the scattering amplitude is exactly marginal in the RG sense. It means even if our ansatz slightly different from the Landau Fermi liquid theory, the multiloop corrections should be able to fix such small discrepency. With some numerical experiments, we find the following simple ansatz are quite close to the Landau Fermi liquid theory,
+          \begin{equation}
+              \label{eq:R_approx}
+              R_q = \frac{v_q+f_0^+}{1-(v_q+f_0^+)\Pi^*_0}-f^+,
+          \end{equation}
+          where the parameters $f_0^+$ is the physical Landau parameter.
+
+          In the following, we will use the ansatz Eq.\eqref{eq:R_approx} to construct the renormalized perturbation theory.
+\end{itemize}
+
+% To fix this problem, we will use a parameterization where the spin-symmetric interaction in the forward scattering process is perfectly matches with the physical behavior:
+% \begin{equation}
+%     \label{eq:renorm_f1}
+%     f^+ \equiv F_0^\pm N_F^*/z^2,
+% \end{equation}
+% and the renormalization condition,
+% \begin{equation}
+%     \label{eq:renorm_f2}
+%     z^2\overline{\Gamma^{4}_{k_1, k_2; k_1-q, k_2+q}}^+ \equiv \overline{R_q}^+ - \overline{R_{q-k_1+k_2}}^+,
+% \end{equation}
+% where symbol $+$ means only the spin-symmetric part should be matched. As indicated by Fig. \ref{fig:fxc}, the quasiparticle interactions are local within the length scale $1/2k_F$, it then makes sense to choose $f^\pm$ and $u$ to be independent of the transfer momentum and frequency. Then the above renormalization conditions uniquely fixes all three parameters (See Appendix. \ref{appendix:renormalization} for more details).
+
+% \begin{figure}
+%     \centering
+%     \begin{subfigure}[b]{0.48\linewidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{fxc_charge.pdf}
+%         %\caption{$charge$}
+%         \label{fig:charge_xc}
+%     \end{subfigure}
+%     %\hfill
+%     \begin{subfigure}[b]{0.48\linewidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{fxc_spin.pdf}
+%         %\caption{$spin$}
+%         \label{fig:spin_xc}
+%     \end{subfigure}
+%     \caption{Exchange-correlation kernel $f_{xc}^\pm$ as a function of the transfer momentum. Left: Spin-symmetric (charge) kernel calculated by diffusive quantum Monte Carlo (DMC) and variational diagrammatic Monte Carlo (VDiagMC). Right: Spin-asymmetric (spin) kernel calculated by VDiagMC. The vertical lines in both figures are the uniform exchange-correlation kernels extracted from the ground state energy obtained by DMC. Both $f_{xc}^\pm$ are relatively flat up the momentum $2k_F$, indicating that the exchange-correlation kernel is localized within the scale $1/2k_F$.}
+%     \label{fig:fxc}
+% \end{figure}
 
 \section{Renormalized Field Theory}
 \subsection{Effective Action}
@@ -505,98 +524,98 @@ Note that only the proper diagrams (one-interaction-irreducible) diagrams contri
 The second-order self-energy diagrams and their counterterms are shown in Fig.\ref{fig:order2}(b).
 They fix the corrections $z_2$, $m_2$ and $\mu_2$. We will not repeat the analysis here.
 
-\section{Charge Instability in the Charged Fermi liquid Theory}
+% \section{Charge Instability in the Charged Fermi liquid Theory}
 
-Here we review the two-particle properties of the charged Fermi liquid in the context of the electron gas problem Eq.\eqref{eq:jellium}. We are particularly interested in the potential instability in the particle-hole channel.
+% Here we review the two-particle properties of the charged Fermi liquid in the context of the electron gas problem Eq.\eqref{eq:jellium}. We are particularly interested in the potential instability in the particle-hole channel.
 
-In a Fermi liquid, the low-energy dynamics of the quasiparticles near the Fermi surface are fixed by a few renormalized parameters, including the wave-function renormalization factor $Z$, effective mass $m^*$, and the Landau parameters for the quasiparticle interactions (see Appendix \ref{appendix:FL} for a detailed derivation).
-Due to the long-range Coulomb repulsion $v_q$, the quasiparticle interaction of a charged Fermi liquid contains a singular term and a regular term,
-\begin{equation}
-    z^2 \Gamma_4^\Omega (\theta_{12}; \bq)=v_{\bq}+f(\theta_{12}),
-\end{equation}
-where $f$ is a function of the angle $\theta_{12}$ of two incoming momenta. It is a sum of three contributions i) the local interaction $u$, ii) exchange effects of the Coulomb repulsion and iii) higher order quantum corrections. The quasiparticle interaction can be derived from the $4$-point one-particle irreducible vertex function (reweighted by the factor $z^2$) in the limit of a vanishing transfer momentum ($\bq \rightarrow 0$) and a small transfer frequency $\Omega/\bq \gg 1$.
+% In a Fermi liquid, the low-energy dynamics of the quasiparticles near the Fermi surface are fixed by a few renormalized parameters, including the wave-function renormalization factor $Z$, effective mass $m^*$, and the Landau parameters for the quasiparticle interactions (see Appendix \ref{appendix:FL} for a detailed derivation).
+% Due to the long-range Coulomb repulsion $v_q$, the quasiparticle interaction of a charged Fermi liquid contains a singular term and a regular term,
+% \begin{equation}
+%     z^2 \Gamma_4^\Omega (\theta_{12}; \bq)=v_{\bq}+f(\theta_{12}),
+% \end{equation}
+% where $f$ is a function of the angle $\theta_{12}$ of two incoming momenta. It is a sum of three contributions i) the local interaction $u$, ii) exchange effects of the Coulomb repulsion and iii) higher order quantum corrections. The quasiparticle interaction can be derived from the $4$-point one-particle irreducible vertex function (reweighted by the factor $z^2$) in the limit of a vanishing transfer momentum ($\bq \rightarrow 0$) and a small transfer frequency $\Omega/\bq \gg 1$.
 
-The Landau quasiparticle interaction $f$ has a spin symmetric and antisymmetric components, both of which can be further decomposed into different angular momenta,
-\begin{equation}
-    f(\theta_{12})=\frac{1}{N_F}\sum_l (2l+1) (F_l^++F_l^-\sigma_1\cdot\sigma_2) P_l(\cos\theta_{12}),
-\end{equation}
-where the renormalized density of the state $N_F=\frac{m^*k_F}{\pi^2}$.
+% The Landau quasiparticle interaction $f$ has a spin symmetric and antisymmetric components, both of which can be further decomposed into different angular momenta,
+% \begin{equation}
+%     f(\theta_{12})=\frac{1}{N_F}\sum_l (2l+1) (F_l^++F_l^-\sigma_1\cdot\sigma_2) P_l(\cos\theta_{12}),
+% \end{equation}
+% where the renormalized density of the state $N_F=\frac{m^*k_F}{\pi^2}$.
 
-In the standard jellium model (namely, $u=0$), the Fermi liquid parameters have been calculated with a controlled accuracy using the variational Diagrammatic Monte Carlo (VDMC) technique up to $r_s=4$. The data are shown in Table \ref{tab1}. We make two key observations: i) as $r_s$ increases, $|F^+_0| \gg |F^-_0|$, and (ii) $|F^+_0| \gg |F^+_1|$, the latter can be derived from the effective mass $m^*/m=1/(1+F^+_1/3)$. We expect the second observation can be generalized to $|F^+_0| \gg |F^{\pm}_{l\ge 1}|$. In other words, the regular part of the quasiparticle interaction in the jellium model is dictated by $F^+_0$. Therefore, we will only focus on the spin-symmetric part (namely, the charge channel) in the following discussion. Phenomenologically, one may approximate $F^+_0 \approx -0.2r_s$ with the VDMC data in Table. \ref{tab1}.
+% In the standard jellium model (namely, $u=0$), the Fermi liquid parameters have been calculated with a controlled accuracy using the variational Diagrammatic Monte Carlo (VDMC) technique up to $r_s=4$. The data are shown in Table \ref{tab1}. We make two key observations: i) as $r_s$ increases, $|F^+_0| \gg |F^-_0|$, and (ii) $|F^+_0| \gg |F^+_1|$, the latter can be derived from the effective mass $m^*/m=1/(1+F^+_1/3)$. We expect the second observation can be generalized to $|F^+_0| \gg |F^{\pm}_{l\ge 1}|$. In other words, the regular part of the quasiparticle interaction in the jellium model is dictated by $F^+_0$. Therefore, we will only focus on the spin-symmetric part (namely, the charge channel) in the following discussion. Phenomenologically, one may approximate $F^+_0 \approx -0.2r_s$ with the VDMC data in Table. \ref{tab1}.
 
-With the presence of the local attraction $u$, there is no available numerical data. However, when the local interaction is relatively weak, one can estimate its contribution to the Landau parameters using a perturbation theory. Since $u$ is independent of transfer momentum and frequency, the leading contribution to the quasiparticle interaction $f$ is the sum of $u_{\sigma\bar{\sigma}'}$ and its exchange counterpart, which is decomposed to a spin symmetric part $u^+=u/2$ and a spin asymmetric part $u^-=-u/2$ \footnote{Any interaction with $SU(2)$ symmetry can be decomposed into $U_{\alpha\beta\gamma\delta}=U^+\delta_{\alpha\beta}\delta_{\gamma\delta}+U^-_{\alpha\beta\gamma\delta}\vec{\sigma}_{\alpha\beta}\cdot\vec{\sigma}_{\gamma\delta}$, where $\vec{\sigma}_{\alpha \beta} \cdot \vec{\sigma}_{\gamma \delta} \equiv 2 \delta_{\alpha \delta} \delta_{\beta \gamma}-\delta_{\alpha \beta} \delta_{\gamma \delta}$. One can show $U^+-U^-$ gives the direction interaction, while $2U^-$ gives the exchange counterpart.}. For an attractive interaction $u<0$, it enhances the amplitude of $F_0^+$, and suppresses that of $F_0^-$. As a result, we may estimate,
-\begin{equation}
-    \label{eq:f}
-    F_0^+\approx -0.2r_s + \frac{N_F}{2}u
-\end{equation}
+% With the presence of the local attraction $u$, there is no available numerical data. However, when the local interaction is relatively weak, one can estimate its contribution to the Landau parameters using a perturbation theory. Since $u$ is independent of transfer momentum and frequency, the leading contribution to the quasiparticle interaction $f$ is the sum of $u_{\sigma\bar{\sigma}'}$ and its exchange counterpart, which is decomposed to a spin symmetric part $u^+=u/2$ and a spin asymmetric part $u^-=-u/2$ \footnote{Any interaction with $SU(2)$ symmetry can be decomposed into $U_{\alpha\beta\gamma\delta}=U^+\delta_{\alpha\beta}\delta_{\gamma\delta}+U^-_{\alpha\beta\gamma\delta}\vec{\sigma}_{\alpha\beta}\cdot\vec{\sigma}_{\gamma\delta}$, where $\vec{\sigma}_{\alpha \beta} \cdot \vec{\sigma}_{\gamma \delta} \equiv 2 \delta_{\alpha \delta} \delta_{\beta \gamma}-\delta_{\alpha \beta} \delta_{\gamma \delta}$. One can show $U^+-U^-$ gives the direction interaction, while $2U^-$ gives the exchange counterpart.}. For an attractive interaction $u<0$, it enhances the amplitude of $F_0^+$, and suppresses that of $F_0^-$. As a result, we may estimate,
+% \begin{equation}
+%     \label{eq:f}
+%     F_0^+\approx -0.2r_s + \frac{N_F}{2}u
+% \end{equation}
 
-We now show that the Landau parameter $F_0^+$ could lead to a charge density wave instability in the system. We first note that the the low-energy dynamical structure factor, namely the density-density correlator, is controlled by $F_0^+$. Indeed,
-\begin{equation}
-    \label{eq:chi}
-    \chi(q, i\omega_n) = \frac{\Pi^*_0(q, i\omega_n)}{1-(v_q+f_0^+)\Pi^*_0(q, i\omega_n)},
-\end{equation}
-where $f_0^+=F_0^+/N_F$. The polarization $\Pi^*_0(q,\omega)$ is for the free electrons with linearized dispersion (because we only care about the asymptotic behavior in the low-energy limit) and has a renormalized mass $m^*$.
-\begin{equation}
-    \Pi^*_0(q, i\omega_n)=-N_F\left[1-\frac{i \omega_{n}}{2 v_{\mathrm{F}} q} \ln \left(\frac{i \omega_{n}+v_{\mathrm{F}} q}{i \omega_{n}-v_{\mathrm{F}} q}\right)\right],
-\end{equation}
-In the limit $\omega_n/v_F \ll q \ll k_F$, the polarization simplifies to,
-\begin{equation}
-    \Pi^*_0(q, i\omega_n) \approx -N_F\left( 1 +\frac{\pi}{2 v_F} \frac{|\omega_n|}{|q|}\right)
-\end{equation}
+% We now show that the Landau parameter $F_0^+$ could lead to a charge density wave instability in the system. We first note that the the low-energy dynamical structure factor, namely the density-density correlator, is controlled by $F_0^+$. Indeed,
+% \begin{equation}
+%     \label{eq:chi}
+%     \chi(q, i\omega_n) = \frac{\Pi^*_0(q, i\omega_n)}{1-(v_q+f_0^+)\Pi^*_0(q, i\omega_n)},
+% \end{equation}
+% where $f_0^+=F_0^+/N_F$. The polarization $\Pi^*_0(q,\omega)$ is for the free electrons with linearized dispersion (because we only care about the asymptotic behavior in the low-energy limit) and has a renormalized mass $m^*$.
+% \begin{equation}
+%     \Pi^*_0(q, i\omega_n)=-N_F\left[1-\frac{i \omega_{n}}{2 v_{\mathrm{F}} q} \ln \left(\frac{i \omega_{n}+v_{\mathrm{F}} q}{i \omega_{n}-v_{\mathrm{F}} q}\right)\right],
+% \end{equation}
+% In the limit $\omega_n/v_F \ll q \ll k_F$, the polarization simplifies to,
+% \begin{equation}
+%     \Pi^*_0(q, i\omega_n) \approx -N_F\left( 1 +\frac{\pi}{2 v_F} \frac{|\omega_n|}{|q|}\right)
+% \end{equation}
 
-\begin{table}
-    \begin{center}
-        \begin{tabular}{|c|c|c|c|c|}
-            \hline
-            $r_s$ & $Z$       & $m^*/m$  & $F_0^-$   & $F_0^+$   \\
-            \hline
-            1     & 0.8725(2) & 0.955(1) & -0.171(1) & -0.209(5) \\
-            \hline
-            2     & 0.7984(2) & 0.943(3) & -0.271(2) & -0.39(1)  \\
-            \hline
-            3     & 0.7219(2) & 0.965(3) & -0.329(3) & -0.56(1)  \\
-            \hline
-            4     & 0.6571(2) & 0.996(3) & -0.368(4) & -0.83(2)  \\
-            \hline
-        \end{tabular}
-    \end{center}
-    \caption{
-        Variational DiagMC computed values of the quasiparticle renormalization amplitude
-        $Z$, effective mass $m^*/m$, and the Landau parameters $F_0^a$,
-        $F_0^s$ for various values of the density parameter $r_s$, together
-        with the estimated error.
-    }
-    \label{tab1}
-\end{table}
+% \begin{table}
+%     \begin{center}
+%         \begin{tabular}{|c|c|c|c|c|}
+%             \hline
+%             $r_s$ & $Z$       & $m^*/m$  & $F_0^-$   & $F_0^+$   \\
+%             \hline
+%             1     & 0.8725(2) & 0.955(1) & -0.171(1) & -0.209(5) \\
+%             \hline
+%             2     & 0.7984(2) & 0.943(3) & -0.271(2) & -0.39(1)  \\
+%             \hline
+%             3     & 0.7219(2) & 0.965(3) & -0.329(3) & -0.56(1)  \\
+%             \hline
+%             4     & 0.6571(2) & 0.996(3) & -0.368(4) & -0.83(2)  \\
+%             \hline
+%         \end{tabular}
+%     \end{center}
+%     \caption{
+%         Variational DiagMC computed values of the quasiparticle renormalization amplitude
+%         $Z$, effective mass $m^*/m$, and the Landau parameters $F_0^a$,
+%         $F_0^s$ for various values of the density parameter $r_s$, together
+%         with the estimated error.
+%     }
+%     \label{tab1}
+% \end{table}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.9\linewidth]{phase diagram.pdf}
-    \caption{Schematic phase diagram of a three-dimensional electron gas with a local attractive interaction. Here $r_s$ is the mean-distance between two electrons that measures the relative strength of the Coulomb repulsion, $u$ is the strength of the local attraction. The quasiparticle interaction (from the vertex correction) together with the local attraction may drive the electron gas to an (incommensurate) charge density wave (CDW). The dash line is where the charge-charge response functions develop universal behaviors below the momentum scale $k_F$.}
-    \label{fig:phasediagram}
-\end{figure}
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{phase diagram.pdf}
+%     \caption{Schematic phase diagram of a three-dimensional electron gas with a local attractive interaction. Here $r_s$ is the mean-distance between two electrons that measures the relative strength of the Coulomb repulsion, $u$ is the strength of the local attraction. The quasiparticle interaction (from the vertex correction) together with the local attraction may drive the electron gas to an (incommensurate) charge density wave (CDW). The dash line is where the charge-charge response functions develop universal behaviors below the momentum scale $k_F$.}
+%     \label{fig:phasediagram}
+% \end{figure}
 
-As the interaction increases, the structure factor in Eq.\eqref{eq:chi} may develop two types of non-trivial behaviors,
-\begin{enumerate}
-    \item When $f_0^+=1/\Pi_0^* (0, i\omega_0)$, the dynamic structure factor develops a universal behavior in the limit $\omega_n/v_F \ll v_F q \ll k_F$,
-          \begin{equation}
-              \chi(q, i\omega_n) \rightarrow \frac{q^2}{4\pi e^2},
-          \end{equation}
-          which is independent of the Fermi liquid parameters and the local interactions. For generic $f_0^+$, there is a similar universal behavior, but only for the momentum $q<q_{TF}=\sqrt{4\pi e^2 N_F}$, where is the Thomas-Fermi screening wavelength with a renormalized mass $m^*$.
+% As the interaction increases, the structure factor in Eq.\eqref{eq:chi} may develop two types of non-trivial behaviors,
+% \begin{enumerate}
+%     \item When $f_0^+=1/\Pi_0^* (0, i\omega_0)$, the dynamic structure factor develops a universal behavior in the limit $\omega_n/v_F \ll v_F q \ll k_F$,
+%           \begin{equation}
+%               \chi(q, i\omega_n) \rightarrow \frac{q^2}{4\pi e^2},
+%           \end{equation}
+%           which is independent of the Fermi liquid parameters and the local interactions. For generic $f_0^+$, there is a similar universal behavior, but only for the momentum $q<q_{TF}=\sqrt{4\pi e^2 N_F}$, where is the Thomas-Fermi screening wavelength with a renormalized mass $m^*$.
 
-          Similar universal behaviors emerge for other charge-charge response functions as well. For example, dielectric function $\epsilon(q,i\omega_n)=1/(1-f_0^+ \Pi^*_0 (q,i\omega_n))$ diverges in the same limit $\omega_n/v_F \ll v_F q \ll k_F$, diverges. Later, we will show such physics are caused by the emergence of a stable fixed point in the effective field theory of the charge fluctuations.
+%           Similar universal behaviors emerge for other charge-charge response functions as well. For example, dielectric function $\epsilon(q,i\omega_n)=1/(1-f_0^+ \Pi^*_0 (q,i\omega_n))$ diverges in the same limit $\omega_n/v_F \ll v_F q \ll k_F$, diverges. Later, we will show such physics are caused by the emergence of a stable fixed point in the effective field theory of the charge fluctuations.
 
-    \item When $f_0^+ \ll 1/\Pi_0^* (0, i\omega_0)$, there may be a CDW instability at a finite momentum,
-          \begin{equation}
-              q_c^2=q_{TF}^2\frac{\tilde{\Pi}_0({q_c})}{1-F_0^+ \tilde{\Pi}_0({q_c})},
-          \end{equation}
-          where $\tilde{\Pi}_0({q_c})=\Pi_0(q_c, i\omega_0)$ is the static polarization at the momentum $q_c$. Note that both the nominator and the denominator in the above equation are negative, ensuring the existence of the critical $q_c$. In general, $q_c$ is not locked to $k_F$ or $2k_F$, indicating the CDW is incommensurate.
+%     \item When $f_0^+ \ll 1/\Pi_0^* (0, i\omega_0)$, there may be a CDW instability at a finite momentum,
+%           \begin{equation}
+%               q_c^2=q_{TF}^2\frac{\tilde{\Pi}_0({q_c})}{1-F_0^+ \tilde{\Pi}_0({q_c})},
+%           \end{equation}
+%           where $\tilde{\Pi}_0({q_c})=\Pi_0(q_c, i\omega_0)$ is the static polarization at the momentum $q_c$. Note that both the nominator and the denominator in the above equation are negative, ensuring the existence of the critical $q_c$. In general, $q_c$ is not locked to $k_F$ or $2k_F$, indicating the CDW is incommensurate.
 
-          We will be focusing on the soft CDW in the limit $q_c \approx q_{TF}\cdot(-F_0^+)^{-1/2} \ll k_F$. The separation of length scale makes sure that the soft CDW here is a collective mode of low-energy quasiparticles near Fermi surface.
+%           We will be focusing on the soft CDW in the limit $q_c \approx q_{TF}\cdot(-F_0^+)^{-1/2} \ll k_F$. The separation of length scale makes sure that the soft CDW here is a collective mode of low-energy quasiparticles near Fermi surface.
 
-\end{enumerate}
+% \end{enumerate}
 
-Now we are ready to propose a schematic phase diagram for the electron gas in Fig. \ref{fig:phasediagram}. It is derived from the nontrivial behavior of the structure factor Eq.\eqref{eq:chi} with the estimation of the Landau parameter Eq.\eqref{eq:f}. To summarize, the system undergoes a charged Fermi liquid to CDW quantum phase transition as the interaction increases. The nature of the CDW and the phase transition is not known at this stage. Within the Fermi liquid phase, the charge-charge response functions develops universal behaviors along a line of fixed points.
+% Now we are ready to propose a schematic phase diagram for the electron gas in Fig. \ref{fig:phasediagram}. It is derived from the nontrivial behavior of the structure factor Eq.\eqref{eq:chi} with the estimation of the Landau parameter Eq.\eqref{eq:f}. To summarize, the system undergoes a charged Fermi liquid to CDW quantum phase transition as the interaction increases. The nature of the CDW and the phase transition is not known at this stage. Within the Fermi liquid phase, the charge-charge response functions develops universal behaviors along a line of fixed points.
 
 
 \appendix
