@@ -314,12 +314,12 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
             append!(df, d)
             sortdata!(df)
         else
-            bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+            bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
             if isempty(bigerrdf) == false
                 # replace only if the the new data has better quality for all quantitites
                 println("will replace $order for $paraid")
                 # println(bigerrdf)
-                df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+                df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
                 append!(df, d)
                 sortdata!(df)
             end
