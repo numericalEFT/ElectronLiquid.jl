@@ -3,9 +3,15 @@
 # using .UEG
 # using .CounterTerm
 using ElectronLiquid
+# using LsqFit
 using Printf
+using PyCall
+using LinearAlgebra
 
-rs = [8.0,]
+curve_fit = pyimport("scipy.optimize").curve_fit
+
+rs = [4.0,]
+# mass2 = [0.01, 0.003,  0.001, 0.0003, 0.0001]
 mass2 = [0.01, 0.001, 0.0001]
 Fs = [-0.0,]
 beta = [25.0,]
@@ -16,34 +22,61 @@ const filename = "para.csv"
 
 cache = []
 
-for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
-    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
+# @. model(x, p) = p[1] * x + p[2]
 
-    # Zrenorm = false
-    # Zrenorm = true
+# function f(x, a, b)
+#     return a * x + b
+# end
 
-    mu, sw = CounterTerm.getSigma(para, parafile=filename)
-    dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
+py"""
+def f(x, a, b):
+    return a * x + b
+"""
 
-    println("δz = ", dz)
-    println("δz_inverse = ", dzi)
-    sumzi = accumulate(+, dzi)
-    # if Zrenorm == false
+for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
+    norenorm_z = zeros(_order, length(mass2), 2)
+    renorm_z = zeros(_order, length(mass2), 2)
+    for (mi, _mass2) in enumerate(mass2)
+        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
 
-    z1 = @. 1.0 / (1.0 + sumzi)
-    # z1 = sumzi
-    # println("z without renormalization = $z")
-    push!(cache, sumzi[3])
+        # Zrenorm = false
+        # Zrenorm = true
 
-    # else
-    sumz = accumulate(+, dz)
-    z2 = @. 1.0 + sumz
-    # end
-    # println("z with renormalization = $z")
-    printstyled("$(UEG.short(para))\n", color=:green)
-    printstyled(@sprintf("%8s   %24s    %24s     %24s\n", "order", "chemical-potential", "no-z-renorm", "z-renorm"), color=:yellow)
-    for o in 1:para.order
-        @printf("%8d   %24s   %24s     %24s\n", o, "$(dmu[o])", "$(z1[o])", "$(z2[o])")
+        mu, sw = CounterTerm.getSigma(para, parafile=filename)
+        dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
+
+        println("δz = ", dz)
+        println("δz_inverse = ", dzi)
+        sumzi = accumulate(+, dzi)
+        # if Zrenorm == false
+
+        z1 = @. 1.0 / (1.0 + sumzi)
+        # z1 = sumzi
+        # println("z without renormalization = $z")
+        push!(cache, sumzi[3])
+
+        # else
+        sumz = accumulate(+, dz)
+        z2 = @. 1.0 + sumz
+        # end
+        # println("z with renormalization = $z")
+        printstyled("$(UEG.short(para))\n", color=:green)
+        printstyled(@sprintf("%8s   %24s    %24s     %24s\n", "order", "chemical-potential", "no-z-renorm", "z-renorm"), color=:yellow)
+        for o in 1:para.order
+            norenorm_z[o, mi, 1] = z1[o].val
+            norenorm_z[o, mi, 2] = z1[o].err
+            renorm_z[o, mi, 1] = z2[o].val
+            renorm_z[o, mi, 2] = z2[o].err
+            @printf("%8d   %24s   %24s     %24s\n", o, "$(dmu[o])", "$(z1[o])", "$(z2[o])")
+        end
+    end
+    for o in 1:_order
+        x = mass2 .^ 0.5
+        # fit = curve_fit(model, x, norenorm_z[o, :, 1], [1.0, 0.0])
+        # sigma = stderror(fit)
+        # println(sigma)
+        popt, pcov = curve_fit(py"f", x, norenorm_z[o, :, 1])
+        println(o, " ", popt[1], " +- ", sqrt.(diag(pcov))[1], " ", popt[2], " +- ", sqrt.(diag(pcov))[2])
     end
 end
 
