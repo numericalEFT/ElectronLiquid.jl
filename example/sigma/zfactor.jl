@@ -10,17 +10,16 @@ using LinearAlgebra
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-rs = [4.0,]
-# mass2 = [0.01, 0.003,  0.001, 0.0003, 0.0001]
-mass2 = [0.01, 0.001, 0.0001]
+rs = [4.0, ]
+mass2 = [0.01, 0.003,  0.001, 0.0003, 0.0001]
 Fs = [-0.0,]
-beta = [25.0,]
+beta = [25.0, ]
 order = [3,]
 
 const filename = "para.csv"
 # const filename = "para_wn_1minus0.csv"
 
-cache = []
+cache =[]
 
 # @. model(x, p) = p[1] * x + p[2]
 
@@ -70,19 +69,23 @@ for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
             @printf("%8d   %24s   %24s     %24s\n", o, "$(dmu[o])", "$(z1[o])", "$(z2[o])")
         end
     end
+    println("without renormalization fit")
     for o in 1:_order
-        x = mass2 .^ 0.5
-        # fit = curve_fit(model, x, norenorm_z[o, :, 1], [1.0, 0.0])
-        # sigma = stderror(fit)
-        # println(sigma)
+        x = mass2.^0.5
         popt, pcov = curve_fit(py"f", x, norenorm_z[o, :, 1])
+        println(o, " ", popt[1], " +- ", sqrt.(diag(pcov))[1], " ", popt[2], " +- ", sqrt.(diag(pcov))[2])
+    end
+    println("with renormalization fit")
+    for o in 1:_order
+        x = mass2.^0.5
+        popt, pcov = curve_fit(py"f", x, renorm_z[o, :, 1])
         println(o, " ", popt[1], " +- ", sqrt.(diag(pcov))[1], " ", popt[2], " +- ", sqrt.(diag(pcov))[2])
     end
 end
 
-b1 = (cache[1] - cache[2]) / (sqrt(0.01) - sqrt(0.001))
-b2 = (cache[2] - cache[3]) / (sqrt(0.001) - sqrt(0.0001))
-println(b1, ", ", b2)
-c1, c2 = cache[2] - b1 * sqrt(0.001), cache[3] - b2 * sqrt(0.0001)
-println(c1, ", ", c2)
-println(1.0 / (1 + c1), ", ", 1 / (1 + c2))
+b1=(cache[1]-cache[2])/(sqrt(0.01)-sqrt(0.001))
+b2=(cache[2]-cache[3])/(sqrt(0.001)-sqrt(0.0001))
+println(b1,", ", b2)
+c1, c2 = cache[2]-b1*sqrt(0.001), cache[3]-b2*sqrt(0.0001)
+println(c1,", ", c2)
+println(1.0/(1+c1),", ", 1/(1+c2))
