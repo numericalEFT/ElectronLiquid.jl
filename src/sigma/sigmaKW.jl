@@ -51,7 +51,7 @@ function KW(para::ParaMC, diagram;
     if haskey(kwargs, :solver)
         @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
     end
-    UEG.MCinitialize!(para)
+    para.isDynamic && UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, diag, root, extT = diagram
@@ -85,7 +85,7 @@ function KW(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrandKW; config=config, measure=measureKW, print=print, neval=neval, kwargs...)
+    result = integrate(integrandKW; solver=:mcmc, config=config, measure=measureKW, print=print, neval=neval, kwargs...)
     # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # niter=niter, print=print, block=block, kwargs...)
 

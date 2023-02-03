@@ -79,20 +79,22 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     #     return 0.0
     # end
 
+    # Evaluate μ counterterms; note that we have:
+    # ∂^n_μ g(ϵₖ - μ, τ) = (-1)^n ∂^n_ω g(ω, τ)
     τ = τout - τin
     order = id.order[1]
-    if order == 0
+    if order == 0  # g[μ]
         if τ ≈ 0.0
             return Spectral.kernelFermiT(-1e-8, ϵ, β)
         else
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
-    elseif order == 1
-        return green2(ϵ, τ, β)
-    elseif order == 2
-        return green3(ϵ, τ, β)
-    elseif order == 3
-        return green3(ϵ, τ, β)
+    elseif order == 1  # ∂_μ g[μ]
+        return -Spectral.kernelFermiT_dω(τ, ϵ, β)
+    elseif order == 2  # ∂^2_μ g[μ]
+        return Spectral.kernelFermiT_dω2(τ, ϵ, β)
+    elseif order == 3  # ∂^3_μ g[μ]
+        return -Spectral.kernelFermiT_dω3(τ, ϵ, β)
     else
         error("not implemented!")
     end
