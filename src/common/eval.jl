@@ -52,10 +52,10 @@ function green3(Ek, τ, beta=β)
 
     if (Ek > 0.0)
         c = exp(-beta * Ek)
-        green = exp(-Ek * τ) / (1.0 + c)^3.0 * (τ^2 / 2 - (beta^2 / 2 + beta * τ - τ^2) * c + (beta - τ)^2 * c^2 / 2.0)
+        green = exp(-Ek * τ) / (1.0 + c)^3.0 * (τ^2 - (beta^2 + 2 * beta * τ - 2 * τ^2) * c + (beta - τ)^2 * c^2)
     else
         c = exp(beta * Ek)
-        green = exp(Ek * (beta - τ)) / (1.0 + c)^3 * (τ^2 * c^2 / 2.0 - (beta^2 / 2.0 + beta * τ - τ^2) * c + (beta - τ)^2 / 2.0)
+        green = exp(Ek * (beta - τ)) / (1.0 + c)^3 * (τ^2 * c^2 - (beta^2 + 2 * beta * τ - 2 * τ^2) * c + (beta - τ)^2)
     end
 
     green *= s
