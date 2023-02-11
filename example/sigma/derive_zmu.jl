@@ -1,13 +1,15 @@
 using ElectronLiquid
+using ElectronGas
 using Measurements
 using Printf
 using JLD2
 
-rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
-mass2 = [0.001, ]
+# rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+rs = [5.0,]
+mass2 = [0.01,]
 Fs = [-0.0,]
-beta = [25.0, ]
-order = [3,]
+beta = [25.0,]
+order = [2,]
 
 const filename = "data_Z.jld2"
 
@@ -42,7 +44,10 @@ function process(datatuple, isSave)
     end
 
     dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
-    println("zfactor: ", dzi)
+    println("dz: ", dzi)
+    for i in eachindex(dzi)
+        println("z[$i]: ", 1.0 / (1.0 + sum(dzi[1:i])))
+    end
 
     ############# save to csv  #################
     # println(df)

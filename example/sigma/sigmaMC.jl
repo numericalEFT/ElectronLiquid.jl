@@ -7,7 +7,7 @@ mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
 order = [2,]
-neval = 1e6
+neval = 1e7
 
 # mission = :Z
 # mission = :K
@@ -22,8 +22,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     if mission == "Z"
         ######### calcualte Z factor ######################
         kgrid = [kF,]
-        # ngrid = [-1, 0]
-        ngrid = [0, 1]
+        ngrid = [-1, 0]
+        # ngrid = [-1, 0, 1]
     elseif mission == "K"
         ######### calculate K dependence #####################
         Nk, korder = 4, 4
@@ -41,7 +41,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
 
     sigma, result = Sigma.KW(para, diagram;
         neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
-        kgrid=kgrid, ngrid=ngrid, neval=neval)
+        kgrid=kgrid, ngrid=ngrid, neval=neval, paralell=:thread)
 
     if isnothing(sigma) == false
         jldopen("data_$(mission).jld2", "a+") do f

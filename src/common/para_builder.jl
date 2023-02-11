@@ -18,12 +18,14 @@ export ParaMC, Weight, getK
 # Specify the type of qgrid and τgrid explicitly, otherwise, there will be a type stability issue with interactionDynamic and interactionStatic
 const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64,CompositeGrids.SimpleG.ClosedBound},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64,CompositeGrids.SimpleG.ClosedBound}}}
 
+# CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64}}}
+
 @with_kw struct ParaMC
     ### fundamental parameters
     beta::Float64
     rs::Float64
     order::Int = 2
-    Fs::Float64 = -0.0
+    Fs::Float64 = [-0.0, -0.0, -0.0]
     Fa::Float64 = -0.0
     # δFs = []
 
