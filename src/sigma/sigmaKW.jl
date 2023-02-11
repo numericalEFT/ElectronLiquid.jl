@@ -53,7 +53,7 @@ function KW(para::ParaMC, diagram;
     # @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
     # end
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.KW"
-    UEG.MCinitialize!(para)
+    para.isDynamic && UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, diag, root, extT = diagram

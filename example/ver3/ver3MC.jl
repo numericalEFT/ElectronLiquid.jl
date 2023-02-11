@@ -23,7 +23,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     partition = UEG.partition(_order)
     # partition = [(1, 0, 0), (1, 1, 0), (2, 0, 0)]
     neighbor = UEG.neighbor(partition)
-    filter = [NoHatree,
+    filter = [NoHartree,
         # NoBubble,
         Proper
     ]

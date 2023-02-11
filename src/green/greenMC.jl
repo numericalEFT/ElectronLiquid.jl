@@ -71,10 +71,10 @@ for p in partition
     if p == (1, 0, 0)
         gdiag[p] = d
     else
-        gdiag[p] = DiagTree.removeHatreeFock!(d)
+        gdiag[p] = DiagTree.removeHartreeFock!(d)
     end
 end
-# DiagTree.removeHatreeFock!(sigma[2, 0, 0])
+# DiagTree.removeHartreeFock!(sigma[2, 0, 0])
 # println(sigma[2, 0, 0])
 # plot_tree(sigma[(2, 0, 0)], maxdepth=8)
 # exit(0)

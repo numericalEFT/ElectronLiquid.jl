@@ -36,7 +36,7 @@ end
 function diagram(paramc::ParaMC, _partition::Vector{T};
     channel=[PHr, PHEr, PPr],
     filter=[
-        NoHatree,
+        NoHartree,
         # Girreducible,
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
@@ -61,7 +61,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
         if isempty(d) == false
             if paramc.isFock # remove the Fock subdiagrams
-                DiagTree.removeHatreeFock!(d)
+                DiagTree.removeHartreeFock!(d)
             end
             push!(diagpara, para)
             push!(diag, ExprTree.build(d))
