@@ -25,7 +25,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     beta::Float64
     rs::Float64
     order::Int = 2
-    Fs::Float64 = [-0.0, -0.0, -0.0]
+    Fs::Float64 = -0.0
     Fa::Float64 = -0.0
     # δFs = []
 
@@ -63,7 +63,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
     τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
-    ######### only need to be initialized for MC simulation ###########################
+    # ######### only need to be initialized for MC simulation ###########################
     dW0::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
     cRs::Vector{Matrix{Float64}} = []
 

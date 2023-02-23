@@ -42,6 +42,9 @@ export CounterTerm
 include("./common/eval.jl")
 using .Propagator
 
+include("./green/green.jl")
+using .Green
+
 include("./sigma/sigma.jl")
 using .Sigma
 export Sigma
