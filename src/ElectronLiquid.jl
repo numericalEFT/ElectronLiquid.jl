@@ -44,6 +44,7 @@ using .Propagator
 
 include("./green/green.jl")
 using .Green
+export Green
 
 include("./sigma/sigma.jl")
 using .Sigma
