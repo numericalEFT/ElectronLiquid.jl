@@ -11,7 +11,7 @@ using Plots
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-rs = [2.0, 4.0, 6.0]
+rs = [4.0,]
 mass2 = [0.01, 0.003, 0.001, 0.0003, 0.0001]
 Fs = [-0.0,]
 beta = [25.0,]
@@ -27,8 +27,8 @@ z = similar(nz)
 z_error = similar(nz)
 
 
-# const filename = "para.csv"
-const filename = "para_wn_1minus0.csv"
+const filename = "para.csv"
+#const filename = "para_wn_1minus0.csv"
 
 cache = []
 
@@ -56,6 +56,7 @@ for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
         dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
 
         println("δz = ", dz)
+        println("δμ = ", dmu)
         println("δz_inverse = ", dzi)
         sumzi = accumulate(+, dzi)
         # if Zrenorm == false

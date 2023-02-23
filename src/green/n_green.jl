@@ -23,11 +23,11 @@ function density(g)
     return n * para.β
 end
 
-sigma = SelfEnergy.G0W0(para, Nk=16, maxK=6 * para.kF)
+dyn, ins = SelfEnergy.G0W0(para, Nk=16, maxK=6 * para.kF)
 
-println("mu: ", SelfEnergy.chemicalpotential(para, sigma))
+println("mu: ", SelfEnergy.chemicalpotential(para, dyn, ins))
 
-sigma = toMatFreq(sigma)
+sigma = toMatFreq(dyn)
 mui = instant(sigma, para.kF, 1, 1)
 println("static mu: ", mui)
 mud = dynamic(sigma, 1, para.kF, 1, 1)

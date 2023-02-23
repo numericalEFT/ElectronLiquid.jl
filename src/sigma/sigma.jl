@@ -30,7 +30,7 @@ end
 
 function diagram(paramc::ParaMC, _partition::Vector{T};
     filter=[
-        NoHartree,
+        FeynmanDiagram.NoHartree,
         # Girreducible,
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
