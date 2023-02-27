@@ -95,6 +95,7 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
         return Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
     elseif order == 3  # ∂^3_μ g[μ]/6
         return -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+        # return 0.0
     else
         error("not implemented!")
     end

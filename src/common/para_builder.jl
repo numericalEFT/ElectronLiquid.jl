@@ -102,15 +102,15 @@ paraid(p::ParaMC) = Dict(
 
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")
 
-
-function partition(order::Int)
+function partition(order::Int; offset::Int=1)
     # normal order, G order, W order
-    par = [(1, 0, 0),  # order 1
-        (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
-        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
-        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
+    par = [
+        (0, 0, 0),  # order 0
+        (1, 0, 0), (0, 1, 0), (0, 0, 1),  # order 1
+        (2, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 1), (0, 2, 0), (0, 0, 2),  # order 2
+        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), (0, 3, 0), (0, 0, 3), (0, 2, 1), (0, 1, 2)  # order 3
     ]
-    return sort([p for p in par if p[1] + p[2] + p[3] <= order])
+    return sort([(p[1] + offset, p[2], p[3]) for p in par if p[1] + p[2] + p[3] <= order - offset])
 end
 
 function neighbor(partitions)
