@@ -41,7 +41,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
 
     sigma, result = Sigma.KW(para, diagram;
         neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
-        kgrid=kgrid, ngrid=ngrid, neval=neval, paralell=:thread)
+        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
 
     if isnothing(sigma) == false
         jldopen("data_$(mission).jld2", "a+") do f
