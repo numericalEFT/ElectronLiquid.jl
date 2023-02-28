@@ -2,14 +2,14 @@ using ElectronLiquid
 using CompositeGrids
 using JLD2
 
-rs = [1.0,]
-mass2 = [1.0,]
+rs = [4.0,]
+mass2 = [0.01,]
 Fs = [-0.0,]
-beta = [40.0,]
-order = [3,]
-neval = 1e8
+beta = [25.0,]
+order = [2,]
+neval = 1e7
 
-isDynamic = false
+isDynamic = true
 isFock = false
 
 # mission = :Z
@@ -45,17 +45,25 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         g, result = Green.densityKT(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal[1:length(valid_partition)+1],
             neval=neval, parallel=:thread)
-    else
+    elseif mission == :K
         g, result = Green.KT(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal[1:length(valid_partition)+1],
             kgrid=kgrid, tgrid=tgrid, neval=neval, parallel=:thread)
+    else
+        error("unknown mission: $(mission)")
     end
 
     if isnothing(g) == false
-        if mission != :n
+        if mission == :K
             for (ki, k) in enumerate(kgrid)
                 println("k = $(k/para.kF), nk = $(g[partition[1]][1, ki])")
             end
+        elseif mission == :n
+            for (ip, p) in enumerate(valid_partition)
+                println("n$(p) = $(g[p]/g[(0, 0, 0)])")
+            end
+        else
+            error("unknown mission: $(mission)")
         end
         jldopen("data_$(mission).jld2", "a+") do f
             key = "$(UEG.short(para))"

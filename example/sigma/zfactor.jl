@@ -11,7 +11,7 @@ using Plots
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-rs = [4.0,]
+rs = [2.0, 4.0]
 mass2 = [0.01, 0.003, 0.001, 0.0003, 0.0001]
 Fs = [-0.0,]
 beta = [25.0,]
@@ -28,7 +28,7 @@ z_error = similar(nz)
 
 
 const filename = "para.csv"
-#const filename = "para_wn_1minus0.csv"
+# const filename = "para_wn_1minus0.csv"
 
 cache = []
 
