@@ -2,7 +2,7 @@ using ElectronLiquid
 using CompositeGrids
 using JLD2
 
-rs = [4.0,]
+rs = [1.0,]
 mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
@@ -13,8 +13,8 @@ isDynamic = true
 isFock = false
 
 # mission = :Z
-# mission = :K
-mission = :n
+mission = :K
+# mission = :n
 # mission = ARGS[1]
 # println("mission: ", mission)
 # exit(0)
@@ -24,10 +24,10 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     kF = para.kF
 
     ######### calculate K/T dependence #####################
-    Nk, korder = 4, 4
-    minK = 0.2kF
-    kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 3kF], [kF,], Nk, minK, korder).grid
-    tgrid = [_beta - 1e-8,]
+    Nk, korder = 5, 5
+    minK = 0.02kF
+    kgrid = CompositeGrid.LogDensedGrid(:cheb, [0.0, 3kF], [kF,], Nk, minK, korder).grid
+    tgrid = [para.β - 1e-8,]
 
     lowest_loop_order = 0  # Green's functions start at zeroth loop order
     partition = UEG.partition(_order; offset=lowest_loop_order)
