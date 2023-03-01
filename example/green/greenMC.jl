@@ -7,7 +7,7 @@ mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
 order = [2,]
-neval = 1e7
+neval = 1e6
 
 isDynamic = true
 isFock = false
@@ -56,7 +56,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     if isnothing(g) == false
         if mission == :K
             for (ki, k) in enumerate(kgrid)
-                println("k = $(k/para.kF), nk = $(g[partition[1]][1, ki])")
+                println("k = $(k/para.kF), $(g[(0, 1, 0)][1, ki]), $(g[(1, 0, 0)][1, ki])")
             end
         elseif mission == :n
             for (ip, p) in enumerate(valid_partition)

@@ -19,8 +19,11 @@ function loaddata(para, FileName=filename)
 end
 
 function renormalize(para, sigma, Zrenorm)
+
+
     mu, sw = CounterTerm.getSigma(para, parafile=parafilename)
     dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
+    # println(dmu)
 
     sigma = CounterTerm.chemicalpotential_renormalization(para.order, sigma, dmu)
     return sigma
@@ -31,9 +34,15 @@ function process(para, Zrenorm)
 
     tgrid, kgrid, data = loaddata(para, filename)
 
+    newdata = Dict()
+    kF_label = searchsortedfirst(kgrid, para.kF)
+    for key in keys(data)
+        # println(key, ": ", data[key][1, kF_label])
+        newdata[(key[1] + 1, key[2], key[3])] = data[key]
+    end
     # data = mergeInteraction(data)
     # println(size(idata[(1, 0)]))
-    return renormalize(para, data, Zrenorm), tgrid, kgrid
+    return renormalize(para, newdata, Zrenorm), tgrid, kgrid
 
     # zk = Dict()
     # for (key, val) in idata
@@ -81,26 +90,30 @@ function plot_k(para, Sw_k, kgrid, Zrenorm)
     # signal = pyimport("scipy.signal")
     interp = pyimport("scipy.interpolate")
 
-    for o in 0:para.order
-        n0 = @. 1 / (1.0 + exp(para.β * (kgrid^2 / (2 * para.me) - para.EF)))
-        if o == 0
-            y = n0
-            e = y .* 0.0
-        else
-            # println(sum(zk[1:o, 1]))
-            # zko = 1 ./ (1 .+ sum(zk[1:o]))
-            zko = sum(Sw_k[1:o]) .+ n0
-            y = [z.val for z in zko[1, :]]
-            e = [z.err for z in zko[1, :]]
-        end
+    for o in 1:para.order
+        # n0 = @. 1 / (1.0 + exp(para.β * (kgrid^2 / (2 * para.me) - para.EF)))
+        # if o == 1
+        #     y = n0
+        #     e = y .* 0.0
+        # else
+        #     # println(sum(zk[1:o, 1]))
+        #     # zko = 1 ./ (1 .+ sum(zk[1:o]))
+        #     # println(length(Sw_k))
+        #     zko = sum(Sw_k[1:o-1])
+        #     y = [z.val for z in zko[1, :]]
+        #     e = [z.err for z in zko[1, :]]
+        # end
+        zko = sum(Sw_k[1:o])
+        y = [z.val for z in zko[1, :]]
+        e = [z.err for z in zko[1, :]]
         # println(zk[o])
-        plot.plt.errorbar(kgrid / kF, y, yerr=e, color=plot.color[o+1], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
+        plot.plt.errorbar(kgrid / kF, y, yerr=e, color=plot.color[o], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
 
         # yfit = signal.savgol_filter(y, 5, 3)
         x = kgrid / kF
         spl = interp.UnivariateSpline(x, y, w=1.0 ./ e)
         yfit = spl(x)
-        plot.plt.plot(x, yfit, color=plot.color[o+1], linestyle="--")
+        plot.plt.plot(x, yfit, color=plot.color[o], linestyle="--")
         # println(plt)
         # p = plot(kgrid.grid, zk[o])
         # display(p)

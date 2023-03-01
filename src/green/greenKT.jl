@@ -44,7 +44,7 @@ function KT(para::ParaMC, diagram;
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, diag, root = diagram
 
-    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
+    K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kF
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
