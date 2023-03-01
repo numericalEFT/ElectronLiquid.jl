@@ -11,7 +11,8 @@ using Plots
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-rs = [2.0, 4.0]
+# rs = [1.0, 2.0, 4.0, 5.0, 6.0]
+rs = [2.0, 4.0, ]
 mass2 = [0.01, 0.003, 0.001, 0.0003, 0.0001]
 Fs = [-0.0,]
 beta = [25.0,]

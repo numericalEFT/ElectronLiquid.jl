@@ -135,7 +135,7 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
-    para = ParaMC(rs=1.0, beta=25.0, Fs=-0.0, order=2, mass2=0.01, isDynamic=true)
+    para = ParaMC(rs=1.0, beta=25.0, Fs=-0.0, order=3, mass2=0.01, isDynamic=true)
 
     Sw_k, tgrid, kgrid = process(para, false)
 

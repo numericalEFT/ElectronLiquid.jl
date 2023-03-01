@@ -6,8 +6,8 @@ rs = [1.0,]
 mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
-order = [2,]
-neval = 1e6
+order = [3,]
+neval = 1e8
 
 isDynamic = true
 isFock = false
