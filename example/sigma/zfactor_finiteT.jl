@@ -3,7 +3,6 @@
 # using .UEG
 # using .CounterTerm
 using ElectronLiquid
-using ElectronGas
 # using LsqFit
 using Printf
 using PyCall
@@ -12,7 +11,7 @@ using Plots
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+rs = [1.0, 2.0, 4.0, 5.0, 6.0, 8.0]
 #rs = [2.0, 4.0, ]
 mass2 = [0.01, 0.003, 0.001, 0.0003, 0.0001]
 Fs = [-0.0,]
@@ -22,19 +21,6 @@ order = [3,]
 rs_old = [1.0, 2.0, 3.0, 4.0]
 z_old = [0.8725, 0.7984, 0.7219, 0.6571]
 z_error_old = [0.0002, 0.0002, 0.0002, 0.0002]
-
-rs_rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-z_rs = [0.8601, 0.7642, 0.6927, 0.6367, 0.5913, 0.5535, 0.52244, 0.49496]
-
-rs_qmc = [1.0, 2.0, 3.99, 5.0, 10.0]
-z_rmc_bf = [0.84, 0.77, 0.64, 0.58, 0.40]
-z_rmc_bf_err = [0.02, 0.01, 0.01, 0.01, 0.01]
-
-z_vmc_sj = [0.894, 0.82, 0.69, 0.61, 0.45]
-z_vmc_sj_err = [0.009, 0.01, 0.01, 0.02, 0.01]
-
-z_vmc_bf = [0.86, 0.78, 0.65, 0.59, 0.41]
-z_vmc_bf_err = [0.01, 0.01, 0.01, 0.02, 0.01]
 
 nz = zeros(order[1], length(rs))
 nz_error = similar(nz)
@@ -116,18 +102,9 @@ for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
     end
 end
 
-println(nz[3, :])
-println(abs.(nz[3, :] .- nz[2, :]) .* 1.0 .+ nz_error[3, :])
-println(z[3, :])
-println(abs.(z[3, :] .- z[2, :]) .* 1.0 .+ z_error[3, :])
-
 p = plot(rs, nz[3, :], yerror=abs.(nz[3, :] .- nz[2, :]) .+ nz_error[3, :], label="without renormalization")
 plot!(p, rs, z[3, :], yerror=abs.(z[3, :] .- z[2, :]) .+ z_error[3, :], label="with renormalization")
-plot!(p, rs_old, z_old, yerror=z_error_old, label="Kristjan & Chen, 2022")
-plot!(p, rs_rs, z_rs, label="RPA")
-plot!(p, rs_qmc, z_rmc_bf, yerror=z_rmc_bf_err, label="BF-RMC")
-plot!(p, rs_qmc, z_vmc_bf, yerror=z_vmc_bf_err, label="BF-VMC")
-plot!(p, rs_qmc, z_vmc_sj, yerror=z_vmc_sj_err, label="SJ-VMC")
+plot!(p, rs_old, z_old, yerror=z_error_old, label="Previous")
 display(p)
 readline()
 
