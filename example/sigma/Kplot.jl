@@ -38,6 +38,8 @@ function renormalize(para, sigma, Zrenorm)
     mu, sw = CounterTerm.getSigma(para, parafile=parafilename)
     ############ z renormalized  ##########################
     dzi, dmu, dz = CounterTerm.sigmaCT(para.order, mu, sw)
+    println(para.order)
+    println(dmu)
     sigma = CounterTerm.chemicalpotential_renormalization(para.order, sigma, dmu)
     return sigma
 end
@@ -66,8 +68,8 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
     rcParams["font.family"] = "Times New Roman"
     figure(figsize=(4, 4))
 
-    function sk(sigma, kgrid)
-        dk = (sigma[2:end] .- sigma[1]) ./ (kgrid[2:end] .^ 2 / (2 * para.me))
+    function sk(sigma, order, kgrid)
+        dk = [(sigma[o][1, 2:end] .- sigma[o][1, 1]) ./ (kgrid[2:end] .^ 2 / (2 * para.me)) for o in 1:order]
         return kgrid[2:end], dk
     end
 
@@ -79,10 +81,10 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
         # zko = Sw_k[o]
         # y = [z.val for z in zko]
         # e = [z.err for z in zko]
-        _kgrid, s_k = sk(Sw_k[o][1, :], kgrid)
-        z = sum([-z for z in s_k] for j in 1:o)
+        _kgrid, s_k = sk(Sw_k, o, kgrid)
+        z = sum(s_k)
         y = [-z.val for z in z]
-        e = [-z.err for z in z]
+        e = [z.err for z in z]
         # println(zk[o])
         # println(length(_kgrid))
         # println(length(y))
@@ -118,6 +120,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     rSw_k, iSw_k, kgrid, ngrid = process(para, false)
 
+
+    kF_label = searchsortedfirst(kgrid, para.kF)
+    for k in keys(rSw_k)
+        println(k, ": ", rSw_k[k][1, kF_label])
+    end
     plotS_k(para, rSw_k, kgrid, Zrenorm)
     # readline()
 end
