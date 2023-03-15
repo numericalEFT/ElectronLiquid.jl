@@ -12,11 +12,12 @@ using Plots
 
 curve_fit = pyimport("scipy.optimize").curve_fit
 
-# rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
-rs = [4.0, ]
+rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+# rs = [4.0, ]
 #rs = [2.0, 4.0, ]
 mass2 = [0.01, 0.003, 0.001, 0.0003, 0.0001]
-Fs = [-0.0, -0.521, -1.0,]
+# Fs = [-0.0, -0.521, -1.0,]
+Fs = [-0.0,]
 beta = [25.0,]
 order = [3,]
 
@@ -105,7 +106,7 @@ for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
         popt, pcov = curve_fit(py"f", x, norenorm_z[o, :, 1])
         println(o, " ", popt[1], " +- ", sqrt.(diag(pcov))[1], " ", popt[2], " +- ", sqrt.(diag(pcov))[2])
         nz[o, rsi] = popt[2]
-        nz_error[o, rsi] = sqrt.(diag(pcov))[2]
+        nz_error[o, rsi] = sqrt.(diag(pcov))[2] * 3.0
     end
     println("with renormalization fit")
     for o in 1:_order
@@ -113,7 +114,7 @@ for (_rs, _F, _beta, _order) in Iterators.product(rs, Fs, beta, order)
         popt, pcov = curve_fit(py"f", x, renorm_z[o, :, 1])
         println(o, " ", popt[1], " +- ", sqrt.(diag(pcov))[1], " ", popt[2], " +- ", sqrt.(diag(pcov))[2])
         z[o, rsi] = popt[2]
-        z_error[o, rsi] = sqrt.(diag(pcov))[2]
+        z_error[o, rsi] = sqrt.(diag(pcov))[2] * 3.0
     end
 end
 

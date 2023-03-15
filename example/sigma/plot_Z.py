@@ -7,9 +7,10 @@ plt.style.use('science')
 # QFT and quasiparticle QFT results for Z
 rs_qft = [0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
 z_qft = [1.0, 0.9224, 0.8608210502584686, 0.749144526156203, 0.6622891781023675, 0.5861045365581065, 0.5208831611860456, 0.46342605505136064, 0.37562045192664967]
-z_qft_err = [1e-8, 0.0002, 0.0025375103900398535, 0.004271382101977, 0.007859657243457406, 0.006433189136690359, 0.002900070407391964, 0.008030549361551665, 0.01620488449726311]
+z_qft_err = [1e-8, 0.0002, 0.0028199354623565345, 0.00832375521694881, 0.010795966185016277, 0.009732720423881042, 0.0100925784804457435, 0.01569005557909372, 0.027285334913524847]
 z_qft_quasi= [1.0, 0.9224, 0.8611633434933357, 0.7496024658544531, 0.6709968875211331, 0.6040765444587273, 0.5492968494379177, 0.5025532635810275, 0.457480762325804]
-z_qft_quasi_err = [1e-8, 0.0002, 0.0007284232205424082, 0.010739723147249847, 0.005032502684109846, 0.006599757655543094, 0.011277819776085687, 0.026913838502092703, 0.04056316938679215]
+z_qft_quasi_err = [1e-8, 0.0002, 0.001040187306472799, 0.01779348428847196, 0.010931222054177377, 0.015168873975929115, 0.023233316150618702, 0.057910434448675205, 0.10363210442228994]
+
 
 # Kristjan & Chen 2022, T=T_F/25
 rs_old = [1.0, 2.0, 3.0, 4.0]
@@ -90,9 +91,10 @@ plot(rs_old, z_old, z_error_old, 's', 4, 'VDMC, $T=T_F/25$', colors[2], 'none')
 plot(3.99, 0.58, 0.07, 'o', 6, 'Experiment', 'gray', 'none')
 
 # QFT and quasiparticle QFT results for Z
-plot(rs_qft, z_qft_quasi, z_qft_quasi_err, '^', markersize, '$G_RW_0$', colors[1], colors[1])
-plt.plot(xnew, curve_quasi, '--', color=colors[1], linewidth=1, markersize=markersize)
+# plot(rs_qft, z_qft_quasi, z_qft_quasi_err, '^', markersize, '$G_RW_0$', colors[1], colors[1])
+# plt.plot(xnew, curve_quasi, '--', color=colors[1], linewidth=1, markersize=markersize)
 
+# z_qft_err = [e*3.0 for e in z_qft_err]
 plot(rs_qft, z_qft, z_qft_err, 'o', markersize, '$G_0W_0$', colors[0], colors[0])
 plt.plot(xnew, curve_qft, '--', color=colors[0], linewidth=1, markersize=markersize)
 
