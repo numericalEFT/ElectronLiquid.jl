@@ -5,6 +5,7 @@ using PyCall
 using PyPlot
 using ElectronLiquid
 using ElectronGas
+using TaylorSeries
 
 # pushfirst!(PyVector(pyimport("sys")."path"), ".")
 
@@ -78,7 +79,7 @@ function spline(x, y, e)
     return __x, yfit
 end
 
-function plotS_k(para, Sw_k, kgrid, Zrenorm)
+function plotS_k(para, rSw_k, iSw_k, kgrid, Zrenorm)
     dim, β, kF = para.dim, para.β, para.kF
     kF_label = searchsortedfirst(kgrid, kF)
     # zk[1] = zk[1] .- zk[1][kF_label]
@@ -96,31 +97,47 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
 
     function sk(sigma, order, kgrid)
         dk = [(sigma[o][1, 2:end] .- sigma[o][1, 1]) ./ (kgrid[2:end] .^ 2 / (2 * para.me)) for o in 1:order]
-        return kgrid[2:end], dk
+        return kgrid[2:end], sum(dk)
     end
 
+    function delta_z(sigma, order, ki)
+        # return [(sigma[o][2, ki] .- sigma[o][1, ki]) ./ (2π / para.β) for o in 1:order]
+        return [(sigma[o][1, ki]) ./ (π / para.β) for o in 1:order]
+    end
+
+    # power series of z-factor
+    function sw(sigma, order, kgrid)
+        dw = [sum(delta_z(sigma, order, ki)) for ki in 1:length(kgrid)]
+        # dw = [(sigma[o][1, :]) ./ (π / para.β) for o in 1:order]
+        return kgrid, dw
+    end
+
+    # power series of 1/z
+    function sw_inv(sigma, order, kgrid)
+        dw = []
+        for ki in 1:length(kgrid)
+            δzi = delta_z(sigma, order, ki)
+            zi = Taylor1([1.0, δzi...], order)
+            z = 1 / zi
+            δz = [getcoeff(z, o) for o in 1:order]
+            push!(dw, sum(δz[1:end]))
+        end
+        return kgrid, dw
+    end
+
+    subplot(1, 2, 2)
     for o in 1:para.order
-        # println(sum(zk[1:o, 1]))
-        # zko = 1 ./ (1 .+ sum(zk[1:o]))
-        # zko = Sw_k[o]
-        # y = [z.val for z in zko]
-        # e = [z.err for z in zko]
-        _kgrid, s_k = sk(Sw_k, o, kgrid)
-        z = sum(s_k)
+        _kgrid, s_k = sk(rSw_k, o, kgrid)
+        z = s_k
         y = [-z.val for z in z]
         e = [z.err for z in z]
-        # println(zk[o])
-        # println(length(_kgrid))
-        # println(length(y))
         errorbar(_kgrid / kF, y, yerr=e, color=color[o], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
 
         _x, _y = spline(_kgrid / kF, y, e)
         plot(_x, _y, color=color[o], linestyle="--")
-        # println(plt)
-        # p = plot(kgrid.grid, zk[o])
-        # display(p)
     end
     xlim([kgrid[1] / kF, kgrid[end] / kF])
+    ylim([0.0, 1.0])
     xlabel("\$k/k_F\$")
     # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     if Zrenorm
@@ -130,9 +147,36 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
     end
     # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     legend()
+
+    subplot(1, 2, 1)
+    for o in 1:para.order
+        _kgrid, s_w = sw_inv(iSw_k, o, kgrid)
+        z = [(1.0 + e) for e in s_w]
+        # _kgrid, s_w = sw(iSw_k, o, kgrid)
+        # z = [1.0 / (1.0 + e) for e in s_w]
+        y = [z.val for z in z]
+        e = [z.err for z in z]
+        kidx = searchsortedfirst(_kgrid, kF)
+        println("order $o at k=$(_kgrid[kidx]/kF): $(z[kidx])")
+
+        errorbar(_kgrid / kF, y, yerr=e, color=color[o], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
+
+        _x, _y = spline(_kgrid / kF, y, e)
+        plot(_x, _y, color=color[o], linestyle="--")
+    end
+    xlim([kgrid[1] / kF, kgrid[end] / kF])
+    ylim([0.0, 1.0])
+    xlabel("\$k/k_F\$")
+    if Zrenorm
+        ylabel("\$z \\cdot \\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    else
+        ylabel("\$\\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    end
+    # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
+    legend()
     #plot.plt.savefig("sigmaK_rs$(para.rs)_Fs$(para.Fs)_$(para.dim)d.pdf")
     show()
-    readline()
+    # readline()
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -146,7 +190,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for k in keys(rSw_k)
         println(k, ": ", rSw_k[k][1, kF_label])
     end
-    plotS_k(para, rSw_k, kgrid, Zrenorm)
+    plotS_k(para, rSw_k, iSw_k, kgrid, Zrenorm)
     # plotS_k(para, iSw_k, kgrid, Zrenorm)
     # readline()
 end
