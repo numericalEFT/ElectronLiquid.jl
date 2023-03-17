@@ -18,10 +18,12 @@ mutable struct Weight{T} <: FieldVector{2,T}
     e::T
     Weight{T}() where {T} = new{T}(0.0, 0.0)
     Weight(d::T, e::T) where {T} = new{T}(d, e)
+    Weight{T}(d::T, e::T) where {T} = new{T}(d, e)
 end
 
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
 export Weight
 
 const ExprTreeF64 = FeynmanDiagram.ExpressionTree{FeynmanDiagram.ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}

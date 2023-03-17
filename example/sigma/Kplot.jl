@@ -52,6 +52,32 @@ function process(para, Zrenorm)
     return renormalize(para, rdata, Zrenorm), renormalize(para, idata, Zrenorm), kgrid, ngrid
 end
 
+function spline(x, y, e)
+    # signal = pyimport("scipy.signal")
+    interp = pyimport("scipy.interpolate")
+    # yfit = signal.savgol_filter(y, 5, 3)
+    w = 1.0 ./ e
+    kidx = searchsortedfirst(x, 0.5)
+    _x, _y = deepcopy(x[kidx:end]), deepcopy(y[kidx:end])
+    _w = 1.0 ./ e[kidx:end]
+
+    #enforce the boundary condition: the derivative at k=0 is zero
+    pushfirst!(_x, 0.01)
+    pushfirst!(_x, 0.0)
+    kidx = searchsortedfirst(_x, 0.7)
+    yavr = sum(y[1:kidx] .* w[1:kidx]) / sum(w[1:kidx])
+    pushfirst!(_y, yavr)
+    pushfirst!(_y, yavr)
+    pushfirst!(_w, _w[1] * 10000)
+    pushfirst!(_w, _w[1] * 10000)
+
+    # generate knots with spline without constraints
+    spl = interp.UnivariateSpline(_x, _y, w=_w, k=3)
+    __x = collect(LinRange(0.0, x[end], 100))
+    yfit = spl(__x)
+    return __x, yfit
+end
+
 function plotS_k(para, Sw_k, kgrid, Zrenorm)
     dim, β, kF = para.dim, para.β, para.kF
     kF_label = searchsortedfirst(kgrid, kF)
@@ -73,8 +99,6 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
         return kgrid[2:end], dk
     end
 
-    # signal = pyimport("scipy.signal")
-    interp = pyimport("scipy.interpolate")
     for o in 1:para.order
         # println(sum(zk[1:o, 1]))
         # zko = 1 ./ (1 .+ sum(zk[1:o]))
@@ -90,11 +114,8 @@ function plotS_k(para, Sw_k, kgrid, Zrenorm)
         # println(length(y))
         errorbar(_kgrid / kF, y, yerr=e, color=color[o], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
 
-        # yfit = signal.savgol_filter(y, 5, 3)
-        x = _kgrid / kF
-        spl = interp.UnivariateSpline(x, y, w=1.0 ./ e)
-        yfit = spl(x)
-        plot(x, yfit, color=color[o], linestyle="--")
+        _x, _y = spline(_kgrid / kF, y, e)
+        plot(_x, _y, color=color[o], linestyle="--")
         # println(plt)
         # p = plot(kgrid.grid, zk[o])
         # display(p)
@@ -126,5 +147,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
         println(k, ": ", rSw_k[k][1, kF_label])
     end
     plotS_k(para, rSw_k, kgrid, Zrenorm)
+    # plotS_k(para, iSw_k, kgrid, Zrenorm)
     # readline()
 end
