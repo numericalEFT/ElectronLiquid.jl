@@ -83,11 +83,11 @@ end
     return KOinstant(q, p.e0, p.dim, p.mass2, p.fs, p.kF)
 end
 
-@inline function KOstatic(q, p::ParaMC)
+@inline function KOstatic(q, p::ParaMC; ct=-p.fs)
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
     Pi = polarKW(q, 0, p)
     invKOinstant = 1.0 / KOinstant(q, p)
-    return 1.0 / (invKOinstant - Pi) - p.fs
+    return 1.0 / (invKOinstant - Pi) + ct # counter term should be -fs for the KO interaction
 end
 
 """

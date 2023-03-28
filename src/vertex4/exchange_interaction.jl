@@ -1,12 +1,15 @@
-function exchange_interaction(para::ParaMC, kamp=para.kF; kwargs...)
+function exchange_interaction(para::ParaMC, kamp=para.kF, kamp2=para.kF; ct=-para.fs, kwargs...)
     kF = para.kF
+    # println(kamp, ", ", kamp2)
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
-    qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
+    # qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
+    qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
+    # println(qs)
 
     Wp = zeros(Float64, length(qs))
     Wm = zeros(Float64, length(qs))
     for (qi, q) in enumerate(qs)
-        Wp[qi] = KOstatic(q, para)
+        Wp[qi] = KOstatic(q, para; ct=ct)
     end
     # Wp *= -NF * z^2 # additional minus sign because the interaction is exchanged
     # Wm *= -NF * z^2
@@ -15,7 +18,7 @@ function exchange_interaction(para::ParaMC, kamp=para.kF; kwargs...)
     return Wp, Wm, θgrid
 end
 
-function exchange_Coulomb(para::ParaMC, kamp = para.kF; kwargs...)
+function exchange_Coulomb(para::ParaMC, kamp=para.kF; kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -31,7 +34,7 @@ function exchange_Coulomb(para::ParaMC, kamp = para.kF; kwargs...)
     return Wp, Wm, θgrid
 end
 
-function exchange_KOcounter(para::ParaMC, kamp = para.kF; order, bubble, kwargs...)
+function exchange_KOcounter(para::ParaMC, kamp=para.kF; order, bubble, kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -61,18 +64,18 @@ function exchange2direct(Wse, Wae)
     return Ws, Wa
 end
 
-function projected_exchange_interaction(l, para, interaction; kamp = para.kF, verbose=1, kwargs...)
+function projected_exchange_interaction(l, para, interaction; kamp=para.kF, verbose=1, kwargs...)
     # verbose > 0 && println(UEG.short(para))
     verbose > 0 && println("l=$l:")
     Wse, Wae, θgrid = interaction(para, kamp, kwargs...)
     Wse0 = Legrendre(l, Wse, θgrid)
     Wae0 = Legrendre(l, Wae, θgrid)
-    verbose > 1 && println("Wse_l$l=", Wse0)
-    verbose > 1 && println("Wae_l$l=", Wae0)
+    verbose > 1 && println("Wse_l=$l=", Wse0)
+    verbose > 1 && println("Wae_l=$l=", Wae0)
 
     Ws0, Wa0 = exchange2direct(Wse0, Wae0)
-    verbose > 0 && println("Ws_l$l=", Ws0)
-    verbose > 0 && println("Wa_l$l=", Wa0)
+    verbose > 0 && println("Ws_l=$l=", Ws0)
+    verbose > 0 && println("Wa_l=$l=", Wa0)
     verbose > 0 && println()
     return Ws0, Wa0
 end
