@@ -83,11 +83,46 @@ end
     return KOinstant(q, p.e0, p.dim, p.mass2, p.fs, p.kF)
 end
 
-@inline function KOstatic(q, p::ParaMC; ct=-p.fs)
+@inline function KOstatic(q, p::ParaMC; ct=true)
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
     Pi = polarKW(q, 0, p)
     invKOinstant = 1.0 / KOinstant(q, p)
-    return 1.0 / (invKOinstant - Pi) + ct # counter term should be -fs for the KO interaction
+    if ct
+        return 1.0 / (invKOinstant - Pi) - p.fs # counter term should be -fs for the KO interaction
+    else
+        return 1.0 / (invKOinstant - Pi)
+    end
+end
+
+@inline function KOstatic_df(q, p::ParaMC; ct=true)
+    # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    Pi = polarKW(q, 0, p)
+    # invKOinstant = 1.0 / KOinstant(q, p)
+    if ct
+        return 1.0 / (1.0 - KOinstant(q, p) * Pi)^2 - 1.0 # counter term should be -fs for the KO interaction
+    else
+        return 1.0 / (1.0 - KOinstant(q, p) * Pi)^2
+    end
+end
+
+@inline function KOstatic_spin(q, p::ParaMC; ct=true)
+    # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    Pi = polarKW(q, 0, p)
+    if ct
+        return p.fa / (1.0 - p.fa * Pi) + p.fa # counter term should be -fs for the KO interaction
+    else
+        return p.fa / (1.0 - p.fa * Pi)
+    end
+end
+
+@inline function KOstatic_spin_df(q, p::ParaMC; ct=true)
+    # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    Pi = polarKW(q, 0, p)
+    if ct
+        return 1.0 / (1.0 - p.fa * Pi)^2 + p.fa # counter term should be -fs for the KO interaction
+    else
+        return 1.0 / (1.0 - p.fa * Pi)^2
+    end
 end
 
 """
