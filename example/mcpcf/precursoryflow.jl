@@ -4,12 +4,20 @@ using LegendrePolynomials
 include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
+using .Propagators.ElectronLiquid
 
-const fname = "run/data/PCFdata_3003.jld2"
+const fname = "run/data/PCFdata_30003.jld2"
 const steps = 1e7 # 2e8/hr
 const ℓ = 0
-const θ, rs = 0.1, 0.3
-const param = Propagators.Parameter.defaultUnit(θ, rs, 3)
+const θ, rs = 0.1, 3.0
+const mass2 = 1e-9
+const Fs = -0.0
+const beta = 1 / θ
+const paramc = UEG.ParaMC(rs=rs, beta=beta,
+    Fs=Fs, order=2,
+    mass2=mass2, isDynamic=true)
+const param = paramc.basic
+# const param = Propagators.Parameter.defaultUnit(θ, rs, 3)
 const α = 0.8
 println(param)
 

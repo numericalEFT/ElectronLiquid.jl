@@ -2,11 +2,12 @@
 
 module Propagators
 
-using ElectronGas
-using ElectronGas.Interaction: RPAwrapped
-using ElectronGas.Parameter
-using ElectronGas.GreenFunc
-using ElectronGas.CompositeGrids
+using ElectronLiquid
+using ElectronLiquid.ElectronGas
+using ElectronLiquid.ElectronGas.Interaction: RPAwrapped
+using ElectronLiquid.ElectronGas.Parameter
+using ElectronLiquid.ElectronGas.GreenFunc
+using ElectronLiquid.ElectronGas.CompositeGrids
 using JLD2
 
 export rpa, interaction, G0, initR, response, coulomb
@@ -263,6 +264,26 @@ if abspath(PROGRAM_FILE) == @__FILE__
         pht = Propagators.phonon(param)
         @time Propagators.interaction(p..., pht)
         @time Propagators.interaction(p..., pht)
+    end
+
+    @testset "Test ElectronLiquid" begin
+        using .Propagators.ElectronLiquid
+        θ, rs = 0.1, 3.0
+        mass2 = 1e-9
+        Fs = -0.0
+        beta = 1 / θ
+        paramc = UEG.ParaMC(rs=rs, beta=beta,
+            Fs=Fs, order=2,
+            mass2=mass2, isDynamic=true)
+        param = paramc.basic
+        rpai, rpat = Propagators.rpa(param)
+        p = (0.00372, 0.0733)
+        V = 1 / real(Propagators.interaction(p[2], rpai))
+        W = real(Propagators.interaction(p..., rpat) * V)
+        println("V=$V, W=$W")
+
+        println(UEG.interactionDynamic(paramc, p[2], 0.0, p[1]))
+        println(UEG.interactionStatic(paramc, p[2], 0.0, p[1]))
     end
 
 end
