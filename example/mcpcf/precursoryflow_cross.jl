@@ -8,7 +8,7 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const fname = "run/data/PCFdata_3003.jld2"
-const steps = 1e7 # 2e8/hr
+const steps = 5e7 # 2e8/hr
 const ℓ = 0
 const θ, rs = 0.1, 0.3
 const param = Propagators.Parameter.defaultUnit(θ, rs, 3)
@@ -62,10 +62,12 @@ function integrand(vars, config)
     Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
     kvmq = norm(Kv - Qv)
     pvmq = norm(Pv - Qv)
-    V1 = 1.0 / interaction(kvmq, funcs) / param.β
-    V2 = 1.0 / interaction(pvmq, funcs) / param.β
+    V1 = 1.0 / interaction(kvmq, funcs)
+    V2 = 1.0 / interaction(pvmq, funcs)
     W1 = interaction(t2, kvmq, funcs) * V1
     W2 = interaction(t - t1, pvmq, funcs) * V2
+    V1 = V1 / param.β
+    V2 = V2 / param.β
 
     K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
     # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
@@ -111,9 +113,9 @@ function run(steps, param, alg=:vegas)
     order = 6
     rpai, rpat = Propagators.rpa(param; mint=mint, minK=minK, maxK=maxK, order=order)
 
-    mint = 0.01
-    minK, maxK = 0.01 * sqrt(param.T * param.me), 10param.kF
-    order = 4
+    mint = 0.1
+    minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
+    order = 3
     Ri, Rt = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     println(size(Rt))
