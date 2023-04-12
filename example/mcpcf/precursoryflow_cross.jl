@@ -1,5 +1,7 @@
 using MCIntegration
 using LegendrePolynomials
+using LinearAlgebra
+using StaticArrays
 
 include("propagators.jl")
 using .Propagators
@@ -14,9 +16,9 @@ const α = 0.8
 println(param)
 
 function integrand(vars, config)
-    norm = config.normalization
+    normalization = config.normalization
     therm = 100000
-    norm = sqrt(norm^2 + therm^2)
+    normalization = sqrt(normalization^2 + therm^2)
 
     ExtT, ExtK, X, T, P, Q = vars
     funcs = config.userdata
@@ -27,35 +29,66 @@ function integrand(vars, config)
     t = extT[ExtT[1]]
     k = extK[ExtK[1]]
     x = X[1]
-    t1, t2, t3, t4 = T[1], T[2], T[3], T[4]
+    t3, t4, t1, t2 = T[1], T[2], T[3], T[4]
     p = P[1]
-    qv = Q[1]
+    Qv = SVector{3,Float64}(Q[1], Q[2], Q[3])
 
     PLX = Pl(x, ℓ)
     q = sqrt(k^2 + p^2 + 2 * k * p * x)
     V = 1.0 / interaction(q, funcs)
     # V = coulomb(q, funcs)[1]
-    G1 = G0(t1, p, funcs)
-    G021 = G0(t1, -p, funcs)
-    G022 = G0(t2, -p, funcs)
-    # R0 = response(p, funcs; norm=norm) / param.β
-    # R = response(t1 - t2, p, funcs; norm=norm)
+    G1 = G0(t3, p, funcs)
+    G021 = G0(t3, -p, funcs)
+    G022 = G0(t4, -p, funcs)
+    # R0 = response(p, funcs; norm=normalization) / param.β
+    # R = response(t1 - t2, p, funcs; norm=normalization)
     R0 = response(p, funcs) / param.β
-    R = response(t1 - t2, p, funcs)
+    R = response(t3 - t4, p, funcs)
     # R0 = 1.0 / param.β
     # R = 0.0
 
     result1 = -p^2 / (4π^2) * PLX * V * G1 * (G021 * R0 + G022 * R)
+    # println("$result1, q=$q, V=$V, G1=$G1, R0=$R0, R=$R")
     # result1 = result1 / length(extT)
 
     W = interaction(t, q, funcs) * V
     # W = 0.0
-    G21 = G0(t1 - t, -p, funcs)
-    G22 = G0(t2 - t, -p, funcs)
+    G21 = G0(t3 - t, -p, funcs)
+    G22 = G0(t4 - t, -p, funcs)
 
     result2 = -p^2 / (4π^2) * PLX * W * G1 * (G21 * R0 + G22 * R)
 
-    return 1.0, result1, result2
+    Kv = SVector{3,Float64}(k, 0, 0)
+    Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
+    kvmq = norm(Kv - Qv)
+    pvmq = norm(Pv - Qv)
+    V1 = 1.0 / interaction(kvmq, funcs) / param.β
+    V2 = 1.0 / interaction(pvmq, funcs) / param.β
+    W1 = interaction(t2, kvmq, funcs) * V1
+    W2 = interaction(t - t1, pvmq, funcs) * V2
+
+    K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
+    # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
+    # t1--t, t2--0
+    Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
+    Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
+    Gi04 = G0(t3, K4, funcs) # for R0
+    Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+    Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
+    Gd04 = G0(t3 - t2, K4, funcs) # for R0
+
+    result3 = -p^2 / (4π^2) * PLX * (
+                  V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
+                  +
+                  W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
+                  +
+                  V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
+                  +
+                  W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
+              )
+    return 1.0, result1, result2, result3
+    # # return 1.0, result1, 0.0, 0.0
+    # return 0.0, 0.0, 0.0, exp(-K1)
 end
 
 function measure(vars, obs, weight, config)
@@ -93,17 +126,18 @@ function run(steps, param, alg=:vegas)
     T = Continuous(0.0, param.β; alpha=3.0, adapt=true)
     P = Continuous(0.0, maxK; alpha=3.0, adapt=true)
     X = Continuous(-1.0, 1.0; alpha=3.0, adapt=true)
-    Q = FermiK(3, param.kF, 0.2 * param.kF, 10.0 * param.kF)
+    # Q = FermiK(3, param.kF, 0.2 * param.kF, 10.0 * param.kF)
+    Q = Continuous(-maxK, maxK; alpha=3.0, adapt=true)
 
     ExtT = Discrete(1, length(extT); adapt=false)
     ExtK = Discrete(1, length(extK); adapt=false)
 
-    # ExtT, ExtK, X, T, P
+    # ExtT, ExtK, X, T, P, Q
     dof = [
         [0, 1, 0, 0, 0, 0],
         [0, 1, 1, 2, 1, 0],
         [1, 1, 1, 2, 1, 0],
-        [1, 1, 1, 4, 1, 1]
+        [1, 1, 1, 4, 1, 3]
     ]
     obs = [zeros(ComplexF64, size(Ri)), zeros(ComplexF64, size(Ri)), zeros(ComplexF64, size(Rt)), zeros(ComplexF64, size(Rt))]
 

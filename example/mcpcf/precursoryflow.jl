@@ -21,6 +21,9 @@ const param = paramc.basic
 const α = 0.8
 println(param)
 
+UEG_interaction_static(ti, to, q) = UEG.Coulombinstant(q, paramc) * UEG.interactionStatic(paramc, q, ti, to)
+UEG_interaction_dynamic(ti, to, q) = UEG.Coulombinstant(q, paramc) * UEG.interactionDynamic(paramc, q, ti, to)
+
 function integrand(vars, config)
     norm = config.normalization
     therm = 100000

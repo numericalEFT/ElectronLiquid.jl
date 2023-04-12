@@ -108,7 +108,7 @@ end
 
 function interaction(k, prop; i=1)
     if k ≈ 0
-        k = 1e-16
+        k = 1e-6
     end
     # return Interp.interp1D(view(prop.data, i, 1, :), prop.mesh[3], k)
     return Interp.linear1D(view(prop.data, i, 1, :), prop.mesh[3], k)
@@ -277,11 +277,13 @@ if abspath(PROGRAM_FILE) == @__FILE__
             mass2=mass2, isDynamic=true)
         param = paramc.basic
         rpai, rpat = Propagators.rpa(param)
-        p = (0.00372, 0.0733)
+        p = (5.0, 1.0)
         V = 1 / real(Propagators.interaction(p[2], rpai))
         W = real(Propagators.interaction(p..., rpat) * V)
         println("V=$V, W=$W")
 
+        V0 = UEG.Coulombinstant(p[2], paramc)
+        println(V0)
         println(UEG.interactionDynamic(paramc, p[2], 0.0, p[1]))
         println(UEG.interactionStatic(paramc, p[2], 0.0, p[1]))
     end
