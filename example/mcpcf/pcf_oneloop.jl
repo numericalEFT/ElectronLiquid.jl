@@ -8,7 +8,7 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const fname = "run/data/PCFdata_5008.jld2"
-const steps = 4e7 # 2e8/hr
+const steps = 1e7 # 2e8/hr
 const ℓ = 0
 const θ, rs = 0.002, 0.5
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
@@ -22,8 +22,8 @@ function integrand(vars, config)
 
     ExtT, ExtK, X, T, P, Q = vars
     funcs = config.userdata
-    Rt = funcs.Rt
-    extT, extK = Rt.mesh[1], Rt.mesh[2]
+    Rtd = funcs.Rt_dense
+    extT, extK = Rtd.mesh[1], Rtd.mesh[2]
     param = funcs.param
 
     t = extT[ExtT[1]]
@@ -95,10 +95,6 @@ end
 
 function measure(vars, obs, weight, config)
     extt, extk = vars[1], vars[2]
-    # funcs = config.userdata
-    # Ri, Rt = funcs.Ri, funcs.Rt
-    # Ri.data[extk[1]] += weight[1] + weight[2]
-    # Rt.data[extt[1], extk[1]] += weight[3]
     obs[1][1, extk[1]] += weight[1]
     obs[2][1, extk[1]] += weight[2]
     obs[3][extt[1], extk[1]] += weight[3]
@@ -113,16 +109,17 @@ function run(steps, param, alg=:vegas)
     order = 6
     rpai, rpat = Propagators.rpa(param; mint=mint, minK=minK, maxK=maxK, order=order)
 
-    mint = 0.05 * param.β
-    minK, maxK = 0.05 * sqrt(param.T * param.me), 10param.kF
+    mint = 0.001 * param.β
+    minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 4
-    Ri, Rt = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     println(size(Ri))
     println(size(Rt))
+    println(size(Rtd))
 
     # userdata
-    funcs = Propagators.Funcs(param, rpai, rpat, Ri, Rt)
+    funcs = Propagators.Funcs(param, rpai, rpat, Ri, Rt, Rtd)
 
     println("Prepare variables")
     extT, extK = Rt.mesh[1], Rt.mesh[2]

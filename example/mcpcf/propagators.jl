@@ -15,7 +15,7 @@ export rpa, interaction, G0, initR, response, coulomb
 # Ri excludes the source term
 
 const rtol = 1e-6 # rtol of DLR 
-const nlog_factor = 3.0 # factor controlling how many point per order of magnitude
+const nlog_factor = 4.0 # factor controlling how many point per order of magnitude
 
 # wrapper of functions and parameters
 struct Funcs{P,II,IT,RI,RT,RTD}
@@ -144,7 +144,7 @@ function initR(param;
     Euv = 100param.EF
     # rtol = 1e-10
 
-    Nlog = floor(Int, 2.0 * log10(param.β / mint))
+    Nlog = floor(Int, nlog_factor * log10(param.β / mint))
     btgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, param.β], [0.0, param.β], Nlog, mint, order)
     tgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha, grid=btgrid)
     wn_mesh = GreenFunc.ImFreq(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
@@ -187,7 +187,7 @@ function loadR(fname, param;
     tgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
     wn_mesh = GreenFunc.ImFreq(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
 
-    Nk = floor(Int, nlog_factor * log10(maxK / minK))
+    Nk = floor(Int, 2.0 * log10(maxK / minK))
     kgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, maxK], [0.0, param.kF], Nk, minK, order)
 
     ri = GreenFunc.MeshArray(kgrid; dtype=ComplexF64)
