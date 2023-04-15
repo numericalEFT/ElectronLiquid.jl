@@ -5,7 +5,7 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const steps = 1e8
+const steps = 1e7
 const ℓ = 0
 const param = Propagators.Parameter.defaultUnit(0.2, 0.2, 3)
 println(param)
@@ -116,6 +116,7 @@ function run(steps, param)
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 4
     Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+    println(size(Ri))
     println(size(Rt))
 
     # userdata

@@ -14,13 +14,17 @@ export rpa, interaction, G0, initR, response, coulomb
 
 # Ri excludes the source term
 
-# wrapper
-struct Funcs{P,II,IT,RI,RT}
+const rtol = 1e-6 # rtol of DLR 
+const nlog_factor = 3.0 # factor controlling how many point per order of magnitude
+
+# wrapper of functions and parameters
+struct Funcs{P,II,IT,RI,RT,RTD}
     param::P
     inti::II
     intt::IT
     Ri::RI
-    Rt::RT
+    Rt::RT # container collecting Rt result, use DLR τ grid 
+    Rt_dense::RTD # container for mc sampling, use dense τ grid
 end
 
 interaction(k, funcs::Funcs) = interaction(k, funcs.inti)
@@ -138,7 +142,7 @@ function initR(param;
     order=6)
 
     Euv = 100param.EF
-    rtol = 1e-10
+    # rtol = 1e-10
 
     Nlog = floor(Int, 2.0 * log10(param.β / mint))
     btgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, param.β], [0.0, param.β], Nlog, mint, order)
@@ -159,13 +163,14 @@ function initR(param;
         R_freq[ni, ki] = (1.0 - 2.0 * ωn^2 / (ωn^2 + Ω_c^2)) / (Ω_c^2 + e^2)
     end
     rdlr = to_dlr(R_freq)
-    rt = dlr_to_imtime(rdlr, tgrid)
+    rtd = dlr_to_imtime(rdlr, tgrid)
+    rt = dlr_to_imtime(rdlr)
     # rt = GreenFunc.MeshArray(tgrid, kgrid; dtype=ComplexF64)
     # ri[:] .= 0.0
     ri[:] .= 1.0
     # rt[:] .= 0.0
 
-    return ri, rt
+    return ri, rt, rtd
 end
 
 function loadR(fname, param;
@@ -174,19 +179,21 @@ function loadR(fname, param;
     order=6)
 
     Euv = 100param.EF
-    rtol = 1e-10
+    # rtol = 1e-10
 
-    Nlog = floor(Int, 2.0 * log10(param.β / mint))
+    Nlog = floor(Int, nlog_factor * log10(param.β / mint))
     btgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, param.β], [0.0, param.β], Nlog, mint, order)
-    tgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha, grid=btgrid)
+    tdgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha, grid=btgrid)
+    tgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
     wn_mesh = GreenFunc.ImFreq(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
 
-    Nk = floor(Int, 2.0 * log10(maxK / minK))
+    Nk = floor(Int, nlog_factor * log10(maxK / minK))
     kgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, maxK], [0.0, param.kF], Nk, minK, order)
 
     ri = GreenFunc.MeshArray(kgrid; dtype=ComplexF64)
 
     rt = GreenFunc.MeshArray(tgrid, kgrid; dtype=ComplexF64)
+    rtd = GreenFunc.MeshArray(tdgrid, kgrid; dtype=ComplexF64)
 
     # load from file
     data = jldopen(fname, "r")
@@ -195,14 +202,18 @@ function loadR(fname, param;
 
     rdlr = to_dlr(R_freq)
     Rt = dlr_to_imtime(rdlr, tgrid)
+    Rtd = dlr_to_imtime(rdlr, tdgrid)
 
     for (ik, k) in enumerate(kgrid)
         ri[ik] = Interp.interp1D(view(R_ins.data, 1, :), R_ins.mesh[2], k)
         for (it, t) in enumerate(tgrid)
             rt[it, ik] = Interp.interp1D(view(Rt, it, :), Rt.mesh[2], k)
         end
+        for (it, t) in enumerate(tdgrid)
+            rtd[it, ik] = Interp.interp1D(view(Rtd, it, :), Rtd.mesh[2], k)
+        end
     end
-    return ri, rt
+    return ri, rt, rtd
 end
 
 function R0(ri, rt, param)
@@ -286,6 +297,23 @@ if abspath(PROGRAM_FILE) == @__FILE__
         println(V0)
         println(UEG.interactionDynamic(paramc, p[2], 0.0, p[1]))
         println(UEG.interactionStatic(paramc, p[2], 0.0, p[1]))
+    end
+
+    @testset "init and load R" begin
+        fname = "run/data/PCFdata_5008.jld2"
+        θ, rs = 0.002, 0.5
+        param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
+        mint = 0.0001 * param.β
+        minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
+        order = 3
+        Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+        println(size(Ri))
+        println(size(Rt))
+        println(size(Rtd))
+        Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+        println(size(Ri))
+        println(size(Rt))
+        println(size(Rtd))
     end
 
 end
