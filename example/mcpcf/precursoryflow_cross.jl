@@ -8,7 +8,7 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const fname = "run/data/PCFdata_5008.jld2"
-const steps = 4e7 # 2e8/hr
+const steps = 1e7 # 2e8/hr
 const ℓ = 0
 const θ, rs = 0.002, 0.5
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
@@ -16,9 +16,6 @@ const α = 0.8
 println(param)
 
 function integrand(vars, config)
-    normalization = config.normalization
-    therm = 100000
-    normalization = sqrt(normalization^2 + therm^2)
 
     ExtT, ExtK, X, T, P, Q = vars
     funcs = config.userdata
@@ -40,8 +37,6 @@ function integrand(vars, config)
     G1 = G0(t3, p, funcs)
     G021 = G0(t3, -p, funcs)
     G022 = G0(t4, -p, funcs)
-    # R0 = response(p, funcs; norm=normalization) / param.β
-    # R = response(t1 - t2, p, funcs; norm=normalization)
     R0 = response(p, funcs) / param.β
     R = response(t3 - t4, p, funcs)
     # R0 = 1.0 / param.β
@@ -58,38 +53,38 @@ function integrand(vars, config)
 
     result2 = -p^2 / (4π^2) * PLX * W * G1 * (G21 * R0 + G22 * R)
 
-    Kv = SVector{3,Float64}(k, 0, 0)
-    Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
-    kvmq = norm(Kv - Qv)
-    pvmq = norm(Pv - Qv)
-    V1 = 1.0 / interaction(kvmq, funcs)
-    V2 = 1.0 / interaction(pvmq, funcs)
-    W1 = interaction(t2, kvmq, funcs) * V1
-    W2 = interaction(t - t1, pvmq, funcs) * V2
-    V1 = V1 / param.β
-    V2 = V2 / param.β
+    # Kv = SVector{3,Float64}(k, 0, 0)
+    # Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
+    # kvmq = norm(Kv - Qv)
+    # pvmq = norm(Pv - Qv)
+    # V1 = 1.0 / interaction(kvmq, funcs)
+    # V2 = 1.0 / interaction(pvmq, funcs)
+    # W1 = interaction(t2, kvmq, funcs) * V1
+    # W2 = interaction(t - t1, pvmq, funcs) * V2
+    # V1 = V1 / param.β
+    # V2 = V2 / param.β
 
-    K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
-    # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
-    # t1--t, t2--0
-    Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
-    Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
-    Gi04 = G0(t3, K4, funcs) # for R0
-    Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
-    Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
-    Gd04 = G0(t3 - t2, K4, funcs) # for R0
+    # K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
+    # # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
+    # # t1--t, t2--0
+    # Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
+    # Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
+    # Gi04 = G0(t3, K4, funcs) # for R0
+    # Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+    # Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
+    # Gd04 = G0(t3 - t2, K4, funcs) # for R0
 
-    result3 = -p^2 / (2π)^5 * PLX * (
-                  V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
-                  +
-                  W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
-                  +
-                  V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
-                  +
-                  W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
-              )
-    return 1.0, result1, result2, result3
-    # # return 1.0, result1, 0.0, 0.0
+    # result3 = -p^2 / (2π)^5 * PLX * (
+    #               V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
+    #               +
+    #               W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
+    #               +
+    #               V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
+    #               +
+    #               W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
+    #           )
+    # return 1.0, result1, result2, result3
+    return 1.0, result1, result2, 1e-22
     # return 0.0, 0.0, 0.0, exp(-K1)
 end
 

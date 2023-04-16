@@ -79,8 +79,8 @@ function measure(vars, obs, weight, config)
     # Ri, Rt = funcs.Ri, funcs.Rt
     # Ri.data[extk[1]] += weight[1] + weight[2]
     # Rt.data[extt[1], extk[1]] += weight[3]
-    obs[1][extk[1]] += weight[1]
-    obs[2][extk[1]] += weight[2]
+    obs[1][1, extk[1]] += weight[1]
+    obs[2][1, extk[1]] += weight[2]
     obs[3][extt[1], extk[1]] += weight[3]
 end
 
@@ -95,7 +95,7 @@ function run(steps, param, alg=:vegas)
     mint = 0.1
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 3
-    Ri, Rt = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    Ri, Rts, Rt = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     println(size(Rt))
 
@@ -113,14 +113,14 @@ function run(steps, param, alg=:vegas)
 
     # ExtT, ExtK, X, T, P
     dof = [[0, 1, 0, 0, 0], [0, 1, 1, 2, 1], [1, 1, 1, 2, 1]]
-    obs = [zeros(ComplexF64, size(Ri)), zeros(ComplexF64, size(Ri)), zeros(ComplexF64, size(Rt))]
+    obs = [zeros(ComplexF64, size(Rt)), zeros(ComplexF64, size(Rt)), zeros(ComplexF64, size(Rt))]
 
     println("Start")
     result = integrate(integrand; measure=measure, userdata=funcs,
         var=(ExtT, ExtK, X, T, P), dof=dof, obs=obs, solver=alg,
         neval=steps, print=-1, block=8, type=ComplexF64)
     # println(result.mean)
-    funcs.Ri.data .= result.mean[1] .+ result.mean[2]
+    funcs.Ri.data .= result.mean[1][1, :] .+ result.mean[2][1, :]
     funcs.Rt.data .= result.mean[3]
 
     return result, funcs
@@ -129,8 +129,9 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     result, funcs = run(steps, param, :vegasmc)
     Ri, Rt = funcs.Ri, funcs.Rt
-    println(Ri.mesh[1])
+    # println(Ri.mesh[1])
     println(real(Ri.data))
+    println(real(Rt.data[1, :]))
     # println(result[1][1])
     println("R0=$(real(Propagators.R0(Ri, Rt, param)))")
 end

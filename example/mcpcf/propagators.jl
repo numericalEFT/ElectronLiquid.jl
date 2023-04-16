@@ -15,7 +15,7 @@ export rpa, interaction, G0, initR, response, coulomb
 # Ri excludes the source term
 
 const rtol = 1e-6 # rtol of DLR 
-const nlog_factor = 4.0 # factor controlling how many point per order of magnitude
+const nlog_factor = 2.0 # factor controlling how many point per order of magnitude
 
 # wrapper of functions and parameters
 struct Funcs{P,II,IT,RI,RT,RTD}
@@ -29,11 +29,13 @@ struct Funcs{P,II,IT,RI,RT,RTD}
 end
 
 Funcs(p, ii, it, ri, rt, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rt, rtd)
+Funcs(p, ii, it, ri, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rtd, rtd)
 
 interaction(k, funcs::Funcs) = interaction(k, funcs.inti)
 interaction(t, k, funcs::Funcs) = interaction(t, k, funcs.intt)
 response(k, funcs::Funcs; norm=1) = response(k, funcs.Ri; norm=norm)
-response(t, k, funcs::Funcs; norm=1) = response(t, k, funcs.Rt; norm=norm)
+# response(t, k, funcs::Funcs; norm=1) = response(t, k, funcs.Rt; norm=norm)
+response(t, k, funcs::Funcs; norm=1) = response(t, k, funcs.Rtd; norm=norm)
 G0(t, k, funcs::Funcs) = G0(t, k, funcs.param)
 coulomb(q, funcs::Funcs) = coulomb(q, funcs.param)
 
@@ -188,7 +190,10 @@ function loadR(fname, param;
     btgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, param.β], [0.0, param.β], Nlog, mint, order)
     tdgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha, grid=btgrid)
     tgrid = GreenFunc.ImTime(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
-    wn_mesh = GreenFunc.ImFreq(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
+    # wn_mesh = GreenFunc.ImFreq(param.β, FERMION; Euv=Euv, rtol=rtol, symmetry=:pha)
+
+    println(tgrid)
+    println(tdgrid)
 
     Nk = floor(Int, 2.0 * log10(maxK / minK))
     kgrid = Propagators.CompositeG.LogDensedGrid(:cheb, [0.0, maxK], [0.0, param.kF], Nk, minK, order)
@@ -216,7 +221,9 @@ function loadR(fname, param;
             rtd[it, ik] = Interp.interp1D(view(Rtd, it, :), Rtd.mesh[2], k)
         end
     end
-    println("R0=$(real(R0(ri, rt, param)[1]))")
+    println(rt[1, :])
+    println(rtd[1, :])
+    println("R0=$(real(R0(ri, rt, param)))")
     return ri, rt, rtd
 end
 

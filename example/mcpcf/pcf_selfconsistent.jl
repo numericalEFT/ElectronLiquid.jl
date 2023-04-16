@@ -7,7 +7,7 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const iscross = true
+const iscross = false
 const fname = "run/data/PCFdata_3006.jld2"
 const Niter = 10
 const steps = 4e6 # 2e8/hr
@@ -39,8 +39,8 @@ function integrand(vars, config)
 
     ExtT, ExtK, X, T, P, Q = vars
     funcs = config.userdata
-    Rtd = funcs.Rtd
-    extT, extK = Rtd.mesh[1], Rtd.mesh[2]
+    Rt = funcs.Rt
+    extT, extK = Rt.mesh[1], Rt.mesh[2]
     param = funcs.param
 
     t = extT[ExtT[1]]
@@ -164,13 +164,14 @@ function run(steps, param, alg=:vegas)
         var=(ExtT, ExtK, X, T, P, Q), dof=dof, obs=obs, solver=alg,
         neval=steps, print=-1, block=8, type=ComplexF64)
     update!(result)
+    println("R0=$(real(Propagators.R0(result.config.userdata.Ris, result.config.userdata.Rt, param) .* (1-α)))")
     for i in 2:Niter
         result = integrate(integrand; config=result.config,
             measure=measure, userdata=funcs,
             var=(ExtT, ExtK, X, T, P, Q), dof=dof, obs=obs, solver=alg,
             neval=steps, print=-1, block=8, type=ComplexF64)
         update!(result)
-        println("R0=$(real(Propagators.R0(result.config.userdata.Ri, result.config.userdata.Rtd, param)[1]))")
+        println("R0=$(real(Propagators.R0(result.config.userdata.Ris, result.config.userdata.Rt, param) .* (1-α)))")
     end
     funcs = result.config.userdata
     normalize!(funcs)
