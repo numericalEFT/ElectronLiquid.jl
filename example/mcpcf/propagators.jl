@@ -23,9 +23,12 @@ struct Funcs{P,II,IT,RI,RT,RTD}
     inti::II
     intt::IT
     Ri::RI
+    Ris::RI # store accumulated Ri for self consistent
     Rt::RT # container collecting Rt result, use DLR τ grid 
-    Rt_dense::RTD # container for mc sampling, use dense τ grid
+    Rtd::RTD # container for mc sampling, use dense τ grid
 end
+
+Funcs(p, ii, it, ri, rt, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rt, rtd)
 
 interaction(k, funcs::Funcs) = interaction(k, funcs.inti)
 interaction(t, k, funcs::Funcs) = interaction(t, k, funcs.intt)
@@ -213,6 +216,7 @@ function loadR(fname, param;
             rtd[it, ik] = Interp.interp1D(view(Rtd, it, :), Rtd.mesh[2], k)
         end
     end
+    println("R0=$(real(R0(ri, rt, param)[1]))")
     return ri, rt, rtd
 end
 

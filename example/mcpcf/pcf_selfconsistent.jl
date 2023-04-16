@@ -7,13 +7,33 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const fname = "run/data/PCFdata_3008.jld2"
-const steps = 1e6 # 2e8/hr
+const iscross = true
+const fname = "run/data/PCFdata_3006.jld2"
+const Niter = 10
+const steps = 4e6 # 2e8/hr
 const ℓ = 0
-const θ, rs = 0.002, 0.3
+const θ, rs = 0.01, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.8
 println(param)
+
+function update!(result; α=α)
+    funcs = result.config.userdata
+
+    # update to Ris and Rt
+    funcs.Ris.data .= funcs.Ris.data .* α .+ 1 .+ result.mean[2][1, :]
+    funcs.Rt.data .= funcs.Rt.data .* α .+ result.mean[3] .+ result.mean[4]
+
+    # update to Ri, Rtd
+    funcs.Ri.data .= funcs.Ris.data .* (1 - α)
+    rdlr = Propagators.to_dlr(funcs.Rt)
+    rtdnew = Propagators.dlr_to_imtime(rdlr, funcs.Rtd.mesh[1])
+    funcs.Rtd.data .= rtdnew.data .* (1 - α)
+end
+
+function normalize!(funcs; α=α)
+    funcs.Rt.data .*= (1 - α)
+end
 
 function integrand(vars, config)
 
@@ -51,36 +71,40 @@ function integrand(vars, config)
 
     result2 = -p^2 / (4π^2) * PLX * W * G1 * (G21 * R0 + G22 * R)
 
-    Kv = SVector{3,Float64}(k, 0, 0)
-    Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
-    kvmq = norm(Kv - Qv)
-    pvmq = norm(Pv - Qv)
-    V1 = 1.0 / interaction(kvmq, funcs)
-    V2 = 1.0 / interaction(pvmq, funcs)
-    W1 = interaction(t2, kvmq, funcs) * V1
-    W2 = interaction(t - t1, pvmq, funcs) * V2
-    V1 = V1 / param.β
-    V2 = V2 / param.β
+    if iscross
+        Kv = SVector{3,Float64}(k, 0, 0)
+        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
+        kvmq = norm(Kv - Qv)
+        pvmq = norm(Pv - Qv)
+        V1 = 1.0 / interaction(kvmq, funcs)
+        V2 = 1.0 / interaction(pvmq, funcs)
+        W1 = interaction(t2, kvmq, funcs) * V1
+        W2 = interaction(t - t1, pvmq, funcs) * V2
+        V1 = V1 / param.β
+        V2 = V2 / param.β
 
-    K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
-    # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
-    # t1--t, t2--0
-    Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
-    Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
-    Gi04 = G0(t3, K4, funcs) # for R0
-    Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
-    Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
-    Gd04 = G0(t3 - t2, K4, funcs) # for R0
+        K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
+        # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
+        # t1--t, t2--0
+        Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
+        Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
+        Gi04 = G0(t3, K4, funcs) # for R0
+        Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+        Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
+        Gd04 = G0(t3 - t2, K4, funcs) # for R0
 
-    result3 = -p^2 / (2π)^5 * PLX * (
-                  V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
-                  +
-                  W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
-                  +
-                  V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
-                  +
-                  W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
-              )
+        result3 = -p^2 / (2π)^5 * PLX * (
+                      V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
+                      +
+                      W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
+                      +
+                      V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
+                      +
+                      W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
+                  )
+    else
+        result3 = 1e-16
+    end
     return 1.0, result1, result2, result3
 end
 
@@ -102,15 +126,18 @@ function run(steps, param, alg=:vegas)
 
     mint = 0.001 * param.β
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
-    order = 3
+    order = 4
     Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    Ris = deepcopy(Ri)
+    Ris.data .= Ri.data ./ (1 - α)
+    Rt.data .= Rt.data ./ (1 - α)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     println(size(Ri))
     println(size(Rt))
     println(size(Rtd))
 
     # userdata
-    funcs = Propagators.Funcs(param, rpai, rpat, Ri, Rt, Rtd)
+    funcs = Propagators.Funcs(param, rpai, rpat, Ri, Ris, Rt, Rtd)
 
     println("Prepare variables")
     extT, extK = Rt.mesh[1], Rt.mesh[2]
@@ -136,10 +163,17 @@ function run(steps, param, alg=:vegas)
     result = integrate(integrand; measure=measure, userdata=funcs,
         var=(ExtT, ExtK, X, T, P, Q), dof=dof, obs=obs, solver=alg,
         neval=steps, print=-1, block=8, type=ComplexF64)
-    # println(result.mean)
-    funcs.Ri.data .= result.mean[1][1, :] .+ result.mean[2][1, :]
-    funcs.Rt.data .= result.mean[3] .+ result.mean[4]
-
+    update!(result)
+    for i in 2:Niter
+        result = integrate(integrand; config=result.config,
+            measure=measure, userdata=funcs,
+            var=(ExtT, ExtK, X, T, P, Q), dof=dof, obs=obs, solver=alg,
+            neval=steps, print=-1, block=8, type=ComplexF64)
+        update!(result)
+        println("R0=$(real(Propagators.R0(result.config.userdata.Ri, result.config.userdata.Rtd, param)[1]))")
+    end
+    funcs = result.config.userdata
+    normalize!(funcs)
     return result, funcs
 end
 
