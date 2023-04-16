@@ -7,14 +7,14 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const iscross = false
+const iscross = true
 const fname = "run/data/PCFdata_3006.jld2"
-const Niter = 10
-const steps = 4e6 # 2e8/hr
+const Niter = 30
+const steps = 1e6 # 2e8/hr
 const ℓ = 0
 const θ, rs = 0.01, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
-const α = 0.8
+const α = 0.7
 println(param)
 
 function update!(result; α=α)
@@ -127,7 +127,8 @@ function run(steps, param, alg=:vegas)
     mint = 0.001 * param.β
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 4
-    Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    # Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     Ris = deepcopy(Ri)
     Ris.data .= Ri.data ./ (1 - α)
     Rt.data .= Rt.data ./ (1 - α)

@@ -7,11 +7,11 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const iscross = false
-const fname = "run/data/PCFdata_30003.jld2"
+const iscross = true
+const fname = "run/data/PCFdata_3006.jld2"
 const steps = 1e7 # 2e8/hr
 const ℓ = 0
-const θ, rs = 0.1, 3.0
+const θ, rs = 0.01, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.8
 println(param)
