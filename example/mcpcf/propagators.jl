@@ -227,11 +227,14 @@ function loadR(fname, param;
     return ri, rt, rtd
 end
 
-function save_pcf(fname, param, ri, rt)
+function save_pcf(fname, param, ri, rt; R0=nothing)
     jldopen(fname, "w") do file
         file["param"] = param
         file["R_ins"] = ri
         file["R_imtime"] = rt
+        if !isnothing(R0)
+            file["R0"] = R0
+        end
     end
     return true
 end

@@ -8,13 +8,13 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const uid = 5006
+const uid = 3006
 const fname = "run/data/PCFdata_$uid.jld2"
 const savefname = "run/data/mcpcf_$uid.jld2"
-const Niter = 5
-const steps = 4e6 # 2e8/hr
+const Niter = 40
+const steps = 4e6 # 3e6 per min
 const ℓ = 0
-const θ, rs = 0.01, 0.5
+const θ, rs = 0.01, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.7
 println(param)
@@ -182,11 +182,12 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     result, funcs = run(steps, param, :vegasmc)
-    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt)
     Ri, Rt = funcs.Ri, funcs.Rt
     println(sum(abs.(result.mean[4]) / sum(abs.(result.mean[3]))))
     println(Ri.mesh[1])
     println(real(Ri.data))
     # println(result[1][1])
-    println("R0=$(real(Propagators.R0(Ri, Rt, param)))")
+    R0 = real(Propagators.R0(Ri, Rt, param))
+    println("R0=$(R0)")
+    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt)
 end
