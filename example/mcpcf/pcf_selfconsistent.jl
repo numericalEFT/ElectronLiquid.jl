@@ -8,11 +8,13 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const fname = "run/data/PCFdata_3006.jld2"
-const Niter = 30
-const steps = 1e6 # 2e8/hr
+const uid = 5006
+const fname = "run/data/PCFdata_$uid.jld2"
+const savefname = "run/data/mcpcf_$uid.jld2"
+const Niter = 5
+const steps = 4e6 # 2e8/hr
 const ℓ = 0
-const θ, rs = 0.01, 0.3
+const θ, rs = 0.01, 0.5
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.7
 println(param)
@@ -127,12 +129,11 @@ function run(steps, param, alg=:vegas)
     mint = 0.001 * param.β
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 4
-    # Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
-    Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+    Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    # Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     Ris = deepcopy(Ri)
     Ris.data .= Ri.data ./ (1 - α)
     Rt.data .= Rt.data ./ (1 - α)
-    # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     println(size(Ri))
     println(size(Rt))
     println(size(Rtd))
@@ -181,6 +182,7 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     result, funcs = run(steps, param, :vegasmc)
+    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt)
     Ri, Rt = funcs.Ri, funcs.Rt
     println(sum(abs.(result.mean[4]) / sum(abs.(result.mean[3]))))
     println(Ri.mesh[1])

@@ -227,6 +227,15 @@ function loadR(fname, param;
     return ri, rt, rtd
 end
 
+function save_pcf(fname, param, ri, rt)
+    jldopen(fname, "w") do file
+        file["param"] = param
+        file["R_ins"] = ri
+        file["R_imtime"] = rt
+    end
+    return true
+end
+
 function R0(ri, rt, param)
     rdlr = Propagators.to_dlr(rt)
     rw = Propagators.to_imfreq(rdlr)
