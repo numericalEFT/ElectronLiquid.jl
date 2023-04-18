@@ -93,7 +93,7 @@ function plotS_k(para, rSw_k, iSw_k, kgrid, Zrenorm)
     rcParams = PyPlot.PyDict(PyPlot.matplotlib."rcParams")
     rcParams["font.size"] = 16
     rcParams["font.family"] = "Times New Roman"
-    figure(figsize=(4, 4))
+    figure(figsize=(8, 4))
 
     function sk(sigma, order, kgrid)
         dk = [(sigma[o][1, 2:end] .- sigma[o][1, 1]) ./ (kgrid[2:end] .^ 2 / (2 * para.me)) for o in 1:order]
@@ -136,15 +136,15 @@ function plotS_k(para, rSw_k, iSw_k, kgrid, Zrenorm)
         _x, _y = spline(_kgrid / kF, y, e)
         plot(_x, _y, color=color[o], linestyle="--")
     end
-    xlim([kgrid[1] / kF, kgrid[end] / kF])
+    xlim([kgrid[1] / kF, 2.0])
     ylim([0.0, 1.0])
     xlabel("\$k/k_F\$")
     # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
-    if Zrenorm
-        ylabel("\$z \\cdot \\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
-    else
-        ylabel("\$\\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
-    end
+    # if Zrenorm
+    #     ylabel("\$z \\cdot \\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    # else
+    #     ylabel("\$\\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    # end
     # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     legend()
 
@@ -164,17 +164,17 @@ function plotS_k(para, rSw_k, iSw_k, kgrid, Zrenorm)
         _x, _y = spline(_kgrid / kF, y, e)
         plot(_x, _y, color=color[o], linestyle="--")
     end
-    xlim([kgrid[1] / kF, kgrid[end] / kF])
+    xlim([kgrid[1] / kF, 2.0])
     ylim([0.0, 1.0])
     xlabel("\$k/k_F\$")
-    if Zrenorm
-        ylabel("\$z \\cdot \\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
-    else
-        ylabel("\$\\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
-    end
+    # if Zrenorm
+    #     ylabel("\$z \\cdot \\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    # else
+    #     ylabel("\$\\frac{\\partial \\Sigma(k, i\\omega_0)}{\\partial i \\omega}\$")
+    # end
     # plot.plt.ylabel("\$z(k/k_F) = \\left( 1+\\frac{\\partial \\operatorname{Im}\\Sigma(k, i\\omega_0)}{\\partial \\omega}\\right)^{-1}\$")
     legend()
-    #plot.plt.savefig("sigmaK_rs$(para.rs)_Fs$(para.Fs)_$(para.dim)d.pdf")
+    savefig("sigmaK.pdf")
     show()
     # readline()
 end

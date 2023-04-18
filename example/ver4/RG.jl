@@ -6,7 +6,7 @@ pgfplotsx()
 
 include("KO.jl")
 
-rs = 4.0
+rs = 8.0
 mass2 = 1e-5
 beta = 100.0
 Nk = 40000
@@ -20,10 +20,12 @@ println(length(Λgrid))
 dΛ = (Λgrid[2] - Λgrid[1])
 
 fs = [0.0,]
+us = [0.0,]
 fa = [0.0,]
 
 for (li, lambda) in enumerate(Λgrid[1:end-1])
     fs_l, fa_l = fs[end], fa[end]
+    us_l = us[end]
     # p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=-fs_l, Fa=-fa_l, order=1, mass2=mass2, isDynamic=true, isFock=false)
     p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=-fs_l, Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
     # ws, wa = Ver4.projected_exchange_interaction(0, p_l, Ver4.exchange_interaction; kamp=p_l.kF, kamp2=lambda, ct=false, verbose=0)
@@ -50,9 +52,11 @@ for (li, lambda) in enumerate(Λgrid[1:end-1])
     # dFs = (ws_d - ws) / dΛ
     # dFa = (wa_d - wa) / dΛ
     fs_new = fs_l + dFs / Fs_df / 2.0 * (Λgrid[li+1] - Λgrid[li])
+    us_new = us_l + dFs / 2.0 * (Λgrid[li+1] - Λgrid[li])
     # fs_new = fs_l + dFs * (Λgrid[li+1] - Λgrid[li])
     fa_new = fa_l + dFa / Fa_df / 2.0 * (Λgrid[li+1] - Λgrid[li])
     push!(fs, fs_new)
+    push!(us, us_new)
     push!(fa, fa_new)
 end
 # kF_idx = searchsortedlast(Λgrid, para.kF, rev=true)
@@ -79,11 +83,22 @@ p = plot(titlefontsize=18,
     tickfontsize=18,
     legendfontsize=18,
     labelfontsize=18,
-    ylabel=L"F_s", xlabel=L"\Lambda/k_F", legend=:topright, size=(800, 600), xlims=[0.0, 3.0], ylims=[0.0, 1.2], linewidth=2, thickness_scaling=1
+    ylabel=L"U_s", xlabel=L"\Lambda/k_F", legend=:topright, size=(800, 600),
+    xlims=[0.0, 3.0],
+    ylims=[0.0, 1.2],
+    linewidth=2, thickness_scaling=1
 )
-plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, fs, label=L"CS")
+# plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, fs .* Λgrid, label=L"CS")
+# plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko .* KOgrid, label=L"KO")
+
+############# plot f ##################
+# plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, fs, label=L"CS")
+# plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"KO")
+
+############ plot u ############
+plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, us, label=L"CS")
 plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"KO")
 #plot a vertical line at 2kF
-# savefig(p, "Fs.pdf")
+savefig(p, "Us.pdf")
 # display(p)
 # readline()
