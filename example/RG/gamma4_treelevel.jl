@@ -34,7 +34,7 @@ function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=1.0, verbose=1
     return Fp, Fm
 end
 
-function gamma4_treelevel_RG(para, Λgrid)
+function gamma4_treelevel_RG(para, Λgrid; verbose=1)
     fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
     us = deepcopy(fs)
 
@@ -45,6 +45,9 @@ function gamma4_treelevel_RG(para, Λgrid)
     while true
         fs_new, us_new = zero(fs), zero(us)
         flag = true
+        if verbose > 0
+            println("iteration $(idx)")
+        end
         for (li, lambda) in enumerate(Λgrid)
             p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=fs[li], Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
 
@@ -73,17 +76,26 @@ function gamma4_treelevel_RG(para, Λgrid)
         us .= us_new
         idx += 1
     end
-    println("iteration $(idx)")
-    # kF_idx = 1
-    # println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
-    # println("Fs(kF): ", fs[kF_idx])
-    # println("Us(kF): ", us[kF_idx])
+    if verbose >= 0
+        println("total iteration $(idx)")
+    end
+    if verbose > 0
+        kF_idx = searchsortedfirst(Λgrid, para.kF)
+        println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
+        println("Fs(kF): ", fs[kF_idx])
+        println("Us(kF): ", us[kF_idx])
+    end
     return fs, us
 end
 
 
-function gamma4_treelevel_KO(para, Λgrid)
+function gamma4_treelevel_KO(para, Λgrid; verbose=1)
     fs = [-KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
-    us = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
+    us = -deepcopy(fs)
+    if verbose > 0
+        kF_idx = searchsortedfirst(Λgrid, para.kF)
+        println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
+        println("KO: Fs(kF) = -Us(kF) = ", fs[kF_idx])
+    end
     return fs, us
 end

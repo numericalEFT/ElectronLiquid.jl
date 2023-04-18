@@ -13,27 +13,14 @@ para = UEG.ParaMC(rs=rs, beta=beta, Fs=-0.0, order=1, mass2=mass2, isDynamic=tru
 println(length(Λgrid))
 println(Λgrid)
 
-fs, us = gamma4_treelevel_RG(para, Λgrid)
+fs, us = gamma4_treelevel_RG(para, Λgrid; verbose=1)
 
-kF_idx = 1
-println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
-println("Fs(kF): ", fs[kF_idx])
-println("Us(kF): ", us[kF_idx])
-
-############## construct KO interaction ###########
 KOgrid = collect(LinRange(1.0 * para.kF, 5.0 * para.kF, 100))
 
 F_cs = Interp.interp1DGrid(fs, Λgrid, KOgrid)
 U_cs = Interp.interp1DGrid(us, Λgrid, KOgrid)
 
-F_ko = [KO(para, kF, kF; verbose=0)[1] for kF in KOgrid]
-
-# kF_idx = searchsortedfirst(KOgrid, para.kF)
-kF_idx = 1
-println("kF_idx: ", kF_idx, " with ", KOgrid[kF_idx] / para.kF, " kF")
-println("KO: Fs(kF): ", F_ko[kF_idx])
-println(KO(para, para.kF, para.kF))
-##################################################
+F_ko, U_ko = gamma4_treelevel_KO(para, KOgrid; verbose=1)
 
 p = plot(titlefontsize=18,
     guidefontsize=18,
@@ -55,8 +42,8 @@ p = plot(titlefontsize=18,
 ############ plot u ############
 plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, -F_cs, label=L"-F^{CS}_s")
 plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, U_cs, label=L"U^{CS}_s")
-plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"-F^{KO}_s=U^{KO}_s")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, -F_ko, label=L"-F^{KO}_s=U^{KO}_s")
 #plot a vertical line at 2kF
-# savefig(p, "Us.pdf")
+savefig(p, "FsUs.pdf")
 display(p)
 readline()
