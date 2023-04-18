@@ -1,0 +1,62 @@
+using Plots
+using LaTeXStrings
+pgfplotsx()
+
+include("gamma4_treelevel.jl")
+
+rs = 8.0
+mass2 = 1e-5
+beta = 100.0
+
+para = UEG.ParaMC(rs=rs, beta=beta, Fs=-0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
+Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 16, 0.01 * para.kF, 16)
+println(length(Λgrid))
+println(Λgrid)
+
+fs, us = gamma4_treelevel_RG(para, Λgrid)
+
+kF_idx = 1
+println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
+println("Fs(kF): ", fs[kF_idx])
+println("Us(kF): ", us[kF_idx])
+
+############## construct KO interaction ###########
+KOgrid = collect(LinRange(1.0 * para.kF, 5.0 * para.kF, 100))
+
+F_cs = Interp.interp1DGrid(fs, Λgrid, KOgrid)
+U_cs = Interp.interp1DGrid(us, Λgrid, KOgrid)
+
+F_ko = [KO(para, kF, kF; verbose=0)[1] for kF in KOgrid]
+
+# kF_idx = searchsortedfirst(KOgrid, para.kF)
+kF_idx = 1
+println("kF_idx: ", kF_idx, " with ", KOgrid[kF_idx] / para.kF, " kF")
+println("KO: Fs(kF): ", F_ko[kF_idx])
+println(KO(para, para.kF, para.kF))
+##################################################
+
+p = plot(titlefontsize=18,
+    guidefontsize=18,
+    tickfontsize=18,
+    legendfontsize=18,
+    labelfontsize=18,
+    ylabel="Quasiparticle Interaction", xlabel=L"\Lambda/k_F", legend=:topright, size=(800, 600),
+    xlims=[0.0, 3.0],
+    ylims=[0.0, 1.2],
+    linewidth=2, thickness_scaling=1
+)
+# plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, fs .* Λgrid, label=L"CS")
+# plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko .* KOgrid, label=L"KO")
+
+############# plot f ##################
+# plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, fs, label=L"CS")
+# plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"KO")
+
+############ plot u ############
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, -F_cs, label=L"-F^{CS}_s")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, U_cs, label=L"U^{CS}_s")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"-F^{KO}_s=U^{KO}_s")
+#plot a vertical line at 2kF
+# savefig(p, "Us.pdf")
+display(p)
+readline()
