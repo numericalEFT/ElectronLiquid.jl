@@ -2,6 +2,7 @@ using ElectronLiquid
 using CompositeGrids
 using Plots
 using LaTeXStrings
+using FiniteDifferences
 pgfplotsx()
 
 include("KO.jl")
@@ -9,67 +10,77 @@ include("KO.jl")
 rs = 8.0
 mass2 = 1e-5
 beta = 100.0
-Nk = 40000
 
 para = UEG.ParaMC(rs=rs, beta=beta, Fs=-0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
-# Λgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, 10 * para.kF], [para.kF,], 8, 0.01 * para.kF, 12)
-Λgrid = collect(reverse(LinRange(para.kF, 20 * para.kF, Nk)))
-dΛgrid = [Λgrid[li+1] - Λgrid[li] for li in 1:length(Λgrid)-1]
+Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 16, 0.01 * para.kF, 16)
 println(length(Λgrid))
-# dΛ = (Λgrid[2] - Λgrid[1]) / 100.0
-dΛ = (Λgrid[2] - Λgrid[1])
+println(Λgrid)
+dΛ = 0.001 * para.kF
 
-fs = [0.0,]
-us = [0.0,]
-fa = [0.0,]
+fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
+us = deepcopy(fs)
 
-for (li, lambda) in enumerate(Λgrid[1:end-1])
-    fs_l, fa_l = fs[end], fa[end]
-    us_l = us[end]
-    # p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=-fs_l, Fa=-fa_l, order=1, mass2=mass2, isDynamic=true, isFock=false)
-    p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=-fs_l, Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
-    # ws, wa = Ver4.projected_exchange_interaction(0, p_l, Ver4.exchange_interaction; kamp=p_l.kF, kamp2=lambda, ct=false, verbose=0)
-    # ws_d, wa_d = Ver4.projected_exchange_interaction(0, p_l, Ver4.exchange_interaction; kamp=p_l.kF, kamp2=lambda + dΛ, ct=false, verbose=0)
+dfs = zero(Λgrid.grid)
+dus = zero(Λgrid.grid)
 
-    # wp, wm, angle = Ver4.exchange_interaction(p_l, p_l.kF, lambda; ct=false)
-    wp, wm, angle = Ver4.exchange_interaction(p_l, lambda, lambda; ct=false)
-    Fs = Ver4.Legrendre(0, wp, angle)
-    Fa = Ver4.Legrendre(0, wm, angle)
+function Fs(para, kamp, kamp2)
+    wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=false)
+    return -Ver4.Legrendre(0, wp, angle)
+end
 
-    # wp, wm, angle = Ver4.exchange_interaction(p_l, p_l.kF, lambda + dΛ; ct=false)
-    wp, wm, angle = Ver4.exchange_interaction(p_l, lambda + dΛ, lambda + dΛ; ct=false)
-    Fs_dΛ = Ver4.Legrendre(0, wp, angle)
-    Fa_dΛ = Ver4.Legrendre(0, wm, angle)
-    dFs = (Fs_dΛ - Fs) / dΛ
-    dFa = (Fa_dΛ - Fa) / dΛ
+function Fa(para, kamp, kamp2)
+    wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=false)
+    return -Ver4.Legrendre(0, wm, angle)
+end
 
-    # wp, wm, angle = Ver4.exchange_interaction_df(p_l, p_l.kF, lambda; ct=false)
-    wp, wm, angle = Ver4.exchange_interaction_df(p_l, lambda, lambda; ct=false)
-    Fs_df = Ver4.Legrendre(0, wp, angle) / para.NF
-    Fa_df = Ver4.Legrendre(0, wm, angle) / para.NF
+idx = 1
+while true
+    println("iteration $(idx)")
+    fs_new, us_new = zero(fs), zero(us)
+    flag = true
+    for (li, lambda) in enumerate(Λgrid)
+        p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=fs[li], Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
 
-    # println(lambda, "->", Fs_df)
-    # dFs = (ws_d - ws) / dΛ
-    # dFa = (wa_d - wa) / dΛ
-    fs_new = fs_l + dFs / Fs_df / 2.0 * (Λgrid[li+1] - Λgrid[li])
-    us_new = us_l + dFs / 2.0 * (Λgrid[li+1] - Λgrid[li])
-    # fs_new = fs_l + dFs * (Λgrid[li+1] - Λgrid[li])
-    fa_new = fa_l + dFa / Fa_df / 2.0 * (Λgrid[li+1] - Λgrid[li])
-    push!(fs, fs_new)
-    push!(us, us_new)
-    push!(fa, fa_new)
+        # _Fs_dΛ = Fs(p_l, lambda + dΛ, lambda + dΛ)
+        # _Fs = Fs(p_l, lambda, lambda)
+        # dFs = (_Fs_dΛ - _Fs) / dΛ
+        dFs = central_fdm(5, 1)(λ -> Fs(p_l, λ, λ), lambda) #use central finite difference method to calculate the derivative
+
+        wp, wm, angle = Ver4.exchange_interaction_df(p_l, lambda, lambda; ct=false)
+        Fs_df = Ver4.Legrendre(0, wp, angle) / para.NF
+
+        dfs[li] = -dFs / Fs_df / 2.0
+        dus[li] = dFs / 2.0
+
+        fs_new[li] = Interp.integrate1D(dfs, Λgrid, [Λgrid[li], Λgrid[end]])
+        us_new[li] = Interp.integrate1D(dus, Λgrid, [Λgrid[li], Λgrid[end]])
+        if abs(fs[li] - fs_new[li]) > 1e-4 || abs(us[li] - us_new[li]) > 1e-4
+            flag = false
+        end
+    end
+
+    if flag
+        break
+    end
+    fs .= fs_new
+    us .= us_new
+    global idx += 1
 end
 # kF_idx = searchsortedlast(Λgrid, para.kF, rev=true)
-kF_idx = length(Λgrid)
+kF_idx = 1
 println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
 println("Fs(kF): ", fs[kF_idx])
-println("Fa(kF): ", fa[kF_idx])
+println("Us(kF): ", us[kF_idx])
+# println("Fa(kF): ", fa[kF_idx])
 
 
 ############## construct KO interaction ###########
 KOgrid = collect(LinRange(1.0 * para.kF, 5.0 * para.kF, 100))
 # F_ko = [KO(para, para.kF, lambda; verbose=0)[1] for lambda in KOgrid]
 F_ko = [KO(para, lambda, lambda; verbose=0)[1] for lambda in KOgrid]
+
+F_cs = Interp.interp1DGrid(fs, Λgrid, KOgrid)
+U_cs = Interp.interp1DGrid(us, Λgrid, KOgrid)
 
 # kF_idx = searchsortedfirst(KOgrid, para.kF)
 kF_idx = 1
@@ -83,7 +94,7 @@ p = plot(titlefontsize=18,
     tickfontsize=18,
     legendfontsize=18,
     labelfontsize=18,
-    ylabel=L"U_s", xlabel=L"\Lambda/k_F", legend=:topright, size=(800, 600),
+    ylabel="Quasiparticle Interaction", xlabel=L"\Lambda/k_F", legend=:topright, size=(800, 600),
     xlims=[0.0, 3.0],
     ylims=[0.0, 1.2],
     linewidth=2, thickness_scaling=1
@@ -96,9 +107,10 @@ p = plot(titlefontsize=18,
 # plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"KO")
 
 ############ plot u ############
-plot!(p, (Λgrid .- para.kF) ./ para.kF, linewidth=2, us, label=L"CS")
-plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"KO")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, -F_cs, label=L"-F^{CS}_s")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, U_cs, label=L"U^{CS}_s")
+plot!(p, (KOgrid .- para.kF) ./ para.kF, linewidth=2, F_ko, label=L"-F^{KO}_s=U^{KO}_s")
 #plot a vertical line at 2kF
-savefig(p, "Us.pdf")
-# display(p)
-# readline()
+# savefig(p, "Us.pdf")
+display(p)
+readline()
