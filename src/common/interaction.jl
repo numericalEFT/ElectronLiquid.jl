@@ -147,6 +147,23 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
     return Rs
 end
 
+"""
+    function KOdynamic_T(para::ParaMC)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+δR_q/r_q = r_q Π₀/(1-r_q Π₀)
+```
+
+where Π₀ is the polarization of free electrons.
+"""
 function KOdynamic_T(para::ParaMC)
     # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
     @unpack dim, e0, EF, β, qgrid, τgrid = para
@@ -172,6 +189,43 @@ function KOdynamic_T(para::ParaMC)
         # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
         staticPi = polarKW(q, 0, para)
         @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
+    end
+    Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
+    return real.(Rs)
+end
+
+"""
+    function KOdynamic_T(para::ParaMC)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+d δR_q/df - 1 = 1/(1-r_q Π₀)^2 - 1
+```
+
+where Π₀ is the polarization of free electrons.
+"""
+function KOdynamic_T_df(para::ParaMC)
+    # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
+    @unpack dim, e0, EF, β, qgrid, τgrid = para
+    dlr = DLRGrid(Euv=10 * EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    Nq, Nτ = length(qgrid), length(τgrid)
+    Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    for (ni, n) in enumerate(dlr.n)
+        for (qi, q) in enumerate(qgrid)
+            invKOinstant = 1.0 / KOinstant(q, para)
+            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
+            Pi[qi, ni] = polarKW(q, n, para)
+            Rs[qi, ni] = Pi[qi, ni] * (-2 * invKOinstant + Pi[qi, ni]) / (invKOinstant - Pi[qi, ni])^2
+        end
     end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
     return real.(Rs)

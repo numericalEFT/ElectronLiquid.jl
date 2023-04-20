@@ -1,12 +1,10 @@
 """
 Calculate vertex4 averged on the Fermi surface
 """
-function integrandPH(config)
-    para, diag, root, extT, kampgrid, lgrid, n = config.para
+function integrandPH(idx, var, config)
+    para, diag, root, extT, kampgrid, lgrid, n = config.userdata
 
     kF, β = para.kF, para.β
-    idx = config.curr
-    var = config.var
     varK, varT = var[1], var[2]
     x = config.var[3][1]
     # error("$(varK.data[:, 1])")
@@ -49,16 +47,12 @@ function integrandPH(config)
     return Weight(wuu * factor, wud * factor)
 end
 
-function measurePH(config)
-    factor = 1.0 / config.reweight[config.curr]
+function measurePH(idx, var, obs, weight, config)
+    Lidx = var[4][1]
+    Kidx = var[5][1]
 
-    Lidx = config.var[4][1]
-    Kidx = config.var[5][1]
-
-    o = config.curr
-    weight = integrandPH(config)
-    config.observable[o, 1, Lidx, Kidx] += weight.d / abs(weight) * factor
-    config.observable[o, 2, Lidx, Kidx] += weight.e / abs(weight) * factor
+    obs[idx][1, Lidx, Kidx] += weight.d
+    obs[idx][2, Lidx, Kidx] += weight.e
 end
 
 function PH(para::ParaMC, diagram;
@@ -94,7 +88,7 @@ function PH(para::ParaMC, diagram;
     AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # angular momentum
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = zeros(ComplexF64, length(dof), 2, Nl, Nk)
+    obs = [zeros(ComplexF64, 2, Nl, Nk) for p in diagpara]
 
     # if isnothing(neighbor)
     #     neighbor = UEG.neighbor(partition)
@@ -104,11 +98,12 @@ function PH(para::ParaMC, diagram;
             var=(K, T, X, L, AMP),
             dof=dof,
             obs=obs,
-            para=(para, diag, root, extT, kamp, l, n),
+            type=Weight,
+            userdata=(para, diag, root, extT, kamp, l, n),
             kwargs...
         )
     end
-    result = MCIntegration.sample(config, integrandPH, measurePH; neval=neval, print=print, kwargs...)
+    result = integrate(integrandPH; measure=measurePH, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -116,18 +111,26 @@ function PH(para::ParaMC, diagram;
 
     if isnothing(result) == false
         if print >= 0
-            MCIntegration.summary(result.config)
-            MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
-            MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
+            report(result.config)
+            report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+            report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
         end
 
-        avg, std = result.mean, result.stdev
-        r = measurement.(real(avg), real(std))
-        i = measurement.(imag(avg), imag(std))
-        data = Complex.(r, i)
-        datadict = Dict{eltype(partition),typeof(data[1, :, :, :])}()
-        for i in 1:length(dof)
-            datadict[partition[i]] = data[i, :, :, :]
+        datadict = Dict{eltype(partition),Any}()
+        if length(dof) == 1
+            avg, std = result.mean, result.stdev
+            r = measurement.(real(avg), real(std))
+            i = measurement.(imag(avg), imag(std))
+            data = Complex.(r, i)
+            datadict[partition[1]] = data
+        else
+            for k in 1:length(dof)
+                avg, std = result.mean[k], result.stdev[k]
+                r = measurement.(real(avg), real(std))
+                i = measurement.(imag(avg), imag(std))
+                data = Complex.(r, i)
+                datadict[partition[k]] = data
+            end
         end
         return datadict, result
     else

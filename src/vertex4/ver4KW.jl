@@ -91,7 +91,7 @@ function KW(para::ParaMC, diagram;
     vWinR = MCIntegration.Discrete(1, NwinR, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = [zeros(ComplexF64, 2, NkinL, NkoutL, NkinR, NwinL, NwoutL, NwinR),] # observable for the Fock diagram 
+    obs = [zeros(ComplexF64, 2, NkinL, NkoutL, NkinR, NwinL, NwoutL, NwinR) for p in diagpara] # observable for the Fock diagram 
 
     if isnothing(config)
         config = MCIntegration.Configuration(;
@@ -116,8 +116,8 @@ function KW(para::ParaMC, diagram;
         r = measurement.(real(avg), real(std))
         i = measurement.(imag(avg), imag(std))
         data = Complex.(r, i)
-        datadict = Dict{eltype(partition),typeof(data[:, :, :, :, :, :, :])}()
-        datadict[partition[1]] = data[:, :, :, :, :, :, :]
+        datadict = Dict{eltype(partition),typeof(data)}()
+        datadict[partition[1]] = data
         return datadict, result
     else
         return nothing, nothing

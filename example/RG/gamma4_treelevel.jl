@@ -34,7 +34,7 @@ function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=1.0, verbose=1
     return Fp, Fm
 end
 
-function gamma4_treelevel_RG(para, Λgrid; verbose=1)
+function gamma4_treelevel_RG(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
     fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
     us = deepcopy(fs)
 
@@ -45,10 +45,8 @@ function gamma4_treelevel_RG(para, Λgrid; verbose=1)
     while true
         fs_new, us_new = zero(fs), zero(us)
         flag = true
-        if verbose > 0
-            println("iteration $(idx)")
-        end
-        for (li, lambda) in enumerate(Λgrid)
+        Threads.@threads for li in eachindex(Λgrid)
+            lambda = Λgrid[li]
             p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=fs[li], Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
 
             # _Fs_dΛ = Fs(p_l, lambda + dΛ, lambda + dΛ)
@@ -64,16 +62,22 @@ function gamma4_treelevel_RG(para, Λgrid; verbose=1)
 
             fs_new[li] = Interp.integrate1D(dfs, Λgrid, [Λgrid[li], Λgrid[end]])
             us_new[li] = Interp.integrate1D(dus, Λgrid, [Λgrid[li], Λgrid[end]])
-            if abs(fs[li] - fs_new[li]) > 1e-4 || abs(us[li] - us_new[li]) > 1e-4
-                flag = false
-            end
+            # if abs((fs[li] - fs_new[li]) / fs[li]) > rtol || abs((us[li] - us_new[li]) / us[li]) > rtol
+            #     flag = false
+            # end
+        end
+        max_fs = maximum(abs.((fs .- fs_new)))
+        max_us = maximum(abs.((us .- us_new)))
+        if max_fs / maximum(fs) < rtol || max_us / maximum(us) < rtol
+            flag = break
         end
 
-        if flag
-            break
+        if verbose > 0
+            println("iteration $(idx) with max_fs = $(max_fs) and max_us = $(max_us)")
         end
-        fs .= fs_new
-        us .= us_new
+
+        @. fs = fs * (1 - mix) + fs_new * (mix)
+        @. us = us * (1 - mix) + us_new * (mix)
         idx += 1
     end
     if verbose >= 0
