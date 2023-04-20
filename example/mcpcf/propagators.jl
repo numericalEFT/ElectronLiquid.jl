@@ -14,8 +14,9 @@ export rpa, interaction, G0, initR, response, coulomb
 
 # Ri excludes the source term
 
-const rtol = 1e-6 # rtol of DLR 
+const rtol = 1e-8 # rtol of DLR 
 const nlog_factor = 2.0 # factor controlling how many point per order of magnitude
+const βEUV = 1e5 # β*Euv for Rt
 
 # wrapper of functions and parameters
 struct Funcs{P,II,IT,RI,RT,RTD}
@@ -146,7 +147,8 @@ function initR(param;
     minK=0.001 * sqrt(param.T * param.me), maxK=10.0 * param.kF,
     order=6)
 
-    Euv = 100param.EF
+    # Euv = 100param.EF
+    Euv = βEUV / param.β
     # rtol = 1e-10
 
     Nlog = floor(Int, nlog_factor * log10(param.β / mint))
@@ -183,7 +185,8 @@ function loadR(fname, param;
     minK=0.001 * sqrt(param.T * param.me), maxK=10.0 * param.kF,
     order=6)
 
-    Euv = 100param.EF
+    # Euv = 100param.EF
+    Euv = βEUV / param.β
     # rtol = 1e-10
 
     Nlog = floor(Int, nlog_factor * log10(param.β / mint))
@@ -227,13 +230,16 @@ function loadR(fname, param;
     return ri, rt, rtd
 end
 
-function save_pcf(fname, param, ri, rt; R0=nothing)
+function save_pcf(fname, param, ri, rt; R0=nothing, result=nothing)
     jldopen(fname, "w") do file
         file["param"] = param
         file["R_ins"] = ri
         file["R_imtime"] = rt
         if !isnothing(R0)
             file["R0"] = R0
+        end
+        if !isnothing(result)
+            file["result"] = result
         end
     end
     return true

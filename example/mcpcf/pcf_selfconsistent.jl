@@ -8,15 +8,15 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const uid = 3006
+const uid = 3003
 const fname = "run/data/PCFdata_$uid.jld2"
 const savefname = "run/data/mcpcf_$uid.jld2"
 const Niter = 40
 const steps = 4e6 # 3e6 per min
 const ℓ = 0
-const θ, rs = 0.01, 0.3
+const θ, rs = 0.1, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
-const α = 0.7
+const α = 0.8
 println(param)
 
 function update!(result; α=α)
@@ -189,5 +189,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # println(result[1][1])
     R0 = real(Propagators.R0(Ri, Rt, param))
     println("R0=$(R0)")
-    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt)
+    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt; R0=R0, result=result)
 end
