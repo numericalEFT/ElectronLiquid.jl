@@ -1,12 +1,13 @@
 
-function integrandKW(idx, vars, config)
+function integrandKW_df(idx, vars, config)
     # function integrandKW(idx, varK, varT, config)
     varK, varT, N, ExtKidx = vars
-    para, diag, extT, kgrid, ngrid = config.userdata
+    paras, diag, extT, kgrid, ngrid = config.userdata
     diagram = diag[idx]
     weight = diagram.node.current
     l = N[1]
     k = ExtKidx[1]
+    para = paras[k]
     varK.data[1, 1] = kgrid[k]
     wn = ngrid[l]
 
@@ -24,7 +25,7 @@ end
 #     return integrandKW(1, varK, varT, N, ExtKidx, config)
 # end
 
-function measureKW(idx, vars, obs, weight, config)
+function measureKW_df(idx, vars, obs, weight, config)
     l = vars[3][1]  #matsubara frequency
     k = vars[4][1]  #K
     obs[idx][l, k] += weight
@@ -39,7 +40,8 @@ end
 #     end
 # end
 
-function KW(para::ParaMC, diagram;
+function KW_df(paras::Vector{ParaMC}, # we assume that all paras share the same kF and beta 
+    diagram;
     kgrid=[para.kF,],
     ngrid=[0,],
     neval=1e6, #number of evaluations
@@ -53,9 +55,13 @@ function KW(para::ParaMC, diagram;
     # @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
     # end
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.KW"
-    para.isDynamic && UEG.MCinitialize!(para)
+    if paras[1].isDynamic
+        for p in paras
+            UEG.MCinitialize!(p)
+        end
+    end
 
-    dim, β, kF = para.dim, para.β, para.kF
+    dim, β, kF = paras[1].dim, paras[1].β, paras[1].kF
     partition, diagpara, diag, root, extT = diagram
 
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
@@ -80,14 +86,14 @@ function KW(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, diag, extT, kgrid, ngrid),
+            userdata=(paras, diag, extT, kgrid, ngrid),
             kwargs...
             # neighbor=neighbor,
             # reweight_goal=reweight_goal, kwargs...
         )
     end
 
-    result = integrate(integrandKW; config=config, measure=measureKW, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrandKW_df; config=config, measure=measureKW_df, print=print, neval=neval, solver=solver, kwargs...)
     # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # niter=niter, print=print, block=block, kwargs...)
 

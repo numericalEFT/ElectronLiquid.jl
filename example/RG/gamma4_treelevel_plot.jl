@@ -1,19 +1,29 @@
 using Plots
 using LaTeXStrings
+using JLD2
 pgfplotsx()
 
 include("gamma4_treelevel.jl")
 
-rs = 8.0
+rs = 1.0
 mass2 = 1e-5
 beta = 100.0
 
 para = UEG.ParaMC(rs=rs, beta=beta, Fs=-0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
-Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 16, 0.01 * para.kF, 16)
+Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 8, 0.01 * para.kF, 8)
 println(length(Λgrid))
 println(Λgrid)
 
-fs, us = gamma4_treelevel_RG(para, Λgrid; verbose=1)
+fs, us, dfs, dus = gamma4_treelevel_RG(para, Λgrid; verbose=1)
+
+jldopen("data_f.jld2", "a+") do f
+    key = "$(UEG.short(para))"
+    if haskey(f, key)
+        @warn("replacing existing data for $key")
+        delete!(f, key)
+    end
+    f[key] = (para, Λgrid, fs, us, dfs, dus)
+end
 
 KOgrid = collect(LinRange(1.0 * para.kF, 5.0 * para.kF, 100))
 

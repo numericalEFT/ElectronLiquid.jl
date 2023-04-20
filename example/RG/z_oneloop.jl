@@ -3,35 +3,45 @@ using ElectronGas
 using CompositeGrids
 using FiniteDifferences
 using GreenFunc
+using MCIntegration
+using JLD2
 
-function zfactor_oneloop_RG(para, Λgrid, fs; verbose=1, rtol=1e-3, mix=1.0, ngrid=[0, 1])
-    dz = zero(Λgrid.grid)
-    z = zero(Λgrid.grid)
-    dk = para.kF * 1e-2
+rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+mass2 = [1e-5,]
+beta = [100.0,]
+order = [1,]
+neval = 1e7
 
-    Threads.@threads for li in eachindex(Λgrid[1:end-1])
-        lambda = Λgrid[li]
-        p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=fs[li], Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
-        sigmadyn1, sigmainst1 = SelfEnergy.G0W0(p_l.basic, [lambda,]; maxK=Λgrid[end])
-        sigmadyn2, sigmainst2 = SelfEnergy.G0W0(p_l.basic, [lambda + dk,]; maxK=Λgrid[end])
+for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
-        sigmadyn1 = dlr_to_imfreq(to_dlr(sigmadyn1), ngrid)
-        sigmadyn2 = dlr_to_imfreq(to_dlr(sigmadyn2), ngrid)
-        zk1 = imag(sigmadyn1[1, 1] - sigmadyn1[2, 1]) / (2 * π * (ngrid[1] - ngrid[2]) / para.basic.β)
-        zk2 = imag(sigmadyn2[1, 1] - sigmadyn2[2, 1]) / (2 * π * (ngrid[1] - ngrid[2]) / para.basic.β)
-        println(lambda, " ", zk1, " ", zk2)
-        dz[li] = (zk2 - zk1) / dk
+    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true)
+    Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 4, 0.01 * para.kF, 4)
+    ngrid = [0, 1]
+
+    f = jldopen("data_f.jld2", "r")
+    key = "$(UEG.short(para))"
+    para, Λgrid, fs, us = f[key]
+
+    paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=0.0, order=para.order,
+        mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
+
+    partition = UEG.partition(para.order)
+    neighbor = UEG.neighbor(partition)
+    @time diagram = Sigma.diagram(para, partition; dR=true)
+    reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
+
+    sigma, result = Sigma.KW_df(paras, diagram;
+        neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
+        kgrid=Λgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+
+    if isnothing(sigma) == false
+        jldopen("data_Z.jld2", "a+") do f
+            key = "$(UEG.short(para))"
+            if haskey(f, key)
+                @warn("replacing existing data for $key")
+                delete!(f, key)
+            end
+            f[key] = (para, ngrid, Λgrid, sigma)
+        end
     end
-
-    println(dz)
-    for li in eachindex(Λgrid)
-        z[li] = Interp.integrate1D(dz, Λgrid, [Λgrid[li], Λgrid[end]])
-    end
-
-    if verbose > 0
-        kF_idx = searchsortedfirst(Λgrid, para.kF)
-        println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
-        println("z(kF): ", z[kF_idx])
-    end
-    return z
 end

@@ -410,6 +410,7 @@ where Π₀ is the polarization of free electrons.
     return vd * linear2D(p.dW0, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
+
 """
     function interactionStatic(p::ParaMC, qd, τIn, τOut)
     
@@ -464,4 +465,40 @@ kostatic - dynamic = v_q
     # end
     kostatic = KOstatic(qd, p)
     return kostatic / p.β - interactionDynamic(p, qd, τIn, τOut)
+end
+
+"""
+    function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+d δR_q/df = (r_q)²Π₀/(1-r_q Π₀)
+```
+
+where Π₀ is the polarization of free electrons.
+"""
+@inline function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
+    # @unpack qgrid, τgrid = p.qgrid, p.τgrid
+    kF, maxK = p.kF, p.maxK
+
+    if qd > maxK
+        return 0.0
+    end
+
+    dτ = abs(τOut - τIn)
+
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-6 * kF
+        qd = 1e-6 * kF
+    end
+
+    return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end

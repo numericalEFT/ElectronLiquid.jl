@@ -1,6 +1,7 @@
 using ElectronLiquid
 using CompositeGrids
 using FiniteDifferences
+using JLD2
 
 function Fs(para, kamp, kamp2)
     wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=false)
@@ -45,9 +46,9 @@ function gamma4_treelevel_RG(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
     while true
         fs_new, us_new = zero(fs), zero(us)
         flag = true
-        Threads.@threads for li in eachindex(Λgrid)
+        for li in eachindex(Λgrid)
             lambda = Λgrid[li]
-            p_l = UEG.ParaMC(rs=rs, beta=beta, Fs=fs[li], Fa=0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
+            p_l = UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false)
 
             # _Fs_dΛ = Fs(p_l, lambda + dΛ, lambda + dΛ)
             # _Fs = Fs(p_l, lambda, lambda)
@@ -89,7 +90,8 @@ function gamma4_treelevel_RG(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
         println("Fs(kF): ", fs[kF_idx])
         println("Us(kF): ", us[kF_idx])
     end
-    return fs, us
+
+    return fs, us, dfs, dus
 end
 
 
@@ -102,4 +104,29 @@ function gamma4_treelevel_KO(para, Λgrid; verbose=1)
         println("KO: Fs(kF) = -Us(kF) = ", fs[kF_idx])
     end
     return fs, us
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+
+    rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+    mass2 = [1e-5,]
+    beta = [100.0,]
+    order = [1,]
+    neval = 1e7
+
+    for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
+
+        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true)
+        Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 4, 0.01 * para.kF, 4)
+        fs, us, dfs, dus = gamma4_treelevel_RG(para, Λgrid; verbose=1)
+
+        jldopen("data_f.jld2", "a+") do f
+            key = "$(UEG.short(para))"
+            if haskey(f, key)
+                @warn("replacing existing data for $key")
+                delete!(f, key)
+            end
+            f[key] = (para, Λgrid, fs, us, dfs, dus)
+        end
+    end
 end

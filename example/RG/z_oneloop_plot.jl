@@ -1,22 +1,57 @@
 using Plots
 using LaTeXStrings
+using ElectronGas
+using ElectronLiquid
+using CompositeGrids
+using JLD2
 pgfplotsx()
 
-include("z_oneloop.jl")
-include("gamma4_treelevel.jl")
+rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+mass2 = [1e-5,]
+beta = [100.0,]
+order = [1,]
+neval = 1e7
 
-rs = 8.0
-mass2 = 1e-5
-beta = 100.0
+function zfactor(data, β)
+    return @. (imag(data[2, :]) - imag(data[1, :])) / (2π / β)
+end
 
-para = UEG.ParaMC(rs=rs, beta=beta, Fs=-0.0, order=1, mass2=mass2, isDynamic=true, isFock=false)
-Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 4, 0.01 * para.kF, 4)
+z_RG, z_RPA = [], []
 
-println(Λgrid)
+for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
-# fs, us = gamma4_treelevel_RG(para, Λgrid; verbose=1)
-# println(fs)
-fs = zero(Λgrid.grid)
-z = zfactor_oneloop_RG(para, Λgrid, fs; verbose=1)
-println(z)
+    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=1, mass2=_mass2, isDynamic=true, isFock=false)
+
+    f = jldopen("data_f.jld2", "r")
+    key = "$(UEG.short(para))"
+    para, Λgrid, fs, us, dfs, dus = f[key]
+
+    f = jldopen("data_Z.jld2", "r")
+    key = "$(UEG.short(para))"
+    para, ngrid, Λgrid, sigma = f[key]
+
+    # println(Λgrid)
+    # println(fs)
+    # println(dfs)
+
+    dz_df = zfactor(sigma[(1, 0, 0)], para.beta)
+
+    dz = Interp.integrate1D(dz_df .* dfs / para.NF, Λgrid)
+    println(dz)
+
+    sigdyn, sigint = SelfEnergy.G0W0(para.basic, int_type=:ko_const, Fs=-fs[1])
+    z = SelfEnergy.zfactor(para.basic, sigdyn, ngrid=[-1, 0])[1]
+    println("rs=$_rs with fs=$(fs[1]): z=$z")
+    ds_dw = 1 / z - 1
+    _z = exp(-ds_dw - dz)
+
+    sigdyn, sigint = SelfEnergy.G0W0(para.basic, int_type=:rpa)
+    z = SelfEnergy.zfactor(para.basic, sigdyn, ngrid=[-1, 0])[1]
+    push!(z_RPA, z)
+    push!(z_RG, _z)
+end
+println(" rs    z_RG      z_RPA")
+for (ri, _rs) in enumerate(rs)
+    println("$(_rs)  $(z_RPA[ri]))  $(z_RG[ri])")
+end
 

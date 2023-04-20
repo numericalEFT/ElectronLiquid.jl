@@ -112,12 +112,20 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 return Coulombinstant(qd, p)
             elseif interactionTauNum(id.para) == 2
                 # println(id.extT)
-                return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                if id.order[3] == 0
+                    return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                else # return dR/df for the RG purpose. The static part is zero
+                    return 0.0
+                end
             else
                 error("not implemented!")
             end
         elseif id.type == Dynamic
-            return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            if id.order[3] == 0
+                return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            else # return dR/df for the RG purpose. 
+                return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            end
         else
             error("not implemented!")
         end
