@@ -8,13 +8,13 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const uid = 3003
+const uid = 3005
 const fname = "run/data/PCFdata_$uid.jld2"
 const savefname = "run/data/mcpcf_$uid.jld2"
-const Niter = 40
+const Niter = 30
 const steps = 4e6 # 3e6 per min
 const ℓ = 0
-const θ, rs = 0.1, 0.3
+const θ, rs = 0.02, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.8
 println(param)
@@ -82,8 +82,11 @@ function integrand(vars, config)
         V2 = 1.0 / interaction(pvmq, funcs)
         W1 = interaction(t2, kvmq, funcs) * V1
         W2 = interaction(t - t1, pvmq, funcs) * V2
-        V1 = V1 / param.β
-        V2 = V2 / param.β
+
+        # V1 = V1 / param.β
+        # V2 = V2 / param.β
+        V1 = -W1 + V1 * fake(kvmq, funcs) / param.β
+        V2 = -W2 + V2 * fake(pvmq, funcs) / param.β
 
         K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
         # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
@@ -173,6 +176,7 @@ function run(steps, param, alg=:vegas)
             var=(ExtT, ExtK, X, T, P, Q), dof=dof, obs=obs, solver=alg,
             neval=steps, print=-1, block=8, type=ComplexF64)
         update!(result)
+        println("round $i")
         println("R0=$(real(Propagators.R0(result.config.userdata.Ris, result.config.userdata.Rt, param) .* (1-α)))")
     end
     funcs = result.config.userdata

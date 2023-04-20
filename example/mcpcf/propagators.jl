@@ -10,12 +10,12 @@ using ElectronLiquid.ElectronGas.GreenFunc
 using ElectronLiquid.ElectronGas.CompositeGrids
 using JLD2
 
-export rpa, interaction, G0, initR, response, coulomb
+export rpa, interaction, G0, initR, response, coulomb, fake
 
 # Ri excludes the source term
 
 const rtol = 1e-8 # rtol of DLR 
-const nlog_factor = 2.0 # factor controlling how many point per order of magnitude
+const nlog_factor = 3.0 # factor controlling how many point per order of magnitude
 const βEUV = 1e5 # β*Euv for Rt
 
 # wrapper of functions and parameters
@@ -27,10 +27,22 @@ struct Funcs{P,II,IT,RI,RT,RTD}
     Ris::RI # store accumulated Ri for self consistent
     Rt::RT # container collecting Rt result, use DLR τ grid 
     Rtd::RTD # container for mc sampling, use dense τ grid
+    fake::II
 end
 
-Funcs(p, ii, it, ri, rt, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rt, rtd)
-Funcs(p, ii, it, ri, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rtd, rtd)
+function f_ake(ii, it)
+    # multiplier for better cancellation between V and W
+    # V(q)=\int_0^β V(q)fake(q, t) dt
+    idlr = to_dlr(it)
+    iw = to_imfreq(idlr)
+    fi = deepcopy(ii)
+    fi.data[1, 1, :] .= iw[1, 1, :] .+ 1.0
+    return fi
+end
+
+Funcs(p, ii, it, ri, rt, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rt, rtd, f_ake(ii, it))
+Funcs(p, ii, it, ri, rtd) = Funcs(p, ii, it, ri, deepcopy(ri), rtd, rtd, f_ake(ii, it))
+Funcs(p, ii, it, ri, ris, rt, rtd) = Funcs(p, ii, it, ri, ris, rt, rtd, f_ake(ii, it))
 
 interaction(k, funcs::Funcs) = interaction(k, funcs.inti)
 interaction(t, k, funcs::Funcs) = interaction(t, k, funcs.intt)
@@ -39,6 +51,7 @@ response(k, funcs::Funcs; norm=1) = response(k, funcs.Ri; norm=norm)
 response(t, k, funcs::Funcs; norm=1) = response(t, k, funcs.Rtd; norm=norm)
 G0(t, k, funcs::Funcs) = G0(t, k, funcs.param)
 coulomb(q, funcs::Funcs) = coulomb(q, funcs.param)
+fake(k, funcs::Funcs) = interaction(k, funcs.fake)
 
 # shift tau to [0, β)
 function tau_fermi(t, β)

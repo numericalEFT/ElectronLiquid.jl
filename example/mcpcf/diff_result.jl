@@ -128,7 +128,7 @@ end
 
 function diff_temps()
     dir = "run/data/"
-    uids = [3004, 3005, 3006, 3007, 3008]
+    uids = [3003, 3004, 3005, 3006, 3007, 3008]
     params, ris, rts, r0s, r00s, results, errs = load_mcpcf_list(uids, dir)
     errs = errs .* err_factor
     temps = [param.T / param.EF for param in params]

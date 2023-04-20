@@ -61,8 +61,11 @@ function integrand(vars, config)
         V2 = 1.0 / interaction(pvmq, funcs)
         W1 = interaction(t2, kvmq, funcs) * V1
         W2 = interaction(t - t1, pvmq, funcs) * V2
-        V1 = V1 / param.β
-        V2 = V2 / param.β
+
+        # V1 = V1 / param.β
+        # V2 = V2 / param.β
+        V1 = -W1 + V1 * fake(kvmq, funcs) / param.β
+        V2 = -W2 + V2 * fake(pvmq, funcs) / param.β
 
         K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
         # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
