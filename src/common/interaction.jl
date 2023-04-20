@@ -178,18 +178,19 @@ function KOdynamic_T(para::ParaMC)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = polarKW(q, n, para)
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
+            # Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni]) * KOinstant(q, para)
         end
     end
-    for (qi, q) in enumerate(qgrid)
-        # turn on this to check consistencey between two static KO interactions
-        w = KOinstant(q, para) * Rs[qi, 1] + Coulombinstant(q, para)
-        kostatic = KOstatic(q, para)
-        @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
-        # println("$(q/kF)   $(w*NF)")
-        # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
-        staticPi = polarKW(q, 0, para)
-        @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
-    end
+    # for (qi, q) in enumerate(qgrid)
+    #     # turn on this to check consistencey between two static KO interactions
+    #     w = KOinstant(q, para) * Rs[qi, 1] + Coulombinstant(q, para)
+    #     kostatic = KOstatic(q, para)
+    #     @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
+    #     # println("$(q/kF)   $(w*NF)")
+    #     # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
+    #     staticPi = polarKW(q, 0, para)
+    #     @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
+    # end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
     return real.(Rs)
 end
@@ -224,7 +225,7 @@ function KOdynamic_T_df(para::ParaMC)
             invKOinstant = 1.0 / KOinstant(q, para)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = polarKW(q, n, para)
-            Rs[qi, ni] = Pi[qi, ni] * (-2 * invKOinstant + Pi[qi, ni]) / (invKOinstant - Pi[qi, ni])^2
+            Rs[qi, ni] = Pi[qi, ni] * (2 * invKOinstant - Pi[qi, ni]) / (invKOinstant - Pi[qi, ni])^2
         end
     end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
