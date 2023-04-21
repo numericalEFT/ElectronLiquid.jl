@@ -8,13 +8,14 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const uid = 3005
+const isload = true
+const uid = 3008
 const fname = "run/data/PCFdata_$uid.jld2"
 const savefname = "run/data/mcpcf_$uid.jld2"
-const Niter = 30
+const Niter = 20
 const steps = 4e6 # 3e6 per min
 const ℓ = 0
-const θ, rs = 0.02, 0.3
+const θ, rs = 0.002, 0.3
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.8
 println(param)
@@ -132,8 +133,11 @@ function run(steps, param, alg=:vegas)
     mint = 0.001 * param.β
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
     order = 4
-    Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
-    # Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+    if isload
+        Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    else
+        Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+    end
     Ris = deepcopy(Ri)
     Ris.data .= Ri.data ./ (1 - α)
     Rt.data .= Rt.data ./ (1 - α)

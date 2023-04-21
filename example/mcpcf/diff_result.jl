@@ -116,7 +116,7 @@ function diff_rss()
     println(R00s)
 
     p = plot()
-    ylims!(0.0, maximum(1 ./ R00s))
+    ylims!(1.0, maximum(1 ./ R00s))
     plot!(p, rss, 1 ./ R0s, yerr=errs ./ R0s, label="RPA+cross")
     plot!(p, rss, 1 ./ R00s, label="RPA")
     xlabel!(p, L"$r_s$")

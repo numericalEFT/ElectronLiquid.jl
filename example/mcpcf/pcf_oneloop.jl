@@ -8,6 +8,7 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
+const ishalfcross = true
 const fname = "run/data/PCFdata_3006.jld2"
 const steps = 1e7 # 2e8/hr
 const ℓ = 0
@@ -52,6 +53,7 @@ function integrand(vars, config)
 
     result2 = -p^2 / (4π^2) * PLX * W * G1 * (G21 * R0 + G22 * R)
 
+    result3 = 0.0
     if iscross
         Kv = SVector{3,Float64}(k, 0, 0)
         Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
@@ -77,17 +79,57 @@ function integrand(vars, config)
         Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
         Gd04 = G0(t3 - t2, K4, funcs) # for R0
 
-        result3 = -p^2 / (2π)^5 * PLX * (
-                      V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
-                      +
-                      W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
-                      +
-                      V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
-                      +
-                      W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
-                  )
+        result3 += -p^2 / (2π)^5 * PLX * (
+                       V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
+                       +
+                       W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
+                       +
+                       V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
+                       +
+                       W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
+                   )
     else
-        result3 = 1e-22
+        result3 += 1e-22
+    end
+    if ishalfcross
+        Kv = SVector{3,Float64}(k, 0, 0)
+        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
+        kvmq = norm(Kv - Qv)
+        pvmq = norm(Pv - Qv)
+        kmp = norm(Kv - Pv)
+        normq = norm(Qv)
+
+        V1 = 1.0 / interaction(kmp, funcs)
+        V2 = 1.0 / interaction(normq, funcs)
+        W1 = interaction(t2, kmp, funcs) * V1
+        W2 = interaction(t1 - t, normq, funcs) * V2
+
+        # V1 = V1 / param.β
+        # V2 = V2 / param.β
+        V1 = -W1 + V1 * fake(kmp, funcs) / param.β
+        V2 = -W2 + V2 * fake(normq, funcs) / param.β
+
+        K1, K2, K3, K4 = p, kvmq, pvmq, -p
+        # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
+        # t1--t, t2--0
+        Gi1, Gi2 = G0(t4, K1, funcs), G0(-t, K2, funcs)
+        Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
+        Gi04 = G0(t3, K4, funcs) # for R0
+        Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+        Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
+        Gd04 = G0(t3 - t2, K4, funcs) # for R0
+
+        result3 += -p^2 / (2π)^5 * PLX * (
+                       V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
+                       +
+                       W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
+                       +
+                       V1 * W2 * Gd1 * Gi2 * Gd3 * (Gi4 * R + Gi04 * R0)
+                       +
+                       W1 * W2 * Gd1 * Gd2 * Gd3 * (Gd4 * R + Gd04 * R0)
+                   )
+    else
+        result3 += 1e-22
     end
     return 1.0, result1, result2, result3
 end
