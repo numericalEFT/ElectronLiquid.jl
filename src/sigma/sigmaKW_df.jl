@@ -9,6 +9,7 @@ function integrandKW_df(idx, vars, config)
     k = ExtKidx[1]
     para = paras[k]
     varK.data[1, 1] = kgrid[k]
+    # varK.data[1, 1] = para.kF
     wn = ngrid[l]
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)

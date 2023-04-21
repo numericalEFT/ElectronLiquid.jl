@@ -1,12 +1,13 @@
-using Plots
-using LaTeXStrings
+# using Plots
+# using LaTeXStrings
 using ElectronGas
 using ElectronLiquid
 using CompositeGrids
 using JLD2
-pgfplotsx()
+# pgfplotsx()
 
 rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+# rs = [4.0,]
 mass2 = [1e-5,]
 beta = [100.0,]
 order = [1,]
@@ -30,20 +31,23 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
     key = "$(UEG.short(para))"
     para, ngrid, Λgrid, sigma = f[key]
 
-    # println(Λgrid)
-    # println(fs)
-    # println(dfs)
+    println(Λgrid)
+    println(fs)
+    println(dfs)
 
-    dz_df = zfactor(sigma[(1, 0, 0)], para.beta)
+    dz_df = zfactor(sigma[(1, 0, 0)], para.β)
+    # println(dz_df[1], " - ", dz_df[end])
 
     dz = Interp.integrate1D(dz_df .* dfs / para.NF, Λgrid)
-    println(dz)
+    # dz = Interp.integrate1D(dfs, Λgrid)
 
     sigdyn, sigint = SelfEnergy.G0W0(para.basic, int_type=:ko_const, Fs=-fs[1])
     z = SelfEnergy.zfactor(para.basic, sigdyn, ngrid=[-1, 0])[1]
     println("rs=$_rs with fs=$(fs[1]): z=$z")
     ds_dw = 1 / z - 1
+    println(dz, " vs ", ds_dw)
     _z = exp(-ds_dw - dz)
+    # _z = exp(-ds_dw)
 
     sigdyn, sigint = SelfEnergy.G0W0(para.basic, int_type=:rpa)
     z = SelfEnergy.zfactor(para.basic, sigdyn, ngrid=[-1, 0])[1]

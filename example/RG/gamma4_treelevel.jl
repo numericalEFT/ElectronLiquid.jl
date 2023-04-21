@@ -117,7 +117,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
         para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true)
-        Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 4, 0.01 * para.kF, 4)
+        Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 8, 0.01 * para.kF, 8)
         fs, us, dfs, dus = gamma4_treelevel_RG(para, Λgrid; verbose=1)
 
         jldopen("data_f.jld2", "a+") do f
