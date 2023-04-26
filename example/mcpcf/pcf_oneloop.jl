@@ -8,11 +8,13 @@ using .Propagators
 using .Propagators: G0, interaction, response
 
 const iscross = true
-const ishalfcross = false
-const fname = "run/data/PCFdata_1006.jld2"
-const steps = 1e7 # 2e8/hr
+const ishalfcross = true
+const uid = 1008
+const fname = "run/data/PCFdata_$uid.jld2"
+const savefname = "run/data/mcpcfL1O2_$uid.jld2"
+const steps = 1e8 # 2e8/hr
 const ℓ = 0
-const θ, rs = 0.01, 0.1
+const θ, rs = 0.002, 0.1
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
 const α = 0.8
 println(param)
@@ -80,6 +82,7 @@ function integrand(vars, config)
             Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
             Gd04 = G0(t3 - t2, K4, funcs) # for R0
 
+            # result3 += -2.0 * p^2 / (2π)^5 * PLX * (
             result3 += -2.0 * p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
                            +
@@ -198,5 +201,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     println(real(Ri.data))
     println(real(Rt.data[1, :]))
     # println(result[1][1])
-    println("R0=$(real(Propagators.R0(Ri, Rt, param)))")
+    R0 = real(Propagators.R0(Ri, Rt, param))
+    println("R0=$(R0)")
+    Propagators.save_pcf(savefname, param, funcs.Ri, funcs.Rt; R0=R0, result=result)
 end
