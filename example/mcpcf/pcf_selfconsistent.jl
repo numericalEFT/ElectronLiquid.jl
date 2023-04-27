@@ -7,18 +7,68 @@ include("propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
 
-const iscross = true
-const ishalfcross = true
-const isload = true
-const uid = 3006
+using ArgParse
+
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table! s begin
+        "--cross-diagram", "-x"
+        help = "2nd order cross diagram"
+        action = :store_true
+
+        "--halfcross-diagram", "-y"
+        help = "2nd order half-cross diagram"
+        action = :store_true
+
+        "--uid", "-u"
+        help = "uid of the job"
+        arg_type = Int
+        default = 106
+
+        "--channel", "-l"
+        help = "orbital channel"
+        arg_type = Int
+        default = 0
+
+        "--steps", "-s"
+        help = "monte carlo step"
+        arg_type = Float64
+        default = 4e6
+
+        "--temperature", "-t"
+        help = "temperature"
+        arg_type = Float64
+        default = 0.01
+
+        "--rs", "-r"
+        help = "Wigner-Seitz radius"
+        arg_type = Float64
+        default = 0.1
+    end
+
+    return parse_args(s)
+end
+
+parsed_args = parse_commandline()
+println("Parsed args:")
+for (arg, val) in parsed_args
+    println("  $arg  =>  $val")
+end
+
+const iscross::Bool = parsed_args["cross-diagram"]
+const ishalfcross::Bool = parsed_args["halfcross-diagram"]
+const uid::Int = parsed_args["uid"]
 const fname = "run/data/PCFdata_$uid.jld2"
 const savefname = "run/data/mcpcfO2_$uid.jld2"
-const Niter = 20
-const steps = 4e6 # 3e6 per min
-const ℓ = 0
-const θ, rs = 0.01, 0.3
+const steps::Float64 = parsed_args["steps"] # 2e8/hr
+const ℓ::Int = parsed_args["channel"]
+const θ::Float64, rs::Float64 = parsed_args["temperature"], parsed_args["rs"]
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
-const α = 0.8
+const α = 0.88
+
+const isload = true
+const Niter = 40
 println(param)
 
 function update!(result; α=α)
