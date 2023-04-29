@@ -4,17 +4,19 @@ Calculate vertex4 averged on the Fermi surface
 function integrandPH_df(idx, vars, config)
     paras, diag, root, extT, kampgrid, lgrid, n = config.userdata
 
-    kF, β = para.kF, para.β
-    varK, varT, varX, varL, extKidx = var
+    varK, varT, varX, varL, extKidx = vars
     x = varX[1]
     # error("$(varK.data[:, 1])")
     l = lgrid[varL[1]]
     loopNum = config.dof[idx][1]
     kidx = extKidx[1]
     para = paras[kidx]
+
+    kF, β = para.kF, para.β
+
     kamp = kampgrid[kidx]
-    # varK.data[1, 1], varK.data[1, 2] = kamp, kamp
-    varK.data[1, 1], varK.data[1, 2] = kF, kF
+    varK.data[1, 1], varK.data[1, 2] = kamp, kamp
+    #varK.data[1, 1], varK.data[1, 2] = kF, kF
     varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
 
 

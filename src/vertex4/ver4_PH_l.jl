@@ -11,8 +11,8 @@ function integrandPH(idx, var, config)
     l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
     kamp = kampgrid[var[5][1]]
-    # varK.data[1, 1], varK.data[1, 2] = kamp, kamp
-    varK.data[1, 1], varK.data[1, 2] = kF, kF
+    varK.data[1, 1], varK.data[1, 2] = kamp, kamp
+    #varK.data[1, 1], varK.data[1, 2] = kF, kF
     varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
 
 

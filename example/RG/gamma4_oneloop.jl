@@ -18,8 +18,8 @@ neval = 1e6
 for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true, isFock=false)
+    kF = para.kF
     Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * para.kF, 20 * para.kF], [para.kF,], 8, 0.01 * para.kF, 8)
-    ngrid = [0, 1]
 
     f = jldopen("data_f.jld2", "r")
     key = "$(UEG.short(para))"
@@ -55,7 +55,6 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
     ver4, result = Ver4.PH_df(paras, diagram;
         kamp=Λgrid, n=n, l=lgrid,
-        neighbor=neighbor,
         neval=neval)
 
     if isnothing(ver4) == false
@@ -64,7 +63,7 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
             for (li, l) in enumerate(lgrid)
                 printstyled("l = $l\n", color=:green)
                 @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
-                for (ki, k) in enumerate(kgrid)
+                for (ki, k) in enumerate(Λgrid)
                     factor = 1.0
                     d1, d2 = real(data[1, li, ki]) * factor, real(data[2, li, ki]) * factor
                     s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
