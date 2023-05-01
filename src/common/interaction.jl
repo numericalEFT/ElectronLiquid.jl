@@ -117,12 +117,13 @@ end
 
 @inline function KOstatic_spin_df(q, p::ParaMC; ct=true)
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
-    Pi = polarKW(q, 0, p)
-    if ct
-        return 1.0 / (1.0 - p.fa * Pi)^2 + p.fa # counter term should be -fs for the KO interaction
-    else
-        return 1.0 / (1.0 - p.fa * Pi)^2
-    end
+    # Pi = polarKW(q, 0, p)
+    # if ct
+    #     return 1.0 / (1.0 - p.fa * Pi)^2 + p.fa # counter term should be -fs for the KO interaction
+    # else
+    #     return 1.0 / (1.0 - p.fa * Pi)^2
+    # end
+    return 0.0 # KO_spin doesn't depend on fs
 end
 
 """

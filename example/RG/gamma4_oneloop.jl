@@ -8,6 +8,8 @@ using FeynmanDiagram
 using JLD2
 using Printf
 
+include("gamma4_treelevel.jl")
+
 # rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
 rs = [4.0,]
 mass2 = [1e-5,]
@@ -25,8 +27,13 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
     key = "$(UEG.short(para))"
     para, Λgrid, fs, us = f[key]
 
-    paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=0.0, order=para.order,
+    _Fs = [KO(para, lambda, lambda; verbose=0)[1] for (li, lambda) in enumerate(Λgrid)]
+    # println(_Fs)
+    # println(fs)
+
+    paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=_Fs[li], Fa=0.0, order=para.order,
         mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
+
 
     partition = [(2, 0, 0),]
     channel = [

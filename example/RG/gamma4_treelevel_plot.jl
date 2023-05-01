@@ -5,7 +5,7 @@ pgfplotsx()
 
 include("gamma4_treelevel.jl")
 
-rs = 1.0
+rs = 8.0
 mass2 = 1e-5
 beta = 100.0
 
