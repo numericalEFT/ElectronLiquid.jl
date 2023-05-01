@@ -14,9 +14,9 @@ export rpa, interaction, G0, initR, response, coulomb, fake
 
 # Ri excludes the source term
 
-const rtol = 1e-8 # rtol of DLR 
+const rtol = 1e-10 # rtol of DLR 
 const nlog_factor = 3.0 # factor controlling how many point per order of magnitude
-const βEUV = 1e5 # β*Euv for Rt
+const βEUV = 1e6 # β*Euv for Rt
 
 # wrapper of functions and parameters
 struct Funcs{P,II,IT,RI,RT,RTD}
