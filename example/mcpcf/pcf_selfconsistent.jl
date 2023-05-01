@@ -58,9 +58,10 @@ end
 
 const iscross::Bool = parsed_args["cross-diagram"]
 const ishalfcross::Bool = parsed_args["halfcross-diagram"]
+const diagramflag = (iscross ? "X" : "") * (ishalfcross ? "Y" : "")
 const uid::Int = parsed_args["uid"]
 const fname = "run/data/PCFdata_$uid.jld2"
-const savefname = "run/data/mcpcfO2X_$uid.jld2"
+const savefname = "run/data/mcpcfO2$(diagramflag)_$uid.jld2"
 const steps::Float64 = parsed_args["steps"] # 2e8/hr
 const ℓ::Int = parsed_args["channel"]
 const θ::Float64, rs::Float64 = parsed_args["temperature"], parsed_args["rs"]
@@ -70,6 +71,7 @@ const α = 0.8
 const isload = true
 const Niter = 40
 println(param)
+println(savefname)
 
 function update!(result; α=α)
     funcs = result.config.userdata
