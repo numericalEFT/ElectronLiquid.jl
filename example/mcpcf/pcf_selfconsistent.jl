@@ -60,12 +60,12 @@ const iscross::Bool = parsed_args["cross-diagram"]
 const ishalfcross::Bool = parsed_args["halfcross-diagram"]
 const uid::Int = parsed_args["uid"]
 const fname = "run/data/PCFdata_$uid.jld2"
-const savefname = "run/data/mcpcfO2_$uid.jld2"
+const savefname = "run/data/mcpcfO2X_$uid.jld2"
 const steps::Float64 = parsed_args["steps"] # 2e8/hr
 const ℓ::Int = parsed_args["channel"]
 const θ::Float64, rs::Float64 = parsed_args["temperature"], parsed_args["rs"]
 const param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
-const α = 0.88
+const α = 0.8
 
 const isload = true
 const Niter = 40
