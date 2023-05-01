@@ -9,6 +9,8 @@ using LaTeXStrings
 using JLD2
 using Roots
 
+const mcpcf_pref = "mcpcfL1O2X"
+const pcf_pref = "PCFdata"
 err_factor = 1 / sqrt(5)
 
 function percent_error(result)
@@ -30,7 +32,7 @@ function percent_error(result)
 end
 
 function load_mcpcf_data(uid, dir)
-    fname = dir * "mcpcf_$uid.jld2"
+    fname = dir * mcpcf_pref * "_$uid.jld2"
     jldopen(fname, "r") do file
         param = file["param"]
         ri = file["R_ins"]
@@ -44,7 +46,7 @@ function load_mcpcf_data(uid, dir)
 end
 
 function load_pcf_data(uid, dir)
-    fname = dir * "PCFdata_$uid.jld2"
+    fname = dir * pcf_pref * "_$uid.jld2"
     jldopen(fname, "r") do file
         ri = file["R_ins"]
         rw = file["R_freq"]
@@ -105,7 +107,8 @@ end
 
 function diff_rss()
     dir = "run/data/"
-    uids = [106, 206, 506, 1006, 3006, 5006]
+    # uids = [106, 206, 506, 1006, 3006, 5006]
+    uids = [108, 208, 508, 1008]
     params, ris, rts, r0s, r00s, results, errs = load_mcpcf_list(uids, dir)
     errs = errs .* err_factor
     rss = [param.rs for param in params]
@@ -116,9 +119,10 @@ function diff_rss()
     println(R00s)
 
     p = plot()
-    ylims!(1.0, maximum(1 ./ R00s))
-    plot!(p, rss, 1 ./ R0s, yerr=errs ./ R0s, label="RPA+cross")
-    plot!(p, rss, 1 ./ R00s, label="RPA")
+    # ylims!(1.0, maximum(1 ./ R00s))
+    # plot!(p, rss, 1 ./ R0s, yerr=errs ./ R0s, label="RPA+cross")
+    # plot!(p, rss, 1 ./ R00s, label="RPA")
+    plot!(p, rss, 1 ./ R0s - 1 ./ R00s, yerr=errs ./ R0s, label="RPA+cross")
     xlabel!(p, L"$r_s$")
     ylabel!(p, L"$1/R_0$")
     display(p)
@@ -129,6 +133,7 @@ end
 function diff_temps()
     dir = "run/data/"
     uids = [3003, 3004, 3005, 3006, 3007, 3008]
+    # uids = [3006, 3007, 3008]
     params, ris, rts, r0s, r00s, results, errs = load_mcpcf_list(uids, dir)
     errs = errs .* err_factor
     temps = [param.T / param.EF for param in params]
@@ -139,6 +144,7 @@ function diff_temps()
     println(R00s)
 
     p = plot(xscale=:log10)
+    xlims!(0.0, 0.1)
     # ylims!(0.0, maximum(1 ./ R00s))
     plot!(p, temps, 1 ./ R0s, yerr=errs ./ R0s, label="RPA+cross")
     plot!(p, temps, 1 ./ R00s, label="RPA")
@@ -150,4 +156,4 @@ function diff_temps()
 end
 
 diff_rss()
-diff_temps()
+# diff_temps()

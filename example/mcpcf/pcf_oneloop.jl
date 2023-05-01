@@ -132,7 +132,7 @@ function integrand(vars, config)
             Gd04 = G0(t3 - t2, K4, funcs) # for R0
 
             # result3 += -2.0 * p^2 / (2π)^5 * PLX * (
-            result3 += -2.0 * p^2 / (2π)^5 * PLX * (
+            result3 += -p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gi2 * Gi3 * (Gi4 * R + Gi04 * R0)
                            +
                            W1 * V2 * Gi1 * Gd2 * Gi3 * (Gd4 * R + Gd04 * R0)
@@ -169,7 +169,7 @@ function integrand(vars, config)
             Gii2, Gid2 = G0(t, K2, funcs), G0(t2, K2, funcs)
             Gdi2, Gdd2 = G0(t - t1, K2, funcs), G0(t2 - t1, K2, funcs)
 
-            result3 += -p^2 / (2π)^5 * PLX * (
+            result3 += -2.0 * p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gii2 * G3 * (Gi4 * R + Gi04 * R0)
                            +
                            W1 * V2 * Gd1 * Gdi2 * G3 * (Gi4 * R + Gi04 * R0)
