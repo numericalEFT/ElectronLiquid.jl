@@ -6,7 +6,7 @@
 function exchange_interaction(para::ParaMC, kamp=para.kF, kamp2=para.kF; ct=true, kwargs...)
     kF = para.kF
     # println(kamp, ", ", kamp2)
-    θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
+    θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 32)
     # qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
     qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
     # println(qs)

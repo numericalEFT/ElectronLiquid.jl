@@ -3,18 +3,6 @@ using CompositeGrids
 using FiniteDifferences
 using JLD2
 
-function Fs(para, kamp, kamp2; ct=false)
-    # wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=ct)
-    Ws0, Wa0 = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=kamp, kamp2=kamp2, verbose=0, ct=ct)
-    return -Ws0
-    # return -Ver4.Legrendre(0, wp, angle)
-end
-
-function Fa(para, kamp, kamp2; ct=false)
-    Ws0, Wa0 = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=kamp, kamp2=kamp2, verbose=0, ct=ct)
-    return -Wa0
-end
-
 """
     function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=1.0, verbose=1, ct=false)
     
@@ -23,13 +11,22 @@ end
     f_s = -\\left< (v_q+f_s)/(1-(v_q+f_s)Π_0) \\right>
     ```
 """
-function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=1.0, verbose=1, ct=false)
-    Fp, Fm = para.Fs, para.Fa
+function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=0.8, verbose=1, ct=false, eps=1e-5)
+    # Fp, Fm = para.Fs, para.Fa
+    Fp, Fm = 0.0, 0.0
     for i = 1:N
         p_l = ParaMC(rs=para.rs, beta=para.beta, Fs=Fp, Fa=Fm, order=para.order, mass2=para.mass2, isDynamic=true, isFock=false)
         # println(p_l.Fs)
-        wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false)
-        Fp = -Ver4.Legrendre(0, wp, angle)
+        wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false, verbose=verbose)
+        Fp_new = -Ver4.Legrendre(0, wp, angle)
+        if abs(Fp_new - Fp) < eps
+            break
+        else
+            if verbose > 1
+                println("iter $i: $Fp_new vs $Fp")
+            end
+        end
+        Fp = mix * Fp_new + (1 - mix) * Fp
         Fm = -0.0
     end
     if verbose > 0
@@ -40,33 +37,71 @@ function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=1.0, verbose=1
     return Fp, Fm
 end
 
-function ∂Rs_∂Λ_exchange(paras, Λgrid; ct=false)
-    dFs, dFa = zero(Λgrid.grid)
-    for li in eachindex(Λgrid)
-        lambda = Λgrid[li]
-        p_l = paras[p_l]
-        dFp = central_fdm(5, 1)(λ -> Fs(p_l, λ, λ; ct=ct), lambda) #use central finite difference method to calculate the derivative
-        dFm = central_fdm(5, 1)(λ -> Fa(p_l, λ, λ; ct=ct), lambda) #use central finite difference method to calculate the derivative
-        dFs[li] = dFp
-        dFa[li] = dFm
-    end
-    return dFs, dFa
+function dKO_dΛ(paras, Λgrid; ct=false)
+    # Fs = [KO(paras[li], lambda, lambda; verbose=0)[1] for lambda in Λgrid]
+    dFs = -∂Rs_∂Λ_exchange(paras, Λgrid; ct=ct) ./ (1 .+ ∂Rs_∂fs_exchange(paras, Λgrid; ct=ct) ./ paras[1].NF)
+    dFm = zero(Λgrid.grid)
+
+    # F0 = -Interp.integrate1D(dFs, Λgrid, [Λgrid[1], Λgrid[end]])
+    # Fs = KO(paras[1], Λgrid[1], Λgrid[1]; verbose=0, ct=ct)[1]
+    # println(F0, " vs ", Fs[1])
+    return dFs, dFm
 end
 
-function ∂Rs_∂fs_exchange(paras, Λgrid; ct=false)
-    dFs, dFa = zero(Λgrid.grid)
+"""
+    function ∂Rs_∂Λ_exchange(paras, Λgrid; ct=false)
+    
+     return N_F ∂<R_{k_1-k_2}>/∂Λ
+"""
+function ∂Rs_∂Λ_exchange(paras, Λgrid; ct=false)
+
+    function exchange(p, kamp, kamp2)
+        wp, wm, angle = Ver4.exchange_interaction(p, kamp, kamp2; ct=ct)
+        return Ver4.Legrendre(0, wp, angle)
+    end
+
+    dF = zero(Λgrid.grid)
     for li in eachindex(Λgrid)
         lambda = Λgrid[li]
-        p_l = paras[p_l]
-        Ws0, Wa0 = Ver4.projected_exchange_interaction(0, p_l, Ver4.exchange_interaction_df; kamp=lambda, kamp2=lambda, verbose=0, ct=ct)
-        dFs[li] = -Ws0
-        dFa[li] = -Wa0
+        p_l = paras[li]
+        dFp = central_fdm(5, 1)(λ -> exchange(p_l, λ, λ), lambda) #use central finite difference method to calculate the derivative
+        dF[li] = dFp
     end
-    return dFs, dFa
+    return dF
+end
+
+"""
+    function ∂Rs_∂fs_exchange(paras, Λgrid; ct=false)
+    
+     return N_F ∂<R_{k_1-k_2}>/∂f
+     
+"""
+function ∂Rs_∂fs_exchange(paras, Λgrid; ct=false)
+    dF = zero(Λgrid.grid)
+    for li in eachindex(Λgrid)
+        lambda = Λgrid[li]
+        p_l = paras[li]
+        wp, wm, angle = Ver4.exchange_interaction_df(p_l, lambda, lambda; ct=ct)
+        dF[li] = Ver4.Legrendre(0, wp, angle)
+    end
+    return dF
 end
 
 
 function gamma4_treelevel_RG(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
+
+    function Fs(para, kamp, kamp2; ct=false)
+        # wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=ct)
+        Ws0, Wa0 = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=kamp, kamp2=kamp2, verbose=0, ct=ct)
+        return -Ws0
+        # return -Ver4.Legrendre(0, wp, angle)
+    end
+
+    function Fa(para, kamp, kamp2; ct=false)
+        Ws0, Wa0 = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=kamp, kamp2=kamp2, verbose=0, ct=ct)
+        return -Wa0
+    end
+
     fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
     us = deepcopy(fs)
 
