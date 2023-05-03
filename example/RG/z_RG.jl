@@ -41,7 +41,8 @@ function z_flow(para, scheme=:KO; ngrid=[0, 1], verbose=1)
     # ds_dw = zfactor(Σ_freq, para.β, ngrid)
     ds_dw = zfactor(sigma[(1, 0, 0)], para.β, ngrid)
 
-    z_RG = @. exp(-ds_dw + dz)
+    z_RG = @. exp(-ds_dw - dz)
+    # z_RG = @. exp(-ds_dw)
 
     z_RPA = @. 1 / (1 + ds_dw)
 
@@ -49,6 +50,7 @@ function z_flow(para, scheme=:KO; ngrid=[0, 1], verbose=1)
         kF_label = searchsortedfirst(Λgrid, para.kF)
         println("kF = $(para.kF), kF_label = $kF_label with z_RPA = $(z_RPA[kF_label]) and z_RG = $(z_RG[kF_label])")
     end
+    return Λgrid, z_RG, ds_dw, dz_df
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

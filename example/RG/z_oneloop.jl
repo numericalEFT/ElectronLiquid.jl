@@ -10,8 +10,8 @@ include("gamma4_treelevel.jl")
 
 # rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
 rs = [4.0,]
-mass2 = [1e-5,]
-beta = [50.0,]
+mass2 = [0.001,]
+beta = [25.0,]
 order = [1,]
 neval = 1e7
 

@@ -4,7 +4,7 @@ using Printf
 using JLD2
 using PrettyTables
 
-include("gamma4_treelevel.jl")
+include("z_RG.jl")
 
 const filename = "ver4_PH.jld2"
 
@@ -13,22 +13,23 @@ const filename = "ver4_PH.jld2"
     
     This function calculates the 3-vertex correction to the one-loop 4-vertex.
     
-    ∫dΛ [z_Λ ∂<R_exchange(f_Λ, Λ)>/∂Λ + ∂z_Λ/∂Λ <R_exchange(f_Λ, Λ)>]
+    ∫dΛ [z_1^Λ ∂<R_exchange(f_Λ, Λ)>/∂f + ∂z_1^Λ/∂f <R_exchange(f_Λ, Λ)>]
 """
-function treelevel(para, kgrid, lgrid)
+function vertex3(para, paras, Λgrid, df_dΛ)
     # para, kgrid, lgrid, ver4, ver4_df = datatuple
-    data100 = zeros(Complex{Measurement{Float64}}, 2, length(lgrid), length(kgrid))
-    # println(para)
-    for (li, l) in enumerate(lgrid)
-        for (ki, k) in enumerate(kgrid)
-            Ws, Wa = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction_df; kamp=k, kamp2=k, verbose=0)
-            Wuu, Wud = Ver4.sa2ud(Ws, Wa)
-            data100[1, li, ki] = Wuu
-            data100[2, li, ki] = Wud
-        end
-    end
-    # ver4[(1, 0, 0)] = data100
-    return data100
+    _Λgrid, z, z1, ∂z1_∂f = z_flow(para, :KO; ngrid=[0, 1])
+    @assert _Λgrid == Λgrid
+
+    Rs_exchange_s = [Ver4.projected_exchange_interaction(0, paras[li], Ver4.exchange_interaction; kamp=Λgrid[li], kamp2=Λgrid[li], ct=true, verbose=0)[1] for li in eachindex(Λgrid)] # counterterm should be on, because the diagrams in DiagMC calcualted with R_q-f, where -f is the counterterm
+
+    Γ3 = z1 .* Rs_exchange_s
+
+    ∂Rs_∂fs_exchange_s = -∂Rs_∂fs_exchange(paras, Λgrid; ct=false) ./ 2 # project to the spin-symmetric channel
+
+    ∂Λ3_∂f = z1 .* ∂Rs_∂fs_exchange_s .+ ∂z1_∂f .* Rs_exchange_s
+    Γ3_corr = [Interp.integrate1D(∂Λ3_∂f .* df_dΛ, Λgrid, (Λgrid[li], Λgrid[end])) for li in eachindex(Λgrid)]
+
+    return Γ3, Γ3_corr
 end
 
 # function singularterm(para, kgrid, lgrid)
@@ -41,10 +42,11 @@ function process200(para, datatuple)
     li = 1
     Λgrid, lgrid, _Fs, ver4, ver4_df = datatuple
     # addbare!(datatuple)
-    ver00 = treelevel(para, Λgrid, lgrid)
 
     paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=_Fs[li], Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
-    dF_dΛ = dKO_dΛ(paras, Λgrid; ct=false)[1]
+
+    dF_dΛ = dKO_dΛ(paras, Λgrid)[1]
+    df_dΛ = dF_dΛ / para.NF
 
     ######### test if dF_dΛ is correct #########
     F0 = -Interp.integrate1D(dF_dΛ, Λgrid, [Λgrid[1], Λgrid[end]])
@@ -53,9 +55,15 @@ function process200(para, datatuple)
 
 
     ######## one-loop correction from the Fs flow, only upupdowndown component is needed #######
-    ∂F2_∂Λ = real(ver4_df[(2, 0, 0)][2, 1, :]) # index 2 gives the ud component
-    F2_corr = -Interp.integrate1D(∂F2_∂Λ .* dF_dΛ / para.NF, Λgrid, [Λgrid[1], Λgrid[end]])
-    println(F2_corr)
+    ∂F2_∂f = real(ver4_df[(2, 0, 0)][2, 1, :]) # index 2 gives the ud component
+    F2_corr = [Interp.integrate1D(∂F2_∂f .* df_dΛ, Λgrid, [Λgrid[li], Λgrid[end]]) for li in eachindex(Λgrid)]
+    println(F2_corr[1])
+
+    ########### tree-level correction to the one-loop 3-vertex correction ###########
+    ver3, ver3_corr = vertex3(para, paras, Λgrid, df_dΛ)
+    ver3 = 2 .* ver3 #right and left 3-vertex correction
+    ver3_corr = 2 .* ver3_corr #right and left 3-vertex correction
+    println(ver3[1], " and ", ver3_corr[1])
 
     ############################ one-loop correction  ###########################################
     F2_uu = real(ver4[(2, 0, 0)][1, 1, 1])
@@ -114,7 +122,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     end
 
     rs = [4.0,]
-    mass2 = [0.01,]
+    mass2 = [0.001,]
     _Fs = [-0.0,]
     beta = [25.0,]
     order = [1,]
