@@ -28,6 +28,7 @@ function vertex3(para, paras, Λgrid, df_dΛ)
 
     ∂Λ3_∂f = z1 .* ∂Rs_∂fs_exchange_s .+ ∂z1_∂f .* Rs_exchange_s
     Γ3_corr = [Interp.integrate1D(∂Λ3_∂f .* df_dΛ, Λgrid, (Λgrid[li], Λgrid[end])) for li in eachindex(Λgrid)]
+    println("z1 = ", z1[1])
 
     return Γ3, Γ3_corr
 end
