@@ -8,6 +8,13 @@ include("gamma4_treelevel.jl")
 
 const filename = "ver4_PH.jld2"
 
+"""
+    function treelevel(para, kgrid, lgrid)
+    
+    This function calculates the 3-vertex correction to the one-loop 4-vertex.
+    
+    ∫dΛ [z_Λ ∂<R_exchange(f_Λ, Λ)>/∂Λ + ∂z_Λ/∂Λ <R_exchange(f_Λ, Λ)>]
+"""
 function treelevel(para, kgrid, lgrid)
     # para, kgrid, lgrid, ver4, ver4_df = datatuple
     data100 = zeros(Complex{Measurement{Float64}}, 2, length(lgrid), length(kgrid))
