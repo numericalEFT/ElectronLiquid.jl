@@ -107,7 +107,7 @@ function integrand(vars, config)
     Qv = SVector{3,Float64}(Q[1], Q[2], Q[3])
 
     PLX = Pl(x, ℓ)
-    q = sqrt(k^2 + p^2 + 2 * k * p * x)
+    q = sqrt(k^2 + p^2 - 2 * k * p * x)
     V = 1.0 / interaction(q, funcs)
     # V = coulomb(q, funcs)[1]
     G1 = G0(t3, p, funcs)
@@ -130,7 +130,7 @@ function integrand(vars, config)
     result3 = 0.0
     if ishalfcross || iscross
         Kv = SVector{3,Float64}(k, 0, 0)
-        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
+        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2) * sign(x), 0)
         if iscross
             kvmq = norm(Kv - Qv)
             pvmq = norm(Pv - Qv)
