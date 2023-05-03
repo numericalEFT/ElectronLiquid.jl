@@ -31,7 +31,7 @@ function percent_error(result)
     return Et
 end
 
-function load_mcpcf_data(uid, dir)
+function load_mcpcf_data(uid, dir; mcpcf_pref=mcpcf_pref)
     fname = dir * mcpcf_pref * "_$uid.jld2"
     jldopen(fname, "r") do file
         param = file["param"]
@@ -45,7 +45,7 @@ function load_mcpcf_data(uid, dir)
     end
 end
 
-function load_pcf_data(uid, dir)
+function load_pcf_data(uid, dir; pcf_pref=pcf_pref)
     fname = dir * pcf_pref * "_$uid.jld2"
     jldopen(fname, "r") do file
         ri = file["R_ins"]
@@ -54,18 +54,19 @@ function load_pcf_data(uid, dir)
     end
 end
 
-function load_mcpcf_list(uids, dir)
+function load_mcpcf_list(uids, dir;
+    pcfdir=dir, mcpcf_pref=mcpcf_pref, pcf_pref=pcf_pref)
     params, ris, rts, R0s, results = [], [], [], [], []
     R00s = []
     errs = []
     for uid in uids
-        param, ri, rt, R0, result, err = load_mcpcf_data(uid, dir)
+        param, ri, rt, R0, result, err = load_mcpcf_data(uid, dir; mcpcf_pref=mcpcf_pref)
         push!(params, param)
         push!(ris, ri)
         push!(rts, rt)
         push!(R0s, R0)
         push!(results, result)
-        ri0, rw0 = load_pcf_data(uid, dir)
+        ri0, rw0 = load_pcf_data(uid, pcfdir; pcf_pref=pcf_pref)
         kF = param.kF
         kgrid = rw0.mesh[2]
         ikF = searchsortedfirst(kgrid, kF)
@@ -155,5 +156,41 @@ function diff_temps()
     savefig(p, "run/diff_temps.pdf")
 end
 
-diff_rss()
-# diff_temps()
+function diff_temps2()
+    dir = "run/data/"
+    kodir = "run/data/ko/"
+    uids = [3003, 3004, 3005, 3006, 3007, 3008]
+    # uids = [3006, 3007, 3008]
+    params, ris, rts, r0s, r00s, results, errs = load_mcpcf_list(uids, dir;
+        mcpcf_pref="mcpcfO2X")
+    params2, ris2, rts2, r0s2, r00s2, results2, errs2 = load_mcpcf_list(uids, dir;
+        pcfdir=kodir, mcpcf_pref="mcpcfO2XYm")
+    errs = errs .* err_factor
+    errs2 = errs2 .* err_factor
+    temps = [param.T / param.EF for param in params]
+    R0s = [r0[1] for r0 in r0s]
+    R00s = [r00[1] for r00 in r00s]
+    R0s2 = [r0[1] for r0 in r0s2]
+    R00s2 = [r00[1] for r00 in r00s2]
+    println(temps)
+    println(R0s)
+    println(R00s)
+    println(R0s2)
+    println(R00s2)
+
+    p = plot(xscale=:log10)
+    xlims!(0.001, 0.1)
+    # ylims!(0.0, maximum(1 ./ R00s))
+    plot!(p, temps, 1 ./ R0s, yerr=errs ./ R0s, label="RPA+X")
+    plot!(p, temps, 1 ./ R00s, label="RPA")
+    plot!(p, temps, 1 ./ R0s2, yerr=errs ./ R0s, label="RPA+XY")
+    plot!(p, temps, 1 ./ R00s2, label="KO")
+    xlabel!(p, L"$T/T_F$")
+    ylabel!(p, L"$1/R_0$")
+    display(p)
+    readline()
+    savefig(p, "run/diff_temps.pdf")
+end
+
+# diff_rss()
+diff_temps2()

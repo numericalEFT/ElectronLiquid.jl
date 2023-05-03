@@ -170,8 +170,8 @@ function integrand(vars, config)
 
             V1 = 1.0 / interaction(kmp, funcs)
             V2 = 1.0 / interaction(qpk, funcs)
-            W1 = interaction(t2, kmp, funcs) * V1
-            W2 = interaction(t1 - t, qpk, funcs) * V2
+            W1 = interaction(t1, kmp, funcs) * V1
+            W2 = interaction(t2 - t, qpk, funcs) * V2
 
             # V1 = V1 / param.β
             # V2 = V2 / param.β
