@@ -30,8 +30,8 @@ function z_flow(para, scheme=:KO; ngrid=[0, 1], verbose=1)
     else
         error("scheme not implemented")
     end
-    println(fs)
-    println(dfs)
+    # println(fs)
+    # println(dfs)
 
     dz_df = zfactor(sigma_df[(1, 0, 0)], para.β, ngrid)
     dz = [Interp.integrate1D(dz_df .* dfs / para.NF, Λgrid, (Λgrid[li], Λgrid[end])) for li in eachindex(Λgrid)]
@@ -48,7 +48,7 @@ function z_flow(para, scheme=:KO; ngrid=[0, 1], verbose=1)
 
     if verbose > 0
         kF_label = searchsortedfirst(Λgrid, para.kF)
-        println("kF = $(para.kF), kF_label = $kF_label with z_RPA = $(z_RPA[kF_label]) and z_RG = $(z_RG[kF_label])")
+        println("rs = $(para.rs), kF = $(para.kF), kF_label = $kF_label with z_RPA = $(z_RPA[kF_label]) and z_RG = $(z_RG[kF_label])")
     end
     return Λgrid, z_RG, ds_dw, dz_df
 end
@@ -56,6 +56,15 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
 
     # para = UEG.ParaMC(rs=4.0, beta=25.0, Fs=-0.0, order=1, mass2=0.01, isDynamic=true, isFock=false)
-    para = UEG.ParaMC(rs=4.0, beta=50.0, Fs=-0.0, order=1, mass2=1e-5, isDynamic=true, isFock=false)
-    z_flow(para, :KO; ngrid=[-1, 0])
+
+    rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+    mass2 = [1e-5,]
+    _Fs = [-0.0,]
+    beta = [25.0,]
+    order = [1,]
+
+    for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, _Fs, beta, order)
+        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=1, mass2=_mass2, isDynamic=true, isFock=false)
+        z_flow(para, :KO; ngrid=[-1, 0])
+    end
 end

@@ -10,12 +10,14 @@ using Printf
 
 include("gamma4_treelevel.jl")
 
-# rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
-rs = [4.0,]
+rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+# rs = [1.0, 2.0, 3.0, 4.0, 5.0]
+# rs = [6.0, 8.0, 10.0]
+# rs = [4.0,]
 mass2 = [0.001,]
 beta = [25.0,]
 order = [1,]
-neval = 1e8
+neval = 1e9
 
 function print_ver4(ver4, lgrid, Λgrid, para)
     kF = para.kF

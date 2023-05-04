@@ -23,12 +23,13 @@ function vertex3(para, paras, Λgrid, df_dΛ)
     Rs_exchange_s = [Ver4.projected_exchange_interaction(0, paras[li], Ver4.exchange_interaction; kamp=Λgrid[li], kamp2=Λgrid[li], ct=true, verbose=0)[1] for li in eachindex(Λgrid)] # counterterm should be on, because the diagrams in DiagMC calcualted with R_q-f, where -f is the counterterm
 
     Γ3 = z1 .* Rs_exchange_s
+    #println(Rs_exchange_s[1])
 
     ∂Rs_∂fs_exchange_s = -∂Rs_∂fs_exchange(paras, Λgrid; ct=false) ./ 2 # project to the spin-symmetric channel
 
     ∂Λ3_∂f = z1 .* ∂Rs_∂fs_exchange_s .+ ∂z1_∂f .* Rs_exchange_s
     Γ3_corr = [Interp.integrate1D(∂Λ3_∂f .* df_dΛ, Λgrid, (Λgrid[li], Λgrid[end])) for li in eachindex(Λgrid)]
-    println("z1 = ", z1[1])
+    #println("z1 = ", z1[1])
 
     return Γ3, Γ3_corr
 end
@@ -72,7 +73,13 @@ function process200(para, datatuple)
     F2s, F2a = Ver4.ud2sa(F2_uu, F2_ud)
     println(F2s, ", ", F2a)
 
-    println(F2s - ver3[1] + F2_corr[1])
+    F1 = _Fs[1]
+    F2 = F2s - ver3[1] + F2_corr[1]
+
+    println(" ------------------------------------------------  ")
+    println("   # rs         order 1           order 2    total")
+    println("   $(para.rs)     $F1     $F2      $(F1-F2)")
+    println(" ------------------------------------------------  ")
 
     # df = CounterTerm.fromFile("para_wn_1minus0.csv")
     # mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
@@ -124,7 +131,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         isSave = true
     end
 
-    rs = [4.0,]
+    rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
     mass2 = [0.001,]
     _Fs = [-0.0,]
     beta = [25.0,]
