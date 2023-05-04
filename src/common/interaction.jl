@@ -148,6 +148,17 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
     return Rs
 end
 
+function KO_W_df(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    # invKOinstant = 1.0 / KOinstant(q, para)
+    # Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
+    # return Rs
+    return 1.0 / (1.0 - KOinstant(q, p) * Pi)^2 - 1.0 # counter term should be -fs for the KO interaction
+end
+
+
 """
     function KOdynamic_T(para::ParaMC)
 
@@ -291,11 +302,48 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
     return cRs1
 end
 
+function counterKO_W_df(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false, bubble=true)
+    Nq, Nw = length(qgrid), length(ngrid)
+    cRs1 = zeros(Float64, (Nq, Nw))
+    for (ni, n) in enumerate(ngrid)
+        for (qi, q) in enumerate(qgrid)
+            Pi = polarKW(q, n, para)
+            if proper == false
+                Rs = KO_W(q, n, para; Pi=Pi)
+                Rs_df = KO_W_df(q, n, para; Pi=Pi)
+            else
+                Rs = 0.0
+            end
+            # Rs will be zero for the proper counter-term
+            if order == 1
+                cRs1[qi, ni] = -2*(Rs + para.fs) * Pi*(Rs_df + 1.0)
+            elseif order == 2
+                cRs1[qi, ni] = 3*(Rs + para.fs)^2 * Pi^2*(Rs_df + 1.0)
+            else
+                error("not implemented!")
+            end
+
+            if bubble == false
+                # cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
+                cRs1[qi, ni] += (order + 1)*(-Rs)^order * Pi^order * (-Rs_df)
+            end
+        end
+    end
+    return cRs1
+end
+
 function counterKO_T(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false, bubble=true)
     dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     cRs1 = counterKO_W(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper, bubble=bubble)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
     return real.(cRs1)
+end
+
+function counterKO_T_df(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false, bubble=true)
+    dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    cRs1_f = counterKO_W_df(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper, bubble=bubble)
+    cRs1_f = matfreq2tau(dlr, cRs1_f, τgrid.grid, axis=2)
+    return real.(cRs1_f)
 end
 
 """
@@ -369,6 +417,30 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
         error("not implemented!")
     end
 end
+
+function counterR_df(p::ParaMC, qd, τIn, τOut, order)
+    kF, maxK = p.kF, p.maxK
+
+    if qd > maxK
+        return 0.0
+    end
+
+    dτ = abs(τOut - τIn)
+
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-6 * kF
+        # q = qgrid.grid[1] + 1.0e-6
+        qd = 1e-6 * kF
+    end
+
+    if order <= p.order
+        return linear2D(p.cRs_f[order], p.qgrid, p.τgrid, qd, dτ)
+    else
+        error("not implemented!")
+    end
+end
+
 
 """
     function interactionDynamic(p::ParaMC, qd, τIn, τOut)

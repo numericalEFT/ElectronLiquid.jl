@@ -147,7 +147,11 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
-            return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            if id.order[3] == 0
+                return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            else
+                return counterR_df(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            end
         else
             error("not implemented!")
         end

@@ -67,6 +67,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     dW0::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
     dW0_f::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
     cRs::Vector{Matrix{Float64}} = []
+    cRs_f::Vector{Matrix{Float64}} = []
 
     # dW0::Matrix{Float64} = KOdynamic_T(basic, qgrid, τgrid, mass2, massratio, fs, fa)
     # cRs::Vector{Matrix{Float64}} = [counterKO_T(basic, qgrid, τgrid, o, mass2, massratio, fs, fa) for o in 1:order]
@@ -83,6 +84,7 @@ function MCinitialize!(para::ParaMC)
     para.dW0_f .= KOdynamic_T_df(para)
     for o in 1:para.order-1
         push!(para.cRs, counterKO_T(para; order=o))
+        push!(para.cRs_f, counterKO_T_df(para; order=o))
     end
 end
 
