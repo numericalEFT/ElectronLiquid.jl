@@ -130,7 +130,7 @@ function integrand(vars, config)
     result3 = 0.0
     if ishalfcross || iscross
         Kv = SVector{3,Float64}(k, 0, 0)
-        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2) * sign(x), 0)
+        Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
         if iscross
             kvmq = norm(Kv - Qv)
             pvmq = norm(Pv - Qv)
