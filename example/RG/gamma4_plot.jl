@@ -59,13 +59,17 @@ function process200(para, datatuple)
     ######## one-loop correction from the Fs flow, only upupdowndown component is needed #######
     ∂F2_∂f = real(ver4_df[(2, 0, 0)][2, 1, :]) # index 2 gives the ud component
     F2_corr = [Interp.integrate1D(∂F2_∂f .* df_dΛ, Λgrid, [Λgrid[li], Λgrid[end]]) for li in eachindex(Λgrid)]
-    println("corr: ", F2_corr[1])
+    println("dF_dΛ corr: ", F2_corr[1])
 
     ########### tree-level correction to the one-loop 3-vertex correction ###########
     ver3, ver3_corr = vertex3(para, paras, Λgrid, df_dΛ)
     ver3 = 2 .* ver3 #right and left 3-vertex correction
     ver3_corr = 2 .* ver3_corr #right and left 3-vertex correction
-    println(ver3[1], " and ", ver3_corr[1])
+    println("tree-level correction to the one-loop 3-vertex correction: ", ver3[1], " and ", ver3_corr[1])
+
+    ########## tree-level correction to the one-loop bubble diagram in the exchange channel ##########
+    F1bs, F1ba = Ver4.projected_exchange_interaction(0, paras[1], Ver4.exchange_KOcounter; kamp = para.kF, kamp2=para.kF, ct= true, order=1, verbose=0)
+    println("tree-level correction to the one-loop bubble diagram in the exchange channel: ", F1bs, ", ", F1ba)
 
     ############################ one-loop correction  ###########################################
     F2_uu = real(ver4[(2, 0, 0)][1, 1, 1])
@@ -74,7 +78,7 @@ function process200(para, datatuple)
     println(F2s, ", ", F2a)
 
     F1 = _Fs[1]
-    F2 = F2s - ver3[1] + F2_corr[1]
+    F2 = F2s +F1bs - ver3[1] + F2_corr[1]
 
     println(" ------------------------------------------------  ")
     println("   # rs         order 1           order 2    total")
