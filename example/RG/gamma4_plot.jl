@@ -17,7 +17,7 @@ const filename = "ver4_PH.jld2"
 """
 function vertex3(para, paras, Λgrid, df_dΛ)
     # para, kgrid, lgrid, ver4, ver4_df = datatuple
-    _Λgrid, z, z1, ∂z1_∂f = z_flow(para, :KO; ngrid=[0, 1])
+    _Λgrid, z, z1, ∂z1_∂f = z_flow(para, :KO; ngrid=[-1, 0])
     @assert _Λgrid == Λgrid
 
     Rs_exchange_s = [Ver4.projected_exchange_interaction(0, paras[li], Ver4.exchange_interaction; kamp=Λgrid[li], kamp2=Λgrid[li], ct=true, verbose=0)[1] for li in eachindex(Λgrid)] # counterterm should be on, because the diagrams in DiagMC calcualted with R_q-f, where -f is the counterterm
@@ -58,7 +58,7 @@ function process200(para, datatuple)
     ######## one-loop correction from the Fs flow, only upupdowndown component is needed #######
     ∂F2_∂f = real(ver4_df[(2, 0, 0)][2, 1, :]) # index 2 gives the ud component
     F2_corr = [Interp.integrate1D(∂F2_∂f .* df_dΛ, Λgrid, [Λgrid[li], Λgrid[end]]) for li in eachindex(Λgrid)]
-    println(F2_corr[1])
+    println("corr: ", F2_corr[1])
 
     ########### tree-level correction to the one-loop 3-vertex correction ###########
     ver3, ver3_corr = vertex3(para, paras, Λgrid, df_dΛ)
@@ -71,6 +71,8 @@ function process200(para, datatuple)
     F2_ud = real(ver4[(2, 0, 0)][2, 1, 1])
     F2s, F2a = Ver4.ud2sa(F2_uu, F2_ud)
     println(F2s, ", ", F2a)
+
+    println(F2s - ver3[1] + F2_corr[1])
 
     # df = CounterTerm.fromFile("para_wn_1minus0.csv")
     # mu, sw = CounterTerm.getSigma(df, UEG.paraid(para), para.order)
