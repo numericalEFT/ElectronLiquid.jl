@@ -7,9 +7,9 @@ using ElectronGas
 
 const filename = "ver4_L.jld2"
 
-rs = [1.0,]
+rs = [5.0,]
 mass2 = [0.01,]
-Fs = [-0.0, -0.2]
+Fs = [-0.0, -0.585]
 beta = [25.0,]
 order = [2,]
 
