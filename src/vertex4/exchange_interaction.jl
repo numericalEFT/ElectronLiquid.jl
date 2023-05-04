@@ -87,14 +87,14 @@ function exchange_Coulomb(para::ParaMC, kamp=para.kF, kamp2=para.kF; kwargs...)
     return Wp, Wm, θgrid
 end
 
-function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble, kwargs...)
+function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble = false, kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     # qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
     qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
 
     # non-proper and no bubble diagram. (MC for vertex4 doesn't include the buble contribution)
-    Wp = UEG.counterKO_W(para; qgrid=qs, ngrid=[0,], order=order, proper=false, bubble=false)[:, 1]
+    Wp = UEG.counterKO_W(para; qgrid=qs, ngrid=[0,], order=order, proper=false, bubble=bubble)[:, 1]
     Wp *= para.NFstar
     Wm = zeros(Float64, length(qs))
     return Wp, Wm, θgrid
