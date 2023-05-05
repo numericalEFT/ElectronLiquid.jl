@@ -1,4 +1,4 @@
-@testset "RG" begin
+@testset "RG_treelevel_interaction" begin
     include("../example/RG/gamma4_treelevel.jl")
     para = UEG.ParaMC(rs=4.0, beta=100.0, order=1, mass2=1e-5, isDynamic=true, isFock=false, Fs=-0.0, Fa=-0.0)
 

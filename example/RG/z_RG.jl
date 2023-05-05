@@ -43,6 +43,8 @@ function z_flow(para, scheme=:KO; ngrid=[0, 1], verbose=1)
 
     z_RG = @. exp(-ds_dw - dz)
     # z_RG = @. exp(-ds_dw)
+    println(ds_dw[1] + dz[1])
+    println(ds_dw[1], ", ", dz[1], ", ", z_RG[1])
 
     z_RPA = @. 1 / (1 + ds_dw)
 
@@ -57,8 +59,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # para = UEG.ParaMC(rs=4.0, beta=25.0, Fs=-0.0, order=1, mass2=0.01, isDynamic=true, isFock=false)
 
-    rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
-    mass2 = [1e-5,]
+    # rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+    rs = [4.0,]
+    mass2 = [0.001,]
     _Fs = [-0.0,]
     beta = [25.0,]
     order = [1,]

@@ -8,14 +8,14 @@ using JLD2
 
 include("gamma4_treelevel.jl")
 
-rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+# rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
 # rs = [1.0, 2.0, 3.0, 4.0, 5.0]
 # rs = [6.0, 8.0, 10.0]
-# rs = [4.0,]
-mass2 = [1e-5,]
+rs = [4.0,]
+mass2 = [0.001,]
 beta = [25.0,]
 order = [1,]
-neval = 1e8
+neval = 1e7
 
 scheme = :KO
 # scheme = :CS
@@ -42,16 +42,7 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
     partition = UEG.partition(para.order)
     neighbor = UEG.neighbor(partition)
-    diagram = Sigma.diagram(para, partition; dR=true)
     reweight_goal = [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 2.0]
-
-    # sigma, result = Sigma.KW_df(paras, diagram;
-    #     neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
-    #     kgrid=Λgrid, ngrid=ngrid, neval=neval, parallel=:thread)
-
-    sigma_df, result = Sigma.KW_df(paras, diagram;
-        neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
-        kgrid=Λgrid, ngrid=ngrid, neval=neval)
 
     plist = Array{Tuple{ParaMC,Float64,Int}}(undef, (3, length(Λgrid)))
     for ip in eachindex(paras)
@@ -59,6 +50,11 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
         plist[2, ip] = (paras[ip], Λgrid[ip], 0)
         plist[3, ip] = (paras[ip], Λgrid[ip], 1)
     end
+
+    diagram_df = Sigma.diagram(para, partition; dR=true)
+    sigma_df, result = Sigma.Generic(plist, diagram_df;
+        neighbor=neighbor,
+        neval=neval)
 
     diagram = Sigma.diagram(para, partition; dR=false)
     sigma, result = Sigma.Generic(plist, diagram;
