@@ -60,7 +60,7 @@ function ∂Rs_∂Λ_exchange(paras, Λgrid; ct=false)
         return Ver4.Legrendre(0, wp, angle)
     end
 
-    dF = zero(Λgrid.grid)
+    dF = zero(Λgrid)
     for li in eachindex(Λgrid)
         lambda = Λgrid[li]
         p_l = paras[li]
@@ -77,7 +77,7 @@ end
      
 """
 function ∂Rs_∂fs_exchange(paras, Λgrid; ct=false)
-    dF = zero(Λgrid.grid)
+    dF = zero(Λgrid)
     for li in eachindex(Λgrid)
         lambda = Λgrid[li]
         p_l = paras[li]

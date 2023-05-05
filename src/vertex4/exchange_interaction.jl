@@ -87,7 +87,7 @@ function exchange_Coulomb(para::ParaMC, kamp=para.kF, kamp2=para.kF; kwargs...)
     return Wp, Wm, θgrid
 end
 
-function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble = false, kwargs...)
+function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble=false, kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     # qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
