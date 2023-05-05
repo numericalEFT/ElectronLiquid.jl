@@ -10,10 +10,10 @@ using Printf
 
 include("gamma4_treelevel.jl")
 
-rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+# rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
 # rs = [1.0, 2.0, 3.0, 4.0, 5.0]
 # rs = [6.0, 8.0, 10.0]
-# rs = [4.0,]
+rs = [4.0,]
 mass2 = [0.001,]
 beta = [25.0,]
 order = [1,]
@@ -79,6 +79,9 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
     ver4_df, result = Ver4.PH_df(paras, diagram;
         kamp=Λgrid, n=n, l=lgrid,
         neval=neval)
+    # ver4_df, result = Ver4.PH_df(paras, diagram;
+    #     kamp=[para.kF for l in Λgrid], n=n, l=lgrid,
+    #     neval=neval)
     print_ver4(ver4_df, lgrid, Λgrid, para)
 
     println("Γ on FS")
