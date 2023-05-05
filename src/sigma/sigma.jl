@@ -78,7 +78,6 @@ end
 
 include("sigma_generic.jl")
 include("sigmaKW.jl")
-include("sigmaKW_df.jl")
 include("sigmaCuba.jl")
 include("sigmaVegas.jl")
 

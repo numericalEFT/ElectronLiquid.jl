@@ -7,9 +7,9 @@ using ElectronGas
 
 const filename = "ver4_L.jld2"
 
-rs = [5.0,]
+rs = [4.0,]
 mass2 = [0.01,]
-Fs = [-0.0, -0.585]
+Fs = [-0.0, -0.515]
 beta = [25.0,]
 order = [2,]
 
@@ -18,7 +18,8 @@ function addbare!(para, datatuple)
     data100 = zeros(Complex{Measurement{Float64}}, 2, length(lgrid), length(kgrid))
     for (li, l) in enumerate(lgrid)
         for (ki, k) in enumerate(kgrid)
-            Ws, Wa = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=k, verbose=0)
+            Ws, Wa = Ver4.projected_exchange_interaction(0, para, Ver4.exchange_interaction; kamp=k, kamp2=k, verbose=0, ct=true)
+            println(Ws, ", ", Wa)
             Wuu, Wud = Ver4.sa2ud(Ws, Wa)
             data100[1, li, ki] = Wuu
             data100[2, li, ki] = Wud
@@ -50,16 +51,32 @@ function process200(para, datatuple)
     # dz =[-0.509, ]
     # println(ver4[(1, 0, 0)][1, 1, 1], ", ", ver4[(1, 0, 0)][2, 1, 1])
     # println((ver4[(1, 0, 0)][1, 1, 1] + ver4[(1, 0, 0)][2, 1, 1]) / 2)
-    # println("before: ", (ver4[(2, 0, 0)][1, 1, 1] + ver4[(2, 0, 0)][2, 1, 1]) / 2)
+    println(ver4[(1, 0, 0)])
+    println(dz)
+    println("before: ", ver4[(2, 0, 0)][1, 1, 1])
     # println(dz)
     ver4 = CounterTerm.z_renormalization(2, ver4, dz, 2)
+    println("after: ", ver4[(2, 0)][1, 1, 1])
     # println("after: ", (ver4[(2, 0)][1, 1, 1] + ver4[(2, 0)][2, 1, 1]) / 2)
     # println(ver4)
+
 
     kF = para.kF
     printstyled("l=$(lgrid[li]) for $(UEG.short(para))\n", color=:green)
     for (p, data) in ver4
         # head = ["k/kF", "uu", "ud", "symmetric", "asymmetric"]
+
+        for (ki, k) in enumerate(kgrid)
+            if p[1]>1
+                ########## tree-level correction to the one-loop bubble diagram in the exchange channel ##########
+                F1bs, F1ba = Ver4.projected_exchange_interaction(lgrid[li], para, Ver4.exchange_KOcounter; kamp = k, kamp2=k, ct= true, order=p[1]-1, verbose=0)
+                F1uu, F1ud = Ver4.ud2sa(F1bs, F1ba)
+                println("tree-level correction to the one-loop bubble diagram in the exchange channel: ", F1uu, ", ", F1ud)
+                data[1, li, ki] += F1uu
+                data[2, li, ki] += F1ud
+            end
+        end
+
 
         printstyled(@sprintf("%12s    %24s    %24s    %24s    %24s     %24s\n",
                 "k/kF", "uu", "ud", "symmetric", "asymmetric", "p: $p"), color=:yellow)

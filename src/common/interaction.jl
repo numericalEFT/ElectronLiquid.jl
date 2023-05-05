@@ -155,7 +155,7 @@ function KO_W_df(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
     # invKOinstant = 1.0 / KOinstant(q, para)
     # Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
     # return Rs
-    return 1.0 / (1.0 - KOinstant(q, p) * Pi)^2 - 1.0 # counter term should be -fs for the KO interaction
+    return 1.0 / (1.0 - KOinstant(q, para) * Pi)^2 - 1.0 # counter term should be -fs for the KO interaction
 end
 
 

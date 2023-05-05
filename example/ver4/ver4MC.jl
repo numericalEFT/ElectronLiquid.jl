@@ -5,9 +5,9 @@ using FeynmanDiagram
 using Printf
 using JLD2
 
-rs = [5.0,]
+rs = [4.0,]
 mass2 = [0.01,]
-Fs = [-0.0, -0.585]
+Fs = [-0.0, -0.515]
 beta = [25,]
 order = [2,]
 neval = 1e7
