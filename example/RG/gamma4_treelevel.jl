@@ -131,6 +131,49 @@ function gamma4_treelevel_RG(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
     error("failed to converge!")
 end
 
+function gamma4_treelevel_RG_2(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
+
+    fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
+    us = deepcopy(fs)
+
+    idx = 1
+    while true
+        paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
+
+        ∂R_∂Λ = ∂Rs_∂Λ_exchange(paras, Λgrid; ct=false)
+        ∂R_∂f = ∂Rs_∂fs_exchange(paras, Λgrid; ct=false) / para.NF
+
+        dfs = -∂R_∂Λ ./ 2.0
+        dus = ∂R_∂Λ ./ 2.0
+        fs_new = [-Interp.integrate1D(dfs, Λgrid, [Λgrid[idx], Λgrid[end]]) for idx in eachindex(Λgrid)]
+        us_new = [-Interp.integrate1D(dus, Λgrid, [Λgrid[idx], Λgrid[end]]) for idx in eachindex(Λgrid)]
+
+        max_fs = maximum(abs.((fs .- fs_new)))
+        max_us = maximum(abs.((us .- us_new)))
+        if verbose > 0
+            println("iteration $(idx) with max_fs = $(max_fs) and max_us = $(max_us)")
+        end
+        if (max_fs / maximum(abs.(fs)) < rtol) && (max_us / maximum(abs.(us)) < rtol)
+            if verbose >= 0
+                println("total iteration $(idx)")
+            end
+            if verbose > 0
+                kF_idx = searchsortedfirst(Λgrid, para.kF)
+                println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
+                println("Fs(kF): ", fs[kF_idx])
+                println("Us(kF): ", us[kF_idx])
+            end
+            return fs, us, dfs, dus
+        end
+
+        @. fs = fs * (1 - mix) + fs_new * (mix)
+        @. us = us * (1 - mix) + us_new * (mix)
+
+        idx += 1
+    end
+    error("failed to converge!")
+end
+
 
 function gamma4_treelevel_KO(para, Λgrid; verbose=1)
     fs = [KO(para, lambda, lambda; verbose=0)[1] for lambda in Λgrid]
@@ -153,9 +196,9 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
-    rs = [4.0,]
+    rs = [10.0,]
     mass2 = [1e-5,]
-    beta = [50.0,]
+    beta = [25.0,]
     order = [1,]
     neval = 1e7
 
@@ -163,7 +206,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
         _para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true)
         Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * _para.kF, 100 * _para.kF], [_para.kF,], 8, 0.01 * _para.kF, 8)
-        fs, us, dfs, dus = gamma4_treelevel_RG(_para, Λgrid; verbose=1)
+        fs, us, dfs, dus = gamma4_treelevel_RG_2(_para, Λgrid; verbose=1)
         println(fs)
         println(dfs)
 

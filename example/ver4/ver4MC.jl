@@ -7,7 +7,7 @@ using JLD2
 
 rs = [4.0,]
 mass2 = [0.01,]
-Fs = [-0.0, -0.515]
+Fs = [-0.0, -0.508]
 beta = [25,]
 order = [2,]
 neval = 1e7
