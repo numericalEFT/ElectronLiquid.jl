@@ -164,7 +164,7 @@ function diff_temps2()
     params, ris, rts, r0s, r00s, results, errs = load_mcpcf_list(uids, dir;
         mcpcf_pref="mcpcfO2X")
     params2, ris2, rts2, r0s2, r00s2, results2, errs2 = load_mcpcf_list(uids, dir;
-        pcfdir=kodir, mcpcf_pref="mcpcfO2XYm")
+        pcfdir=kodir, mcpcf_pref="mcpcfO2XY")
     errs = errs .* err_factor
     errs2 = errs2 .* err_factor
     temps = [param.T / param.EF for param in params]
