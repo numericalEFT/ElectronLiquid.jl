@@ -116,14 +116,13 @@ end
 end
 
 @inline function KOstatic_spin_df(q, p::ParaMC; ct=true)
-    # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
-    # Pi = polarKW(q, 0, p)
-    # if ct
-    #     return 1.0 / (1.0 - p.fa * Pi)^2 + p.fa # counter term should be -fs for the KO interaction
-    # else
-    #     return 1.0 / (1.0 - p.fa * Pi)^2
-    # end
-    return 0.0 # KO_spin doesn't depend on fs
+    Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
+    Pi = polarKW(q, 0, p)
+    if ct
+        return 1.0 / (1.0 - p.fa * Pi)^2 - 1.0 # counter term should be -fa for the KO interaction
+    else
+        return 1.0 / (1.0 - p.fa * Pi)^2
+    end
 end
 
 """
@@ -316,16 +315,16 @@ function counterKO_W_df(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.o
             end
             # Rs will be zero for the proper counter-term
             if order == 1
-                cRs1[qi, ni] = -2*(Rs + para.fs) * Pi*(Rs_df + 1.0)
+                cRs1[qi, ni] = -2 * (Rs + para.fs) * Pi * (Rs_df + 1.0)
             elseif order == 2
-                cRs1[qi, ni] = 3*(Rs + para.fs)^2 * Pi^2*(Rs_df + 1.0)
+                cRs1[qi, ni] = 3 * (Rs + para.fs)^2 * Pi^2 * (Rs_df + 1.0)
             else
                 error("not implemented!")
             end
 
             if bubble == false
                 # cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
-                cRs1[qi, ni] += (order + 1)*(-Rs)^order * Pi^order * (-Rs_df)
+                cRs1[qi, ni] += (order + 1) * (-Rs)^order * Pi^order * (-Rs_df)
             end
         end
     end
