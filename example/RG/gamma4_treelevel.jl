@@ -147,6 +147,7 @@ function gamma4_treelevel_RG_2(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
     idx = 1
     while true
         paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=fa[li], order=1, mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
+        # paras = [UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs[li], Fa=-0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
 
         ∂Rs_∂Λ, ∂Ra_∂Λ = ∂R_∂Λ_exchange(paras, Λgrid; ct=false)
         ∂Rs_∂f, ∂Ra_∂f = ∂R_∂f_exchange(paras, Λgrid; ct=false)
@@ -174,6 +175,8 @@ function gamma4_treelevel_RG_2(para, Λgrid; verbose=1, rtol=1e-4, mix=0.9)
             end
             if verbose > 0
                 kF_idx = searchsortedfirst(Λgrid, para.kF)
+                println("Rs_Λ:", ∂Rs_∂Λ)
+                println("Ra_Λ:", ∂Ra_∂Λ)
                 println("kF_idx: ", kF_idx, " with ", Λgrid[kF_idx] / para.kF, " kF")
                 println("Fs(kF): ", fs[kF_idx])
                 println("Fa(kF): ", fa[kF_idx])
@@ -221,7 +224,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
         _para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=-0.0, order=_order, mass2=_mass2, isDynamic=true)
-        Λgrid = CompositeGrid.LogDensedGrid(:gauss, [0.1 * _para.kF, 100 * _para.kF], [_para.kF,], 8, 0.01 * _para.kF, 16)
+        Λgrid = CompositeGrid.LogDensedGrid(:gauss, [1.0 * _para.kF, 100 * _para.kF], [_para.kF,], 8, 0.01 * _para.kF, 8)
         fs, fa, u, dfs, dfa, du = gamma4_treelevel_RG_2(_para, Λgrid; verbose=1)
         println(fs)
         println(dfs)
