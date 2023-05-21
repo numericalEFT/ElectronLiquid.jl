@@ -7,11 +7,14 @@ const beta = 25
 const para = UEG.ParaMC(rs=rs, beta=beta)
 const kF = para.kF
 
+# partition = [(1, 0, 0), (2, 0, 0),]
 partition = [(2, 0, 0),]
-channel = [PHr, PHEr]
-neighbor = UEG.neighbor(partition)
+channel = [PHr,] # multiply by 2 for PHEr
+# neighbor = UEG.neighbor(partition)
 
-filter = [NoHartree, NoBubble, Proper]
+filter = [NoHartree, NoBubble]
+# set proper to reduce ver3 diagram(Y).
+# set transfer momentum for proper
 
 diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
 partition, diagpara, diag, root, extT = diagram
