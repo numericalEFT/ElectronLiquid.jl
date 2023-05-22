@@ -90,6 +90,7 @@ function update!(result; α=α)
 end
 
 function normalize!(funcs; α=α)
+    funcs.Ris.data .*= (1 - α)
     funcs.Rt.data .*= (1 - α)
 end
 
@@ -117,7 +118,7 @@ function integrand(vars, config)
     # G022 = G0(t4, -p, funcs)
     # R0 = response(p, funcs) / param.β
     # R = response(t3 - t4, p, funcs)
-    F = responsef(0.0, p, funcs)
+    F = -responsef(param.β, p, funcs)
 
     # result1 = -p^2 / (4π^2) * PLX * V * G1 * (G021 * R0 + G022 * R)
     result1 = -p^2 / (4π^2) * PLX * V * F
@@ -245,7 +246,7 @@ function run(steps, param, alg=:vegas)
     println(size(Ft))
 
     # userdata
-    funcs = Propagators.Funcs(param, rpai, rpat, Ri, Rt, Ft)
+    funcs = Propagators.Funcs(param, rpai, rpat, Ris, Rt, Ft)
 
     println("Prepare variables")
     extT, extK = Rt.mesh[1], Rt.mesh[2]

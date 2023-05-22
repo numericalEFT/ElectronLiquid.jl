@@ -24,7 +24,7 @@ function parse_commandline()
         "--uid", "-u"
         help = "uid of the job"
         arg_type = Int
-        default = 106
+        default = 3006
 
         "--channel", "-l"
         help = "orbital channel"
@@ -34,7 +34,7 @@ function parse_commandline()
         "--steps", "-s"
         help = "monte carlo step"
         arg_type = Float64
-        default = 1e7
+        default = 1e6
 
         "--temperature", "-t"
         help = "temperature"
@@ -44,7 +44,7 @@ function parse_commandline()
         "--rs", "-r"
         help = "Wigner-Seitz radius"
         arg_type = Float64
-        default = 0.1
+        default = 0.3
     end
 
     return parse_args(s)

@@ -159,11 +159,12 @@ function G0(t, k, param)
     return result
 end
 
-function GG0(n, k, param)
+function GG0(wn, k, param)
     β = param.β
     ε = k^2 / 2 / param.me - param.μ
-    ω = (2n + 1)π / β
-    return 1 / (ω^2 + ε^2)
+    # ω = (2n + 1)π / β
+    # return 1 / (ω^2 + ε^2)
+    return 1 / (wn^2 + ε^2)
 end
 
 function calcF!(F, R0, Rt, param; norm=1.0)
@@ -172,8 +173,8 @@ function calcF!(F, R0, Rt, param; norm=1.0)
     Rw = dlr_to_imfreq(Rdlr)
     Fw = similar(Rw)
     for ind in eachindex(Fw)
-        n, k = Fw.mesh[1][ind[1]], Fw.mesh[2][ind[2]]
-        Fw[ind] = real(Rw[ind] + R0[ind[2]]) * GG0(n, k, param)
+        wn, k = Fw.mesh[1][ind[1]], Fw.mesh[2][ind[2]]
+        Fw[ind] = real(Rw[ind] + R0[ind[2]]) * GG0(wn, k, param)
     end
     tgrid = F.mesh[1]
     Fdlr = to_dlr(Fw)

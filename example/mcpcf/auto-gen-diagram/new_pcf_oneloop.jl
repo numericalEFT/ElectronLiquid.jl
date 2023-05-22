@@ -34,7 +34,7 @@ function parse_commandline()
         "--steps", "-s"
         help = "monte carlo step"
         arg_type = Float64
-        default = 4e6
+        default = 1e6
 
         "--temperature", "-t"
         help = "temperature"
@@ -94,7 +94,7 @@ function integrand(vars, config)
     # R = response(t3 - t4, p, funcs)
     # R0 = 1.0 / param.β
     # R = 0.0
-    F = responsef(0.0, p, funcs)
+    F = -responsef(param.β - 1e-16, p, funcs)
 
     result1 = -p^2 / (4π^2) * PLX * V * F #G1 * (G021 * R0 + G022 * R)
 
