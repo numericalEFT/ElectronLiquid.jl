@@ -1,6 +1,7 @@
 using ElectronLiquid
 using CompositeGrids
 using FiniteDifferences
+using Roots
 using JLD2
 
 """
@@ -11,14 +12,26 @@ using JLD2
     f_s = -\\left< (v_q+f_s)/(1-(v_q+f_s)Π_0) \\right>
     ```
 """
-function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=0.8, verbose=1, eps=1e-5)
-    # Fp, Fm = para.Fs, para.Fa
-    Fp, Fm = 0.0, 0.0
+function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=0.8, verbose=0, eps=1e-5, spin_spin=false)
+    @assert spin_spin == false "Spin-Spin KO interaciton doesn't work yet."
+    Fp, Fm = para.Fs, para.Fa
+    # Fp, Fm = 0.0, 0.0
+    # Fp, Fm = Fs, Fa
     for i = 1:N
         p_l = ParaMC(rs=para.rs, beta=para.beta, Fs=Fp, Fa=Fm, order=para.order, mass2=para.mass2, isDynamic=true, isFock=false)
         # println(p_l.Fs)
         wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false, verbose=verbose)
-        Fp_new = -Ver4.Legrendre(0, wp, angle)
+        if spin_spin
+            # u = 2<R^-> = -2<R^+>
+            u = -Fp + 3Fm
+            Fp_new = ufp(p_l, -u / 2, kamp, kamp2; verbose=verbose)
+            Fm_new = ufm(p_l, u / 2, kamp, kamp2; verbose=verbose)
+            # Fp_new = -u + 3Fm
+            # println(Fp, " and ", Fm, " solution: ", u, " vs ", Fp_new, " vs ", Fm_new)
+        else
+            Fp_new = -Ver4.Legrendre(0, wp, angle)
+            Fm_new = 0.0
+        end
         if abs(Fp_new - Fp) < eps
             break
         else
@@ -26,8 +39,9 @@ function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; N=100, mix=0.8, verbose=1
                 println("iter $i: $Fp_new vs $Fp")
             end
         end
+        # println(Fm_new, spin_spin)
         Fp = mix * Fp_new + (1 - mix) * Fp
-        Fm = -0.0
+        Fm = mix * Fm_new + (1 - mix) * Fm
     end
     if verbose > 0
         println("Self-consistent approach: ")
@@ -46,6 +60,46 @@ function dKO_dΛ(paras, Λgrid)
     # Fs = KO(paras[1], Λgrid[1], Λgrid[1]; verbose=0, ct=ct)[1]
     # println(F0, " vs ", Fs[1])
     return dFs, dFm
+end
+
+"""
+Solve the equation at different energy scale
+Find f^+ that with a given u: u = <R^+_exchange(f, Λ)>
+"""
+function ufp(para, u, kamp=para.kF, kamp2=para.kF; verbose=0, init=-1.0, eps=1e-5)
+    println("solving ufp with $u")
+    function _u(fs)
+        p_l = UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs, Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false)
+        wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false, verbose=verbose)
+        return Ver4.Legrendre(0, wp, angle) - u
+    end
+
+    function _u_f(fs)
+        p_l = UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fs, Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false)
+        wp, wm, angle = Ver4.exchange_interaction_df(p_l, kamp, kamp2; ct=false, verbose=verbose)
+        return Ver4.Legrendre(0, wp, angle) / para.NF
+    end
+    return find_zero((_u, _u_f), init, Roots.Newton(), verbose=(verbose > 0))
+end
+
+"""
+Solve the equation at different energy scale
+Find f^- that with a given u: u = <R^-_exchange(f, Λ)>
+"""
+function ufm(para, u, kamp=para.kF, kamp2=para.kF; verbose=0, init=-0.0, eps=1e-5)
+    println("solving ufm with $u")
+    function _u(fa)
+        p_l = UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=0.0, Fa=fa, order=1, mass2=para.mass2, isDynamic=true, isFock=false)
+        wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false, verbose=verbose)
+        return Ver4.Legrendre(0, wm, angle) - u
+    end
+
+    function _u_f(fa)
+        p_l = UEG.ParaMC(rs=para.rs, beta=para.beta, Fs=fa, Fa=0.0, order=1, mass2=para.mass2, isDynamic=true, isFock=false)
+        wp, wm, angle = Ver4.exchange_interaction_df(p_l, kamp, kamp2; ct=false, verbose=verbose)
+        return Ver4.Legrendre(0, wm, angle) / para.NF
+    end
+    return find_zero((_u, _u_f), init, Roots.Newton(), verbose=(verbose > 0))
 end
 
 """
