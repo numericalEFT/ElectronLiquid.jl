@@ -44,7 +44,7 @@ dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
 # println("dz: ", dzi)
 for i in eachindex(dzi)
     # push!(zfactor, 1.0 / (1.0 + sum(dzi[1:i])))
-    println("z[$i]: ", 1.0 / (1.0 + sum(dzi[1:i])))
+    println("z[$i]: ", 1.0 / (1.0 - sum(dzi[1:i])))
 end
 
 fk = jldopen(filenameK, "r")
