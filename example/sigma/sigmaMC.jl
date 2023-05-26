@@ -1,13 +1,15 @@
 using ElectronLiquid
 using CompositeGrids
 using JLD2
+# using MPI
 
-rs = [4.0,]
-mass2 = [0.001,]
+# MPI.Init()
+rs = [1.0,]
+mass2 = [1.0,]
 Fs = [-0.0,]
-beta = [25.0,]
+beta = [40.0,]
 order = [2,]
-neval = 1e7
+neval = 1e8
 
 # mission = :Z
 # mission = :K
@@ -43,7 +45,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
         kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
 
-    if isnothing(sigma) == false
+    if isnothing(sigma) == false 
         jldopen("data_$(mission).jld2", "a+") do f
             key = "$(UEG.short(para))"
             if haskey(f, key)
