@@ -44,7 +44,7 @@ dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
 # println("dz: ", dzi)
 for i in eachindex(dzi)
     # push!(zfactor, 1.0 / (1.0 + sum(dzi[1:i])))
-    println("z[$i]: ", 1.0 / (1.0 - sum(dzi[1:i])))
+    println("z[$i]: ", 1.0 / (1.0 + sum(dzi[1:i])))
 end
 
 fk = jldopen(filenameK, "r")
@@ -59,7 +59,7 @@ _ms = Dict()
 for (p, val) in data
     ek = real.(val[1, :] .- val[1, 1]) ./ (kgrid .^ 2 / (2me))
     println("order: $p, mass1 = $(ek[kF_label])")
-    println(ek)
+    # println(ek)
     _ms[p] = ek[kF_label]
 end
 
@@ -69,24 +69,25 @@ dmi, dμ, dm = CounterTerm.sigmaCT(para.order, _mu, _ms)
 
 for i in eachindex(dmi)
     # push!(m_eff, 1.0 / (1.0 + sum(dmi[1:i])*z_factor[i])) 
-    println("m_eff[$i]: ", 1.0 /((1.0 - sum(dmi[1:i])) / (1.0 -sum(dzi[1:i]))))
+    println("m_eff[$i]: ", 1.0 /((1.0 - sum(dmi[1:i])) / (1.0 + sum(dzi[1:i]))))
 end
 
-
+δk = 1
 _ms2 = Dict()
 for (p, val) in data
     ek2 = real.(val[1, :] .-val[1, kF_label] ) ./ (kgrid .-kgrid[kF_label]) *para.me/para.kF
     println("order: $p, mass2 = $((ek2[kF_label-1]+ek2[kF_label+1])/2)")
-    println(ek2)
-    _ms2[p] = (ek2[kF_label-1] + ek2[kF_label+1]) / 2
+    # println(ek2)
+    _ms2[p] = (ek2[kF_label-δk] + ek2[kF_label+δk]) / 2
 end
 
 dmi2, dμ2, dm2 = CounterTerm.sigmaCT(para.order, _mu, _ms2)
 
 # m_eff = []
-
+# println("δk-=$(round(-(kgrid[kF_label-δk]-kF)/kF;digits=3))kF")
+println("δk=$(round((kgrid[kF_label+δk]-kF)/kF;digits=3))kF")
 for i in eachindex(dmi2)
     # push!(m_eff, 1.0 / (1.0 + sum(dmi[1:i])*z_factor[i])) 
-    println("m2_eff[$i]: ", 1.0 / ((1.0 - sum(dmi2[1:i])) / (1.0 - sum(dzi[1:i]))))
+    println("m2_eff[$i]: ", 1.0 / ((1.0 - sum(dmi2[1:i])) / (1.0 + sum(dzi[1:i]))))
 end
 
