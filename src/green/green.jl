@@ -46,6 +46,12 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         d = Parquet.green(para)
         dp = DiagTree.derivative([d,], BareGreenId, p[2], index=1)
         dpp = DiagTree.derivative(dp, BareInteractionId, p[3], index=2)
+
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for d in dpp
+            d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
+
         if isempty(dpp) == false
             if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
                 DiagTree.removeHartreeFock!(dpp)
