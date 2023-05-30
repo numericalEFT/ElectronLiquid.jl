@@ -42,7 +42,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     # println("Diagram set: ", _partition)
 
     Kin, Qout = zeros(16), zeros(16)
-    Qout[1], Kin[2]=1.0, 1.0
+    Qout[1], Kin[2] = 1.0, 1.0
     legK = [Qout, Kin]
 
     diag = Vector{ExprTreeF64}()
@@ -53,6 +53,11 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         d::Vector{Diagram{Float64}} = Parquet.vertex3(para, legK).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
+
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for _d in d
+            _d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
         if isempty(d) == false
             if paramc.isFock # remove the Fock subdiagrams
                 DiagTree.removeHartreeFock!(d)
@@ -78,8 +83,8 @@ end
     # println(extT)
     tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
     win, wout = π * (2nin + 1) / β, π * (2nout + 1) / β
-    wq = win-wout
-    return cos(tfin*win-tfout*wout-tb*wq)
+    wq = win - wout
+    return cos(tfin * win - tfout * wout - tb * wq)
 
     # if (idx == 1)
     #     return cos(π / β * ((2tb) - (tfin + tfout)))
@@ -94,8 +99,8 @@ end
     # println(extT)
     tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
     win, wout = π * (2nin + 1) / β, π * (2nout + 1) / β
-    wq = win-wout
-    return exp(-1im * (tfin * win - tfout * wout - tb*wq))
+    wq = win - wout
+    return exp(-1im * (tfin * win - tfout * wout - tb * wq))
 end
 
 # @inline function phase(varT, extT, n, β)
