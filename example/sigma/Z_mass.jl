@@ -75,8 +75,14 @@ for (p, val) in data
             println("δk= -$(round((kgrid[kF_label+δki]-kF)/kF;digits=3))kF, Re(Σ_i(0,kF+δk))= $(real(val[1,kF_label-δki]))")
             println("δk= $(round((kgrid[kF_label+δki]-kF)/kF;digits=3))kF, Re(Σ_i(0,kF+δk))= $(real(val[1,kF_label+δki]))")
             _ms[δki][p] = (ek2[kF_label-δki] + ek2[kF_label+δki]) / 2
+            _ms[δki][p] =  ek2[kF_label+δki]
         end
     end
+end
+δki = 3
+println("δk= $(round((kgrid[kF_label+δki]-kF)/kF;digits=3))kF")
+for p in sort([k for k in keys(data)])
+    println("$p: μ = $(_mu[p])   m = $(_ms[δki][p])")
 end
 
 
@@ -85,7 +91,7 @@ dmi, dμi, dm = [ ], [ ], [ ]
 
 for i in 1:klength
     dmi_t, dμi_t, dm_t = CounterTerm.sigmaCT(para.order, _mu, _ms[i])
-    println(dmi_t)
+    # println(dmi_t)
     δmn = dmi_t
     # δmn = CounterTerm.renormalization(para.order, _ms[i], dmu, dzi, nbody=1, zrenorm=true)
     push!(dmi,dmi_t)
@@ -95,7 +101,7 @@ for i in 1:klength
     # δMn = [-δmn[1], (δmn[1])^2 - δmn[2], -(δmn[1])^3 + 2δmn[1]*δmn[2]- δmn[3]]
     δrn = [δMn[1] + δsn[1], δMn[2] + δMn[1] * δsn[1] + δsn[2], δMn[3] + δMn[2] * δsn[1] + δMn[1]*δsn[2] + δsn[3]]
     # δrn = [δMn[1] - δsn[1], δMn[2] - δMn[1] * δsn[1] - δsn[2], δMn[3] - δMn[2] * δsn[1] - δMn[1] * δsn[2] - δsn[3]]
-
+    println(dmi_t)
     for j in eachindex(δrn)
     # push!(m_eff, 1.0 / (1.0 + sum(dmi[1:i])*z_factor[i])) 
         println("(m*/m) order $j: ", 1.0 + sum(δrn[1:j]))
