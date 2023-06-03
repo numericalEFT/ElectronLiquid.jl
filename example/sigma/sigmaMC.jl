@@ -7,7 +7,7 @@ using JLD2
 rs = [1.0,]
 mass2 = [1.0,]
 Fs = [-0.0,]
-beta = [40.0,]
+beta = [50.0]
 order = [3,]
 neval = 1e9
 
@@ -24,8 +24,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     if mission == "Z"
         ######### calcualte Z factor ######################
         kgrid = [kF,]
-        ngrid = [-1, 0]
-        # ngrid = [-1, 0, 1]
+        # ngrid = [-1, 0]
+        ngrid = [-1, 0, 1]
     elseif mission == "K"
         ######### calculate K dependence #####################
         # Nk, korder = 4, 4

@@ -9,8 +9,8 @@ const filenameZ = "data_Z.jld2"
 const filenameK = "data_K.jld2"
 
 function FreqDerivative(data, β)
-    return @. (imag(data[3, 1]) - imag(data[2, 1])) / (2π / β)
-    # return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
+    # return @. (imag(data[3, 1]) - imag(data[2, 1])) / (2π / β)
+    return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
 end
 
 function mu(data)

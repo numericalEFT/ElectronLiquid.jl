@@ -16,17 +16,23 @@ para = UEG.ParaMC(rs=rs, beta=beta, Fs=Fs, order=order, mass2=mass2, isDynamic=f
 
 df_re = DataFrame(CSV.File("re_sigma_iw0_rs=1.0_beta_ef=40.0_mass2=1.0_neval=5.0e10_dK=0.001.csv"))
 df_im = DataFrame(CSV.File("im_sigma_iw0_rs=1.0_beta_ef=40.0_mass2=1.0_neval=5.0e10_dK=0.001.csv"))
+dw_im = DataFrame(CSV.File("im_sigma_iwn_kF_rs=1.0_beta_ef=40.0_mass2=1.0_neval=5.0e10.csv"))
 
 println(df_re)
+println(dw_im)
+
 pl = df_re[!, 1]
 pl = [eval(Meta.parse(pl[i])) for i in eachindex(pl)]
 
 _mu = Dict()
 for (i, p) in enumerate(pl)
-    _mu[p] = measurement(df_re[i, 2])
-    if(p == (1,0,2) || p == (1,2,0)) 
-        _mu[p] = _mu[p]/2
-    end
+    _mu[p] = measurement(df_re[i, 2]) / (factorial(p[2])*factorial(p[3]))
+end
+
+_z = Dict()
+for (i, p) in enumerate(pl)
+    dΣdw = (measurement(dw_im[i, 3]) - measurement(dw_im[i, 2])) / (2π/para.β)
+    _z[p] = dΣdw / (factorial(p[2]) * factorial(p[3]))
 end
 
 # println(_mu)
@@ -34,17 +40,23 @@ end
 _ms = Dict() 
 for (i, p) in enumerate(pl)
     dm = (measurement(df_re[i, 5]) - measurement(df_re[i, 2])) / (para.kF*0.01) * para.me / para.kF
-    _ms[p] = dm
-    if (p == (1, 0, 2) || p == (1, 2, 0))
-        _ms[p] = _ms[p] / 2
-    end
+    _ms[p] = dm / (factorial(p[2]) * factorial(p[3]))
 end
 
 for p in sort([k for k in pl])
-    println("$p: μ = $(_mu[p]), m = $(_ms[p])")
+    println("$p: μ = $(_mu[p]), ∂Σ/∂k = $(_ms[p]), ∂Σ/∂ω = $(_z[p])")
+end
+
+dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
+
+z_factor = zeros(typeof(dz[1]), para.order)
+δsn = dzi
+
+for i in eachindex(dzi)
+    z_factor[i] = 1 + sum(dz[1:i])
+    # println("z[$i]: ", z_factor[i])
+    println("δs_$i=", δsn[i])
 end
 
 
-dmi_t, dμi_t, dm_t = CounterTerm.sigmaCT(para.order, _mu, _ms)
-println(dmi_t)
 
