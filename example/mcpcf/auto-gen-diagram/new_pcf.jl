@@ -157,8 +157,8 @@ function integrand(vars, config)
             Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
             # Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
             # Gd04 = G0(t3 - t2, K4, funcs) # for R0
-            F00, F01 = responsef(t, p, funcs), response(t1, p, funcs)
-            F10, F11 = responsef(t - t2, p, funcs), response(t1 - t2, p, funcs)
+            F00, F01 = responsef(t, p, funcs), responsef(t1, p, funcs)
+            F10, F11 = responsef(t - t2, p, funcs), responsef(t1 - t2, p, funcs)
 
             result3 += -1.0 * p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gi2 * F00 # Gi3 * (Gi4 * R + Gi04 * R0)
@@ -197,7 +197,7 @@ function integrand(vars, config)
             Gii2, Gid2 = G0(t, K2, funcs), G0(t2, K2, funcs)
             Gdi2, Gdd2 = G0(t - t1, K2, funcs), G0(t2 - t1, K2, funcs)
 
-            F0, F1 = responsef(-t, p, funcs), response(-t2, p, funcs)
+            F0, F1 = responsef(-t, p, funcs), responsef(-t2, p, funcs)
 
             result3 += -2.0 * p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gii2 * F0 # G3 * (Gi4 * R + Gi04 * R0)

@@ -2,6 +2,8 @@
 
 module Propagators
 
+using FeynmanDiagram
+
 using ElectronLiquid
 using ElectronLiquid.ElectronGas
 using ElectronLiquid.ElectronGas.Interaction: RPAwrapped
@@ -12,6 +14,7 @@ using JLD2
 
 export rpa, interaction, G0, initR, response, coulomb, fake
 export calcF!, responsef
+export diagram_gen, diagram_eval
 
 # Ri excludes the source term
 
@@ -308,6 +311,25 @@ function response(t, k, rt; norm=1)
     return factor * Interp.linear2D(view(rt.data, :, :), rt.mesh[1], rt.mesh[2], t, k) / norm
 end
 
+function diagram_gen(rs, beta)
+    paramc = UEG.ParaMC(rs=rs, beta=beta)
+    kF = paramc.kF
+    partition = [(2, 0, 0)]
+    channel = [PHr,]
+    filter = [NoHartree, NoBubble]
+    diagram = Ver4.diagram(paramc, partition; channel=channel, filter=filter)
+    return paramc, diagram
+end
+
+function diagram_eval(diagram, K, T, paramc; idx=1, Fs=1.0, Fd=1.0)
+    partition, diagpara, diag, root, extT = diagram
+    d = diag[idx]
+    weight = d.node.current
+    ExprTree.evalKT!(d, K, T, paramc)
+    w = sum(weight[r] for (ri, r) in enumerate(d.root))
+    return w
+end
+
 end
 
 using Test, BenchmarkTools
@@ -315,80 +337,84 @@ using Test, BenchmarkTools
 if abspath(PROGRAM_FILE) == @__FILE__
     using .Propagators
 
-    @testset "Propagators" begin
+    # @testset "Propagators" begin
 
-        param = Propagators.Parameter.defaultUnit(0.01, 1.0)
+    #     param = Propagators.Parameter.defaultUnit(0.01, 1.0)
 
-        rpai, rpat = Propagators.rpa(param)
+    #     rpai, rpat = Propagators.rpa(param)
 
-        println(size(rpat))
-        println(size(rpai))
+    #     println(size(rpat))
+    #     println(size(rpai))
 
-        p = (0.00372, 0.0733)
-        println(Propagators.interaction(p..., rpat))
-        println(Propagators.interaction(p[2], rpai))
-        @time Propagators.interaction(p..., rpat)
-        @time Propagators.interaction(p[2], rpai)
-        @time Propagators.G0(p..., param)
+    #     p = (0.00372, 0.0733)
+    #     println(Propagators.interaction(p..., rpat))
+    #     println(Propagators.interaction(p[2], rpai))
+    #     @time Propagators.interaction(p..., rpat)
+    #     @time Propagators.interaction(p[2], rpai)
+    #     @time Propagators.G0(p..., param)
 
-        @time Propagators.interaction(p..., rpat)
-        @time Propagators.interaction(p[2], rpai)
-        @time Propagators.G0(p..., param)
+    #     @time Propagators.interaction(p..., rpat)
+    #     @time Propagators.interaction(p[2], rpai)
+    #     @time Propagators.G0(p..., param)
 
-        Ri, Rt = Propagators.initR(param)
-        @time Propagators.response(p..., Rt)
-        @time Propagators.response(p[2], Ri)
+    #     Ri, Rt = Propagators.initR(param)
+    #     @time Propagators.response(p..., Rt)
+    #     @time Propagators.response(p[2], Ri)
 
-        @time Propagators.response(p..., Rt)
-        @time Propagators.response(p[2], Ri)
+    #     @time Propagators.response(p..., Rt)
+    #     @time Propagators.response(p[2], Ri)
 
-        pht = Propagators.phonon(param)
-        @time Propagators.interaction(p..., pht)
-        @time Propagators.interaction(p..., pht)
+    #     pht = Propagators.phonon(param)
+    #     @time Propagators.interaction(p..., pht)
+    #     @time Propagators.interaction(p..., pht)
+    # end
+
+    # @testset "Test ElectronLiquid" begin
+    #     using .Propagators.ElectronLiquid
+    #     θ, rs = 0.1, 3.0
+    #     mass2 = 1e-9
+    #     Fs = -0.0
+    #     beta = 1 / θ
+    #     paramc = UEG.ParaMC(rs=rs, beta=beta,
+    #         Fs=Fs, order=2,
+    #         mass2=mass2, isDynamic=true)
+    #     param = paramc.basic
+    #     rpai, rpat = Propagators.rpa(param)
+    #     p = (5.0, 1.0)
+    #     V = 1 / real(Propagators.interaction(p[2], rpai))
+    #     W = real(Propagators.interaction(p..., rpat) * V)
+    #     println("V=$V, W=$W")
+
+    #     V0 = UEG.Coulombinstant(p[2], paramc)
+    #     println(V0)
+    #     println(UEG.interactionDynamic(paramc, p[2], 0.0, p[1]))
+    #     println(UEG.interactionStatic(paramc, p[2], 0.0, p[1]))
+    # end
+
+    # @testset "init and load R" begin
+    #     fname = "run/data/PCFdata_5008.jld2"
+    #     θ, rs = 0.002, 0.5
+    #     param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
+    #     mint = 0.0001 * param.β
+    #     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
+    #     order = 3
+    #     Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
+    #     println(size(Ri))
+    #     println(size(Rt))
+    #     println(size(Rtd))
+    #     Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
+    #     println(size(Ri))
+    #     println(size(Rt))
+    #     println(size(Rtd))
+    #     println(Rtd.data[1, 1])
+
+    #     calcF!(Rtd, Ri, Rt, param)
+    #     println(Rtd.data[1, 1])
+
+    # end
+
+    @testset "diagram gen" begin
+        θ, rs = 0.02, 0.5
+        paramc, diagram = diagram_gen(rs, 1 / θ)
     end
-
-    @testset "Test ElectronLiquid" begin
-        using .Propagators.ElectronLiquid
-        θ, rs = 0.1, 3.0
-        mass2 = 1e-9
-        Fs = -0.0
-        beta = 1 / θ
-        paramc = UEG.ParaMC(rs=rs, beta=beta,
-            Fs=Fs, order=2,
-            mass2=mass2, isDynamic=true)
-        param = paramc.basic
-        rpai, rpat = Propagators.rpa(param)
-        p = (5.0, 1.0)
-        V = 1 / real(Propagators.interaction(p[2], rpai))
-        W = real(Propagators.interaction(p..., rpat) * V)
-        println("V=$V, W=$W")
-
-        V0 = UEG.Coulombinstant(p[2], paramc)
-        println(V0)
-        println(UEG.interactionDynamic(paramc, p[2], 0.0, p[1]))
-        println(UEG.interactionStatic(paramc, p[2], 0.0, p[1]))
-    end
-
-    @testset "init and load R" begin
-        fname = "run/data/PCFdata_5008.jld2"
-        θ, rs = 0.002, 0.5
-        param = Propagators.Parameter.rydbergUnit(θ, rs, 3)
-        mint = 0.0001 * param.β
-        minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
-        order = 3
-        Ri, Rt, Rtd = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
-        println(size(Ri))
-        println(size(Rt))
-        println(size(Rtd))
-        Ri, Rt, Rtd = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
-        println(size(Ri))
-        println(size(Rt))
-        println(size(Rtd))
-        println(Rtd.data[1, 1])
-
-        calcF!(Rtd, Ri, Rt, param)
-        println(Rtd.data[1, 1])
-
-    end
-
 end
