@@ -148,8 +148,8 @@ function integrand(vars, config)
 
             V1 = 1.0 / interaction(kmp, funcs)
             V2 = 1.0 / interaction(qpk, funcs)
-            W1 = interaction(t2, kmp, funcs) * V1
-            W2 = interaction(t1 - t, qpk, funcs) * V2
+            W1 = interaction(t1, kmp, funcs) * V1
+            W2 = interaction(t2 - t, qpk, funcs) * V2
 
             # V1 = V1 / param.β
             # V2 = V2 / param.β
@@ -181,46 +181,46 @@ function integrand(vars, config)
 
             # # brutal force inverse diagram
 
-            # kmp = norm(Kv - Pv)
-            # qpk = norm(Qv - Kv)
+            kmp = norm(Kv - Pv)
+            qpk = norm(Qv - Kv)
 
-            # V1 = 1.0 / interaction(kmp, funcs)
-            # V2 = 1.0 / interaction(qpk, funcs)
-            # W1 = interaction(t2 - t, kmp, funcs) * V1
-            # W2 = interaction(t1, qpk, funcs) * V2
+            V1 = 1.0 / interaction(kmp, funcs)
+            V2 = 1.0 / interaction(qpk, funcs)
+            W1 = interaction(t1 - t, kmp, funcs) * V1
+            W2 = interaction(t2, qpk, funcs) * V2
 
-            # # V1 = V1 / param.β
-            # # V2 = V2 / param.β
-            # V1 = -W1 + V1 * fake(kmp, funcs) / param.β
-            # V2 = -W2 + V2 * fake(qpk, funcs) / param.β
+            # V1 = V1 / param.β
+            # V2 = V2 / param.β
+            V1 = -W1 + V1 * fake(kmp, funcs) / param.β
+            V2 = -W2 + V2 * fake(qpk, funcs) / param.β
 
-            # K1, K2, K3, K4 = norm(Qv), norm(Qv + Pv - Kv), -p, p
-            # # 3 is always 0-t3
-            # # 4 relies on i2: (t, t2)-t4
-            # # 04: t4 replaced by t3
-            # # 1 relies on i1: t-(t1, 0)
-            # # 2 relies on both: (0, t1)-(t, t2)
-            # Gi1, Gd1 = G0(t, K1, funcs), G0(t1, K1, funcs)
-            # G3 = G0(t3 - t, K3, funcs)
-            # Gi4, Gd4 = G0(t4, K4, funcs), G0(t4 - t2, K4, funcs)
-            # Gi04, Gd04 = G0(t3, K4, funcs), G0(t3 - t2, K4, funcs)
-            # Gii2, Gid2 = G0(-t, K2, funcs), G0(t2 - t, K2, funcs)
-            # Gdi2, Gdd2 = G0(-t1, K2, funcs), G0(t2 - t1, K2, funcs)
+            K1, K2, K3, K4 = norm(Qv), norm(Qv + Pv - Kv), -p, p
+            # 3 is always 0-t3
+            # 4 relies on i2: (t, t2)-t4
+            # 04: t4 replaced by t3
+            # 1 relies on i1: t-(t1, 0)
+            # 2 relies on both: (0, t1)-(t, t2)
+            Gi1, Gd1 = G0(t, K1, funcs), G0(t1, K1, funcs)
+            G3 = G0(t3 - t, K3, funcs)
+            Gi4, Gd4 = G0(t4, K4, funcs), G0(t4 - t2, K4, funcs)
+            Gi04, Gd04 = G0(t3, K4, funcs), G0(t3 - t2, K4, funcs)
+            Gii2, Gid2 = G0(-t, K2, funcs), G0(t2 - t, K2, funcs)
+            Gdi2, Gdd2 = G0(-t1, K2, funcs), G0(t2 - t1, K2, funcs)
 
-            # result3 += -1.0 * p^2 / (2π)^5 * PLX * (
-            #                V1 * V2 * Gi1 * Gii2 * G3 * (Gi4 * R + Gi04 * R0)
-            #                +
-            #                W1 * V2 * Gd1 * Gdi2 * G3 * (Gi4 * R + Gi04 * R0)
-            #                +
-            #                V1 * W2 * Gi1 * Gid2 * G3 * (Gd4 * R + Gd04 * R0)
-            #                +
-            #                W1 * W2 * Gd1 * Gdd2 * G3 * (Gd4 * R + Gd04 * R0)
-            #            )
+            result3 += -1.0 * p^2 / (2π)^5 * PLX * (
+                           V1 * V2 * Gi1 * Gii2 * G3 * (Gi4 * R + Gi04 * R0)
+                           +
+                           W1 * V2 * Gd1 * Gdi2 * G3 * (Gi4 * R + Gi04 * R0)
+                           +
+                           V1 * W2 * Gi1 * Gid2 * G3 * (Gd4 * R + Gd04 * R0)
+                           +
+                           W1 * W2 * Gd1 * Gdd2 * G3 * (Gd4 * R + Gd04 * R0)
+                       )
 
         end
     end
-    result1 = 0.0
-    result2 = 0.0
+    # result1 = 0.0
+    # result2 = 0.0
     return 1.0, result1, result2, result3
 end
 

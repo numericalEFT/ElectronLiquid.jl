@@ -62,11 +62,11 @@ fake(k, funcs::Funcs) = interaction(k, funcs.fake)
 
 # shift tau to [0, β)
 function tau_fermi(t, β)
-    if 0 <= t < β
+    if 0 < t < β
         return t, 1.0
     elseif β <= t < 2β
         return t - β, -1.0
-    elseif -β <= t < 0
+    elseif -β <= t <= 0
         return t + β, -1.0
     else
         error("τ=$t out of range!")
