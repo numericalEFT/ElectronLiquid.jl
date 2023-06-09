@@ -138,6 +138,9 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 if dim == 3
                     invK = 1.0 / (qd^2 + mass2)
                     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                elseif dim == 2
+                    invK = 1.0 / (qd + mass2)
+                    return e0^2 / 2ϵ0 * invK * (mass2 * invK)^order
                     # elseif dim == 2
                     #     invK = 1.0 / sqrt(qd^2 + mass2)
                     #     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
