@@ -27,13 +27,11 @@ para, ngrid, kgrid, data = value[1], value[2], value[3], value[4]
 printstyled(key, color=:yellow)
 # printstyled(UEG.short(para), color=:yellow)
 println()
-
 for p in sort([k for k in keys(data)])
     # println("$p: μ = $(mu(data[p]))   z = $(FreqDerivative(data[p], para.β))")
     # println("$p: ImΣ0 = $(imag(data[p][2,1]))   ImΣ-1 = $(imag(data[p][1,1])) ImΣ1 = $(imag(data[p][3,1]))")
     println("$p: ImΣ0 = $(imag(data[p][2,1]))   ImΣ-1 = $(imag(data[p][1,1]))")
     # println("$p: ReΣ0 = $(real(data[p][2,1]))   ReΣ-1 = $(real(data[p][1,1])) ReΣ1 = $(real(data[p][3,1]))")
-
 end
 
 _mu = Dict()
@@ -75,8 +73,10 @@ println(klength)
 _ms = [Dict() for i in 1:klength]
 # _ms3 = Dict()
 
+rdata, idata = Dict(), Dict()
 for (p, val) in data
-    # push!(real.(dReSigma, val[1, :] .- val[1, 1]))
+    rdata[p] = real(data[p][:, :])
+    idata[p] = imag(data[p][:, :])
     ek2 = real.(val[1, :] .- val[1, kF_label]) ./ (kgrid .- kgrid[kF_label]) * para.me / para.kF
     # println("order: $p, mass2 = $((ek2[kF_label-1]+ek2[kF_label+1])/2)")
     println("order: $p")
@@ -121,8 +121,17 @@ for i in 1:klength
     end
 end
 
-dReSigma = []
-
+println(dmu)
+rSigma = CounterTerm.chemicalpotential_renormalization(para.order, rdata, dmu)
+println(rSigma)
+drSigma_k = []
+for val in rSigma
+    #push!(S_k, val[1, :].-val[1, kF_label])
+    push!(drSigma_k, val[1, :] .- val[1, 1])
+    #push!(S_k, val[1, :])
+end
+println(drSigma_k)
+println(kgrid)
 ######## Plot 
 # interp = pyimport("scipy.interpolate")
 style = PyPlot.matplotlib."style"
@@ -135,9 +144,9 @@ rcParams["font.family"] = "Times New Roman"
 figure(figsize=(4, 4))
 dmp = []
 for o in 1:para.order
-    y = sum([z.val for z in dReSigma[j]] for j in 1:o)
-    #y = [z.val for z in dReSigma[o]]
-    e = [z.err for z in dReSigma[o]]
+    y = sum([z.val for z in drSigma_k[j]] for j in 1:o)
+    #y = [z.val for z in drSigma_k[o]]
+    e = [z.err for z in drSigma_k[o]]
     #y ./= para.EF
     #e ./=para.EF
     y ./= (kgrid) .^ 2 / (2 * para.me)
@@ -146,12 +155,12 @@ for o in 1:para.order
     errorbar(kgrid / kF, y, yerr=e, color=color[o], capsize=4, fmt="o", markerfacecolor="none", label="Order $o")
     push!(dmp, measurement(y[kF_label], e[kF_label]))
     # yfit = signal.savgol_filter(y, 5, 3)
-    x = kgrid / kF
-    y[1:3] .= y[kF_label]
-    e[1:3] .= e[kF_label]
-    spl = interp.UnivariateSpline(x, y, w=1.0 ./ e)
-    yfit = spl(x)
-    plot(x, yfit, color=color[o], linestyle="--")
+    # x = kgrid / kF
+    # y[1:3] .= y[kF_label]
+    # e[1:3] .= e[kF_label]
+    # spl = interp.UnivariateSpline(x, y, w=1.0 ./ e)
+    # yfit = spl(x)
+    # plot(x, yfit, color=color[o], linestyle="--")
     #println(y)
     #println(yfit)
 end
@@ -166,5 +175,5 @@ xlabel(L"$k/k_F$")
 ylabel(L"$(\Sigma_{k, i\omega_0}-\Sigma_{0, i\omega_0})/(k^2/2m)$")
 # end
 legend(loc=2)
-#savefig("sigmaK_rs$(para.rs)_Fs$(para.Fs)_$(para.dim)d.pdf")
+savefig("sigmaK_rs$(para.rs)_Fs$(para.Fs)_$(para.dim)d.pdf")
 println(dmp)
