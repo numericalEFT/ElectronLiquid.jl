@@ -11,6 +11,7 @@ Fs = [-0.0,]
 beta = [50.0]
 order = [3,]
 neval = 2e9
+isDynamic = false
 
 # mission = :Z
 # mission = :K
@@ -19,7 +20,7 @@ println("mission: ", mission)
 # exit(0)
 
 for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
-    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=false, dim=dim)
+    para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=isDynamic, dim=dim)
     kF = para.kF
 
     if mission == "Z"
