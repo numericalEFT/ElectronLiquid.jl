@@ -51,6 +51,10 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         if dR
             sdpp = DiagTree.derivative(sdpp, BareInteractionId, 1, index=3)
         end
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for d in sdpp
+            d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
         if isempty(sdpp) == false
             if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
                 DiagTree.removeHartreeFock!(sdpp)

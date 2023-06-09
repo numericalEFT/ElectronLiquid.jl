@@ -60,6 +60,12 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
+
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for _d in d
+            _d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
+
         if dR
             d = DiagTree.derivative(d, BareInteractionId, 1, index=3)
         end

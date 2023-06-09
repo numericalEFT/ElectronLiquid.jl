@@ -14,7 +14,7 @@
         mass2=para.mass2, isDynamic=true, isFock=false) for li in eachindex(Λgrid)]
 
     # d R_ex/df on FS
-    dR = ∂Rs_∂fs_exchange(paras, [para.kF for l in Λgrid]; ct=false) / para.NF
+    dR = ∂R_∂f_exchange(paras, [para.kF for l in Λgrid]; ct=false)[1] / para.NF
 
     # R(f=0) - R(f=f_0)
     diff = Interp.integrate1D(dR .* dfs, Λgrid, [Λgrid[1], Λgrid[end]])
