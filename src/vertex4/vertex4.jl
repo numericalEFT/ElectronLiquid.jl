@@ -40,7 +40,8 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # Girreducible,
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
-    ]
+    ],
+    dR=false # whether to use the derivative of the renormalized interaction, for the RG purpose
 ) where {T}
     # println("Build the vertex4 diagrams into an experssion tree ...")
     # _partition = UEG.partition(order)
@@ -59,6 +60,15 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
         d = DiagTree.derivative(d, BareGreenId, p[2], index=1)
         d = DiagTree.derivative(d, BareInteractionId, p[3], index=2)
+
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for _d in d
+            _d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
+
+        if dR
+            d = DiagTree.derivative(d, BareInteractionId, 1, index=3)
+        end
         if isempty(d) == false
             if paramc.isFock # remove the Fock subdiagrams
                 DiagTree.removeHartreeFock!(d)
@@ -99,14 +109,15 @@ end
     return phase(varT, extT, n[1], n[2], n[3], β)
 end
 
-@inline ud2sa(Wuu, Wud) = @. (Wuu + Wud)/2, (Wuu-Wud)/2
-@inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws-Wa
+@inline ud2sa(Wuu, Wud) = @. (Wuu + Wud) / 2, (Wuu - Wud) / 2
+@inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws - Wa
 
 # include("common.jl")
 
 # include("ver4_avg.jl")
 include("ver4KW.jl")
 include("ver4_PH_l.jl")
+include("ver4_PH_l_df.jl")
 include("exchange_interaction.jl")
 
 end

@@ -5,12 +5,12 @@ using FeynmanDiagram
 using Printf
 using JLD2
 
-rs = [5.0,]
-mass2 = [0.01, 0.001]
-Fs = [-1.0,]
+rs = [4.0,]
+mass2 = [0.01,]
+Fs = [-0.0, -0.508]
 beta = [25,]
 order = [2,]
-neval = 1e9
+neval = 1e7
 
 mission = ARGS[1]
 println("mission (L or K): ", mission)
@@ -41,9 +41,9 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         ######### calcualte Z factor ######################
         Nk, korder = 4, 4
         minK = 0.2kF
-        kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.1 * kF, 2kF], [kF,], Nk, minK, korder).grid
+        # kgrid = CompositeGrid.LogDensedGrid(:uniform, [0.1 * kF, 2kF], [kF,], Nk, minK, korder).grid
         # kgrid = [0.5 * kF, kF, 1.5 * kF]
-        # kgrid = [kF, ]
+        kgrid = [kF,]
         # n = [0, 1, 1, 0] # q=0 and w -> 0 to measure F
         n = [-1, 0, 0, -1] # q=0 and w -> 0 to measure F
         # n = [0, 0, 0, 0] # q -> 0 and w = 0 to measure A
@@ -77,7 +77,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
                     @warn("replacing existing data for $key")
                     delete!(f, key)
                 end
-                f[key] = (para, kgrid, lgrid, ver4)
+                f[key] = (kgrid, lgrid, ver4)
             end
         end
 

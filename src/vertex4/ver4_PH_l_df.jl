@@ -1,16 +1,20 @@
 """
 Calculate vertex4 averged on the Fermi surface
 """
-function integrandPH(idx, var, config)
-    para, diag, root, extT, kampgrid, lgrid, n = config.userdata
+function integrandPH_df(idx, vars, config)
+    paras, diag, root, extT, kampgrid, lgrid, n = config.userdata
+
+    varK, varT, varX, varL, extKidx = vars
+    x = varX[1]
+    # error("$(varK.data[:, 1])")
+    l = lgrid[varL[1]]
+    loopNum = config.dof[idx][1]
+    kidx = extKidx[1]
+    para = paras[kidx]
 
     kF, β = para.kF, para.β
-    varK, varT = var[1], var[2]
-    x = config.var[3][1]
-    # error("$(varK.data[:, 1])")
-    l = lgrid[var[4][1]]
-    loopNum = config.dof[idx][1]
-    kamp = kampgrid[var[5][1]]
+
+    kamp = kampgrid[kidx]
     varK.data[1, 1], varK.data[1, 2] = kamp, kamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
     varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
@@ -47,7 +51,7 @@ function integrandPH(idx, var, config)
     return Weight(wuu * factor, wud * factor)
 end
 
-function measurePH(idx, var, obs, weight, config)
+function measurePH_df(idx, var, obs, weight, config)
     Lidx = var[4][1]
     Kidx = var[5][1]
 
@@ -55,7 +59,7 @@ function measurePH(idx, var, obs, weight, config)
     obs[idx][2, Lidx, Kidx] += weight.e
 end
 
-function PH(para::ParaMC, diagram;
+function PH_df(paras::Vector{ParaMC}, diagram;
     kamp=[para.kF,], #amplitude of k of four external legs
     n=[0, 0, 0],
     l=[0,],
@@ -65,7 +69,13 @@ function PH(para::ParaMC, diagram;
     config=nothing,
     kwargs...
 )
-    UEG.MCinitialize!(para)
+
+    para = paras[1]
+    if paras[1].isDynamic
+        for p in paras
+            UEG.MCinitialize!(p)
+        end
+    end
 
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     Nl = length(l)
@@ -85,7 +95,7 @@ function PH(para::ParaMC, diagram;
     T.data[1] = 0.0
     X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
     L = MCIntegration.Discrete(1, Nl, alpha=alpha) # angular momentum
-    AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # angular momentum
+    AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # kamp
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = [zeros(ComplexF64, 2, Nl, Nk) for p in diagpara]
@@ -94,16 +104,17 @@ function PH(para::ParaMC, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration(
+        config = Configuration(;
             var=(K, T, X, L, AMP),
             dof=dof,
             obs=obs,
             type=Weight,
-            userdata=(para, diag, root, extT, kamp, l, n),
+            userdata=(paras, diag, root, extT, kamp, l, n),
             kwargs...
         )
     end
-    result = integrate(integrandPH; measure=measurePH, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    println(config.neighbor)
+    result = integrate(integrandPH_df; measure=measurePH_df, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])

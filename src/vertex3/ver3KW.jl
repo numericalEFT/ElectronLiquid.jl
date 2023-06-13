@@ -1,9 +1,7 @@
-function integrandKW(config)
-    para, diag, root, extT, kin, qout, nkin, nqout = config.para
+function integrandKW(idx, var, config)
+    para, diag, root, extT, kin, qout, nkin, nqout = config.userdata
 
     kF, β = para.kF, para.β
-    idx = config.curr
-    var = config.var
     varK, varT = var[1], var[2]
     loopNum = config.dof[idx][1]
     # error(loopNum)
@@ -43,20 +41,11 @@ function integrandKW(config)
     # return Weight(zero(ComplexF64), wud * para.NF)
 end
 
-function measureKW(config)
-    factor = 1.0 / config.reweight[config.curr]
-    var = config.var
+function measureKW(idx, var, obs, weight, config)
     kin, qout = var[3][1], var[4][1]
     nkin, nqout = var[5][1], var[6][1]
-    # println(config.observable[1][1])
-    # if config.curr == 1
-    o = config.curr
-    weight = integrandKW(config)
-    config.observable[o, 1, kin, qout, nkin, nqout] += weight.d / abs(weight) * factor
-    config.observable[o, 2, kin, qout, nkin, nqout] += weight.e / abs(weight) * factor
-    # else
-    #     return
-    # end
+    obs[idx][1, kin, qout, nkin, nqout] += weight.d
+    obs[idx][2, kin, qout, nkin, nqout] += weight.e
 end
 
 function KW(para::ParaMC, diagram;
@@ -94,33 +83,42 @@ function KW(para::ParaMC, diagram;
     vWqout = MCIntegration.Discrete(1, Nwqout, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = zeros(ComplexF64, length(dof), 2, Nkin, Nqout, Nwin, Nwqout) # observable for the Fock diagram 
+    obs = [zeros(ComplexF64, 2, Nkin, Nqout, Nwin, Nwqout) for p in diagpara] # observable for the Fock diagram 
 
     if isnothing(config)
         config = MCIntegration.Configuration(
             var=(K, T, vKin, vQout, vWin, vWqout),
             dof=dof,
             obs=obs,
-            para=(para, diag, root, extT, kin, qout, nkin, nqout),
+            type=Weight,
+            userdata=(para, diag, root, extT, kin, qout, nkin, nqout),
             kwargs...
         )
     end
-    result = MCIntegration.sample(config, integrandKW, measureKW; neval=neval, print=print, kwargs...)
+    result = integrate(integrandKW; config=config, measure=measureKW, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
-            MCIntegration.summary(result.config)
-            MCIntegration.summary(result, [o -> (real(o[i, 1, 1, 1, 1, 1])) for i in 1:length(dof)], ["uu$i" for i in 1:length(dof)])
-            MCIntegration.summary(result, [o -> (real(o[i, 2, 1, 1, 1, 1])) for i in 1:length(dof)], ["ud$i" for i in 1:length(dof)])
+            report(result.config)
+            report(result; pick=o -> (real(o[1, 1, 1, 1, 1])), name="uu")
+            report(result; pick=o -> (real(o[2, 1, 1, 1, 1])), name="ud")
         end
 
-        avg, std = result.mean, result.stdev
-        r = measurement.(real(avg), real(std))
-        i = measurement.(imag(avg), imag(std))
-        data = Complex.(r, i)
-        datadict = Dict{eltype(partition),typeof(data[1, :, :, :, :, :])}()
-        for i in 1:length(dof)
-            datadict[partition[i]] = data[i, :, :, :, :, :]
+        datadict = Dict{eltype(partition),Any}()
+        if length(dof) == 1
+            avg, std = result.mean, result.stdev
+            r = measurement.(real(avg), real(std))
+            i = measurement.(imag(avg), imag(std))
+            data = Complex.(r, i)
+            datadict[partition[1]] = data
+        else
+            for k in 1:length(dof)
+                avg, std = result.mean[k], result.stdev[k]
+                r = measurement.(real(avg), real(std))
+                i = measurement.(imag(avg), imag(std))
+                data = Complex.(r, i)
+                datadict[partition[k]] = data
+            end
         end
         return datadict, result
     else

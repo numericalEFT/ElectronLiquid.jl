@@ -3,10 +3,11 @@
     
     Calculate the exchange interaction between two particles with two incoming momentum kamp and kamp2. Averge over the angle between the two momenta.
 """
-function exchange_interaction(para::ParaMC, kamp=para.kF, kamp2=para.kF; ct=true, kwargs...)
+function exchange_interaction(para::ParaMC, kamp=para.kF, kamp2=para.kF; ct=true,
+    θgrid=CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 32),
+    kwargs...)
     kF = para.kF
     # println(kamp, ", ", kamp2)
-    θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     # qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
     qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
     # println(qs)
@@ -87,14 +88,14 @@ function exchange_Coulomb(para::ParaMC, kamp=para.kF, kamp2=para.kF; kwargs...)
     return Wp, Wm, θgrid
 end
 
-function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble, kwargs...)
+function exchange_KOcounter(para::ParaMC, kamp=para.kF, kamp2=para.kF; order, bubble=false, kwargs...)
     kF = para.kF
     θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
     # qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
     qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
 
     # non-proper and no bubble diagram. (MC for vertex4 doesn't include the buble contribution)
-    Wp = UEG.counterKO_W(para; qgrid=qs, ngrid=[0,], order=order, proper=false, bubble=false)[:, 1]
+    Wp = UEG.counterKO_W(para; qgrid=qs, ngrid=[0,], order=order, proper=false, bubble=bubble)[:, 1]
     Wp *= para.NFstar
     Wm = zeros(Float64, length(qs))
     return Wp, Wm, θgrid
@@ -122,6 +123,9 @@ function projected_exchange_interaction(l, para, interaction; kamp=para.kF, kamp
     # verbose > 0 && println(UEG.short(para))
     verbose > 0 && println("l=$l:")
     Wse, Wae, θgrid = interaction(para, kamp, kamp2; kwargs...)
+    # println(Wse)
+    # println(Wae)
+    # exit(0)
     Wse0 = Legrendre(l, Wse, θgrid)
     Wae0 = Legrendre(l, Wae, θgrid)
     verbose > 1 && println("Wse_l=$l=", Wse0)

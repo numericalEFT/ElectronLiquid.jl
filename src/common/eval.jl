@@ -91,10 +91,12 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
         end
     elseif order == 1  # ∂_μ g[μ]
         return -Spectral.kernelFermiT_dω(τ, ϵ, β)
-    elseif order == 2  # ∂^2_μ g[μ]/2
-        return Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
-    elseif order == 3  # ∂^3_μ g[μ]/6
-        return -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+    elseif order == 2  # ∂^2_μ g[μ]
+        # return Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+        return Spectral.kernelFermiT_dω2(τ, ϵ, β)
+    elseif order == 3  # ∂^3_μ g[μ]
+        # return -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+        return -Spectral.kernelFermiT_dω3(τ, ϵ, β)
         # return 0.0
     else
         error("not implemented!")
@@ -112,12 +114,20 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 return Coulombinstant(qd, p)
             elseif interactionTauNum(id.para) == 2
                 # println(id.extT)
-                return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                if id.order[3] == 0
+                    return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                else # return dR/df for the RG purpose. The static part is zero
+                    return 0.0
+                end
             else
                 error("not implemented!")
             end
         elseif id.type == Dynamic
-            return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            if id.order[3] == 0
+                return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            else # return dR/df for the RG purpose. 
+                return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+            end
         else
             error("not implemented!")
         end
@@ -128,6 +138,9 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 if dim == 3
                     invK = 1.0 / (qd^2 + mass2)
                     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                elseif dim == 2
+                    invK = 1.0 / (qd + mass2)
+                    return e0^2 / 2ϵ0 * invK * (mass2 * invK)^order
                     # elseif dim == 2
                     #     invK = 1.0 / sqrt(qd^2 + mass2)
                     #     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
@@ -139,7 +152,11 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
             end
         elseif id.type == Dynamic
-            return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            if id.order[3] == 0
+                return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            else
+                return counterR_df(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+            end
         else
             error("not implemented!")
         end

@@ -119,7 +119,7 @@ end
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
     Pi = polarKW(q, 0, p)
     if ct
-        return 1.0 / (1.0 - p.fa * Pi)^2 + p.fa # counter term should be -fs for the KO interaction
+        return 1.0 / (1.0 - p.fa * Pi)^2 - 1.0 # counter term should be -fa for the KO interaction
     else
         return 1.0 / (1.0 - p.fa * Pi)^2
     end
@@ -147,6 +147,34 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
     return Rs
 end
 
+function KO_W_df(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
+    if abs(q) < 1e-6
+        q = 1e-6
+    end
+    # invKOinstant = 1.0 / KOinstant(q, para)
+    # Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
+    # return Rs
+    return 1.0 / (1.0 - KOinstant(q, para) * Pi)^2 - 1.0 # counter term should be -fs for the KO interaction
+end
+
+
+"""
+    function KOdynamic_T(para::ParaMC)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+δR_q/r_q = r_q Π₀/(1-r_q Π₀)
+```
+
+where Π₀ is the polarization of free electrons.
+"""
 function KOdynamic_T(para::ParaMC)
     # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
     @unpack dim, e0, EF, β, qgrid, τgrid = para
@@ -161,17 +189,55 @@ function KOdynamic_T(para::ParaMC)
             # Rs = (vq+f)Π0/(1-(vq+f)Π0)
             Pi[qi, ni] = polarKW(q, n, para)
             Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni])
+            # Rs[qi, ni] = Pi[qi, ni] / (invKOinstant - Pi[qi, ni]) * KOinstant(q, para)
         end
     end
-    for (qi, q) in enumerate(qgrid)
-        # turn on this to check consistencey between two static KO interactions
-        w = KOinstant(q, para) * Rs[qi, 1] + Coulombinstant(q, para)
-        kostatic = KOstatic(q, para)
-        @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
-        # println("$(q/kF)   $(w*NF)")
-        # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
-        staticPi = polarKW(q, 0, para)
-        @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
+    # for (qi, q) in enumerate(qgrid)
+    #     # turn on this to check consistencey between two static KO interactions
+    #     w = KOinstant(q, para) * Rs[qi, 1] + Coulombinstant(q, para)
+    #     kostatic = KOstatic(q, para)
+    #     @assert abs(w - kostatic) < 1e-4 "$q  ==> $w != $(kostatic)"
+    #     # println("$(q/kF)   $(w*NF)")
+    #     # staticPi = -basic.NF * massratio * lindhard(q / 2 / basic.kF, basic.dim)
+    #     staticPi = polarKW(q, 0, para)
+    #     @assert abs(Pi[qi, 1] - staticPi) < 1e-8 "$(Pi[qi, 1]) vs $staticPi"
+    # end
+    Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
+    return real.(Rs)
+end
+
+"""
+    function KOdynamic_T(para::ParaMC)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+d δR_q/df - 1 = 1/(1-r_q Π₀)^2 - 1
+```
+
+where Π₀ is the polarization of free electrons.
+"""
+function KOdynamic_T_df(para::ParaMC)
+    # para = Parameter.rydbergUnit(1.0 / beta, rs, dim, Λs=mass2)
+    @unpack dim, e0, EF, β, qgrid, τgrid = para
+    dlr = DLRGrid(Euv=10 * EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    Nq, Nτ = length(qgrid), length(τgrid)
+    Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Pi = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    for (ni, n) in enumerate(dlr.n)
+        for (qi, q) in enumerate(qgrid)
+            invKOinstant = 1.0 / KOinstant(q, para)
+            # Rs = (vq+f)Π0/(1-(vq+f)Π0)
+            Pi[qi, ni] = polarKW(q, n, para)
+            Rs[qi, ni] = Pi[qi, ni] * (2 * invKOinstant - Pi[qi, ni]) / (invKOinstant - Pi[qi, ni])^2
+        end
     end
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
     return real.(Rs)
@@ -235,11 +301,48 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
     return cRs1
 end
 
+function counterKO_W_df(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false, bubble=true)
+    Nq, Nw = length(qgrid), length(ngrid)
+    cRs1 = zeros(Float64, (Nq, Nw))
+    for (ni, n) in enumerate(ngrid)
+        for (qi, q) in enumerate(qgrid)
+            Pi = polarKW(q, n, para)
+            if proper == false
+                Rs = KO_W(q, n, para; Pi=Pi)
+                Rs_df = KO_W_df(q, n, para; Pi=Pi)
+            else
+                Rs = 0.0
+            end
+            # Rs will be zero for the proper counter-term
+            if order == 1
+                cRs1[qi, ni] = -2 * (Rs + para.fs) * Pi * (Rs_df + 1.0)
+            elseif order == 2
+                cRs1[qi, ni] = 3 * (Rs + para.fs)^2 * Pi^2 * (Rs_df + 1.0)
+            else
+                error("not implemented!")
+            end
+
+            if bubble == false
+                # cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
+                cRs1[qi, ni] += (order + 1) * (-Rs)^order * Pi^order * (-Rs_df)
+            end
+        end
+    end
+    return cRs1
+end
+
 function counterKO_T(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false, bubble=true)
     dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     cRs1 = counterKO_W(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper, bubble=bubble)
     cRs1 = matfreq2tau(dlr, cRs1, τgrid.grid, axis=2)
     return real.(cRs1)
+end
+
+function counterKO_T_df(para::ParaMC; qgrid=para.qgrid, τgrid=para.τgrid, order=para.order, proper=false, bubble=true)
+    dlr = DLRGrid(Euv=10 * para.EF, β=para.β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    cRs1_f = counterKO_W_df(para; qgrid=qgrid, ngrid=dlr.n, order=order, proper=proper, bubble=bubble)
+    cRs1_f = matfreq2tau(dlr, cRs1_f, τgrid.grid, axis=2)
+    return real.(cRs1_f)
 end
 
 """
@@ -314,6 +417,30 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
     end
 end
 
+function counterR_df(p::ParaMC, qd, τIn, τOut, order)
+    kF, maxK = p.kF, p.maxK
+
+    if qd > maxK
+        return 0.0
+    end
+
+    dτ = abs(τOut - τIn)
+
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-6 * kF
+        # q = qgrid.grid[1] + 1.0e-6
+        qd = 1e-6 * kF
+    end
+
+    if order <= p.order
+        return linear2D(p.cRs_f[order], p.qgrid, p.τgrid, qd, dτ)
+    else
+        error("not implemented!")
+    end
+end
+
+
 """
     function interactionDynamic(p::ParaMC, qd, τIn, τOut)
 
@@ -354,6 +481,7 @@ where Π₀ is the polarization of free electrons.
     # error("$vd, $(linear2D(dW0, qgrid, τgrid, qd, dτ))")
     return vd * linear2D(p.dW0, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
+
 
 """
     function interactionStatic(p::ParaMC, qd, τIn, τOut)
@@ -409,4 +537,40 @@ kostatic - dynamic = v_q
     # end
     kostatic = KOstatic(qd, p)
     return kostatic / p.β - interactionDynamic(p, qd, τIn, τOut)
+end
+
+"""
+    function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
+
+Dynamic part of the interaction.
+
+Assume 
+```math
+r_q = v_q + f
+```
+Then, the dynamic interaction is given by
+
+```math
+d δR_q/df = (r_q)²Π₀/(1-r_q Π₀)
+```
+
+where Π₀ is the polarization of free electrons.
+"""
+@inline function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
+    # @unpack qgrid, τgrid = p.qgrid, p.τgrid
+    kF, maxK = p.kF, p.maxK
+
+    if qd > maxK
+        return 0.0
+    end
+
+    dτ = abs(τOut - τIn)
+
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-6 * kF
+        qd = 1e-6 * kF
+    end
+
+    return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end

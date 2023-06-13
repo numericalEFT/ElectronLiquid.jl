@@ -34,7 +34,8 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # Girreducible,
         # Proper,   #one interaction irreduble diagrams or not
         # NoBubble, #allow the bubble diagram or not
-    ]
+    ],
+    dR=false # whether to use the derivative of the renormalized interaction, for the RG purpose
 ) where {T}
     println("Build the sigma diagrams into an experssion tree ...")
     println("Diagram set: ", _partition)
@@ -47,6 +48,13 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         sd::Vector{Diagram{Float64}} = Parquet.sigma(para).diagram
         sdp = DiagTree.derivative(sd, BareGreenId, p[2], index=1)
         sdpp = DiagTree.derivative(sdp, BareInteractionId, p[3], index=2)
+        if dR
+            sdpp = DiagTree.derivative(sdpp, BareInteractionId, 1, index=3)
+        end
+        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
+        for d in sdpp
+            d.factor *= 1 / factorial(p[2]) / factorial(p[3])
+        end
         if isempty(sdpp) == false
             if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
                 DiagTree.removeHartreeFock!(sdpp)
@@ -72,6 +80,7 @@ end
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
+include("sigma_generic.jl")
 include("sigmaKW.jl")
 include("sigmaCuba.jl")
 include("sigmaVegas.jl")

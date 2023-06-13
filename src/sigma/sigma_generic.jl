@@ -1,14 +1,14 @@
 
-function integrandKW(idx, vars, config)
+function integrand_generic(idx, vars, config)
     # function integrandKW(idx, varK, varT, config)
-    varK, varT, N, ExtKidx = vars
-    para, diag, extT, kgrid, ngrid = config.userdata
+    varK, varT, varX = vars
+    diag, extT, paras = config.userdata
     diagram = diag[idx]
     weight = diagram.node.current
-    l = N[1]
-    k = ExtKidx[1]
-    varK.data[1, 1] = kgrid[k]
-    wn = ngrid[l]
+    Xidx = varX[1]
+    para = paras[Xidx][1]
+    varK.data[1, 1] = paras[Xidx][2] # momentum
+    wn = paras[Xidx][3] # Matsubara frequency (integer)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
     w = sum(weight[r] * phase(varT, extT[idx][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
@@ -24,10 +24,12 @@ end
 #     return integrandKW(1, varK, varT, N, ExtKidx, config)
 # end
 
-function measureKW(idx, vars, obs, weight, config)
-    l = vars[3][1]  #matsubara frequency
-    k = vars[4][1]  #K
-    obs[idx][l, k] += weight
+function measure_generic(idx, vars, obs, weight, config)
+    # l = vars[3][1]  #matsubara frequency
+    # k = vars[4][1]  #K
+    varK, varT, varX = vars
+    Xidx = varX[1]
+    obs[idx][Xidx] += weight
 end
 
 #for vegas algorithm
@@ -39,9 +41,7 @@ end
 #     end
 # end
 
-function KW(para::ParaMC, diagram;
-    kgrid=[para.kF,],
-    ngrid=[0,],
+function Generic(paras::AbstractArray{Tuple{ParaMC,Float64,Int}}, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
@@ -53,9 +53,14 @@ function KW(para::ParaMC, diagram;
     # @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
     # end
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.KW"
-    para.isDynamic && UEG.MCinitialize!(para)
+    dim, β, kF = paras[1][1].dim, paras[1][1].β, paras[1][1].kF
+    for p in paras
+        p[1].isDynamic && UEG.MCinitialize!(p[1])
+        @assert p[1].dim == dim "All parameters must have the same dimension"
+        @assert p[1].β ≈ β "All parameters must have the same inverse temperature"
+        @assert p[1].kF ≈ kF "All parameters must have the same Fermi momentum"
+    end
 
-    dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, diag, root, extT = diagram
 
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
@@ -64,30 +69,29 @@ function KW(para::ParaMC, diagram;
     # T = MCIntegration.Tau(β, β / 2.0, offset=1)
     T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
     T.data[1] = 0.0
-    X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    X = MCIntegration.Discrete(1, length(paras), alpha=alpha)
 
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
-    obs = [zeros(ComplexF64, length(ngrid), length(kgrid)) for o in 1:length(dof)]
+    obs = [zeros(ComplexF64, size(paras)) for o in 1:length(dof)]
 
     # if isnothing(neighbor)
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
         config = Configuration(;
-            var=(K, T, X, ExtKidx),
+            var=(K, T, X),
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, diag, extT, kgrid, ngrid),
+            userdata=(diag, extT, paras),
             kwargs...
             # neighbor=neighbor,
             # reweight_goal=reweight_goal, kwargs...
         )
     end
 
-    result = integrate(integrandKW; config=config, measure=measureKW, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrand_generic; config=config, measure=measure_generic, print=print, neval=neval, solver=solver, kwargs...)
     # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
     # niter=niter, print=print, block=block, kwargs...)
 
