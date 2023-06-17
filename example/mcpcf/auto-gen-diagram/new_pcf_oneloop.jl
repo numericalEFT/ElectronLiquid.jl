@@ -107,15 +107,15 @@ function integrand(vars, config)
 
     result3 = 0.0
     if ishalfcross || iscross
-        Kv = SVector{3,Float64}(k, 0, 0)
+        Kv = SVector{3,Float64}(-k, 0, 0)
         Pv = SVector{3,Float64}(p * x, p * sqrt(1 - x^2), 0)
         if iscross
             kvmq = norm(Kv - Qv)
             pvmq = norm(Pv - Qv)
             V1 = 1.0 / interaction(kvmq, funcs)
             V2 = 1.0 / interaction(pvmq, funcs)
-            W1 = interaction(t2, kvmq, funcs) * V1
-            W2 = interaction(t - t1, pvmq, funcs) * V2
+            W1 = interaction(t2 - t, kvmq, funcs) * V1
+            W2 = interaction(-t1, pvmq, funcs) * V2
 
             # V1 = V1 / param.β
             # V2 = V2 / param.β
@@ -125,14 +125,14 @@ function integrand(vars, config)
             K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
             # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
             # t1--t, t2--0
-            Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
+            Gi1, Gi2 = G0(-t, K1, funcs), G0(t, K2, funcs)
             # Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
             # Gi04 = G0(t3, K4, funcs) # for R0
-            Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+            Gd1, Gd2 = G0(t1 - t, K1, funcs), G0(t2, K2, funcs)
             # Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
             # Gd04 = G0(t3 - t2, K4, funcs) # for R0
-            F00, F01 = responsef(t, p, funcs), responsef(t1, p, funcs)
-            F10, F11 = responsef(t - t2, p, funcs), responsef(t1 - t2, p, funcs)
+            F00, F01 = responsef(-t, p, funcs), responsef(t1 - t, p, funcs)
+            F10, F11 = responsef(-t2, p, funcs), responsef(t1 - t2, p, funcs)
 
             result3 += -1.0 * p^2 / (2π)^5 * PLX * (
                            V1 * V2 * Gi1 * Gi2 * F00 # Gi3 * (Gi4 * R + Gi04 * R0)
@@ -143,6 +143,40 @@ function integrand(vars, config)
                            +
                            W1 * W2 * Gd1 * Gd2 * F11 # Gd3 * (Gd4 * R + Gd04 * R0)
                        )
+            # kvmq = norm(Kv - Qv)
+            # pvmq = norm(Pv - Qv)
+            # V1 = 1.0 / interaction(kvmq, funcs)
+            # V2 = 1.0 / interaction(pvmq, funcs)
+            # W1 = interaction(t2, kvmq, funcs) * V1
+            # W2 = interaction(t - t1, pvmq, funcs) * V2
+
+            # # V1 = V1 / param.β
+            # # V2 = V2 / param.β
+            # V1 = -W1 + V1 * fake(kvmq, funcs) / param.β
+            # V2 = -W2 + V2 * fake(pvmq, funcs) / param.β
+
+            # K1, K2, K3, K4 = norm(Qv), norm(Qv - Pv - Kv), p, -p
+            # # 1,3 cares if 2 is ins; 2,4 cares if 1 is ins
+            # # t1--t, t2--0
+            # Gi1, Gi2 = G0(t, K1, funcs), G0(-t, K2, funcs)
+            # # Gi3, Gi4 = G0(t3 - t, K3, funcs), G0(t4, K4, funcs)
+            # # Gi04 = G0(t3, K4, funcs) # for R0
+            # Gd1, Gd2 = G0(t1, K1, funcs), G0(t2 - t, K2, funcs)
+            # # Gd3, Gd4 = G0(t3 - t1, K3, funcs), G0(t4 - t2, K4, funcs)
+            # # Gd04 = G0(t3 - t2, K4, funcs) # for R0
+            # F00, F01 = responsef(t, p, funcs), responsef(t1, p, funcs)
+            # F10, F11 = responsef(t - t2, p, funcs), responsef(t1 - t2, p, funcs)
+
+            # result3 += -1.0 * p^2 / (2π)^5 * PLX * (
+            #                V1 * V2 * Gi1 * Gi2 * F00 # Gi3 * (Gi4 * R + Gi04 * R0)
+            #                +
+            #                W1 * V2 * Gi1 * Gd2 * F10 # Gi3 * (Gd4 * R + Gd04 * R0)
+            #                +
+            #                V1 * W2 * Gd1 * Gi2 * F01 # Gd3 * (Gi4 * R + Gi04 * R0)
+            #                +
+            #                W1 * W2 * Gd1 * Gd2 * F11 # Gd3 * (Gd4 * R + Gd04 * R0)
+            #            )
+
         end
         if ishalfcross
             kmp = norm(Kv - Pv)

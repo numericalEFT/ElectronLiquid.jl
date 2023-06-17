@@ -14,7 +14,7 @@ using JLD2
 
 export rpa, interaction, G0, initR, response, coulomb, fake
 export calcF!, responsef
-export diagram_gen, diagram_eval
+export diagram_gen, F2F!
 
 # Ri excludes the source term
 
@@ -186,6 +186,13 @@ function calcF!(F, R0, Rt, param; norm=1.0)
     return true
 end
 
+function F2F!(F, Ft, param; norm=1.0)
+    Fdlr = to_dlr(Ft)
+    tgrid = F.mesh[1]
+    F.data .= dlr_to_imtime(Fdlr, tgrid).data .* norm
+    return true
+end
+
 function initR(param;
     mint=0.001,
     minK=0.001 * sqrt(param.T * param.me), maxK=10.0 * param.kF,
@@ -311,24 +318,30 @@ function response(t, k, rt; norm=1)
     return factor * Interp.linear2D(view(rt.data, :, :), rt.mesh[1], rt.mesh[2], t, k) / norm
 end
 
-function diagram_gen(rs, beta)
-    paramc = UEG.ParaMC(rs=rs, beta=beta)
+function diagram_gen(rs, beta; order=2)
+    paramc = UEG.ParaMC(rs=rs, beta=beta, isDynamic=true, Fs=-0.0, mass2=1e-16, order=order)
     kF = paramc.kF
-    partition = [(2, 0, 0)]
+    if order == 1
+        partition = [(1, 0, 0),]
+    elseif order == 2
+        partition = [(1, 0, 0), (2, 0, 0)]
+    else
+        error("order not implemented")
+    end
     channel = [PHr,]
     filter = [NoHartree, NoBubble]
     diagram = Ver4.diagram(paramc, partition; channel=channel, filter=filter)
     return paramc, diagram
 end
 
-function diagram_eval(diagram, K, T, paramc; idx=1, Fs=1.0, Fd=1.0)
-    partition, diagpara, diag, root, extT = diagram
-    d = diag[idx]
-    weight = d.node.current
-    ExprTree.evalKT!(d, K, T, paramc)
-    w = sum(weight[r] for (ri, r) in enumerate(d.root))
-    return w
-end
+# function diagram_eval(diagram, K, T, paramc; idx=1, Fs=1.0, Fd=1.0)
+#     partition, diagpara, diag, root, extT = diagram
+#     d = diag[idx]
+#     weight = d.node.current
+#     ExprTree.evalKT!(d, K, T, paramc)
+#     # w = sum(weight[r] for (ri, r) in enumerate(d.root))
+#     # return w
+# end
 
 end
 

@@ -4,11 +4,11 @@ using FeynmanDiagram
 const rs = 2.0
 const beta = 25
 
-const para = UEG.ParaMC(rs=rs, beta=beta)
+const para = UEG.ParaMC(rs=rs, beta=beta, isDynamic=true)
 const kF = para.kF
 
-# partition = [(1, 0, 0), (2, 0, 0),]
-partition = [(2, 0, 0),]
+partition = [(1, 0, 0), (2, 0, 0),]
+# partition = [(2, 0, 0),]
 channel = [PHr,] # multiply by 2 for PHEr
 # neighbor = UEG.neighbor(partition)
 
