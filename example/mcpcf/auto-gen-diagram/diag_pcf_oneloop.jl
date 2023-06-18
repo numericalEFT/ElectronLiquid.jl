@@ -113,7 +113,7 @@ function integrand(vars, config)
     end
 
     result2 = 0.0
-    idx = 1 # uu
+    idx = 2 # uu
     dorder = 2
     weight = diag[order].node.current
     extTu = dextT[idx][dorder]

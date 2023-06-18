@@ -320,6 +320,8 @@ end
 
 function diagram_gen(rs, beta; order=2)
     paramc = UEG.ParaMC(rs=rs, beta=beta, isDynamic=true, Fs=-0.0, mass2=0.01, order=order)
+    UEG.MCinitialize!(paramc)
+
     kF = paramc.kF
     if order == 1
         partition = [(1, 0, 0),]
