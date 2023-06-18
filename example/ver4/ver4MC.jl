@@ -18,6 +18,7 @@ println("mission (L or K): ", mission)
 
 for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
+    println(para)
     kF = para.kF
 
     # partition = UEG.partition(_order)
