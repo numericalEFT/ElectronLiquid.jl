@@ -14,7 +14,7 @@ using JLD2
 
 export rpa, interaction, G0, initR, response, coulomb, fake
 export calcF!, responsef
-export diagram_gen, F2F!
+export diagram_gen, F2F!, add_source
 
 # Ri excludes the source term
 
@@ -167,7 +167,7 @@ function GG0(wn, k, param)
     ε = k^2 / 2 / param.me - param.μ
     # ω = (2n + 1)π / β
     # return 1 / (ω^2 + ε^2)
-    return 1 / (wn^2 + ε^2)
+    return 1 ./ (wn .^ 2 .+ ε^2)
 end
 
 function calcF!(F, R0, Rt, param; norm=1.0)
@@ -191,6 +191,16 @@ function F2F!(F, Ft, param; norm=1.0)
     tgrid = F.mesh[1]
     F.data .= dlr_to_imtime(Fdlr, tgrid).data .* norm
     return true
+end
+
+function add_source(Ft, param; source=1.0)
+    Fdlr = to_dlr(Ft)
+    Fw = dlr_to_imfreq(Fdlr)
+    for ind in eachindex(Fw)
+        wn, k = Fw.mesh[1][ind[1]], Fw.mesh[2][ind[2]]
+        Fw[ind] = Fw[ind] + GG0(wn, k, param) * source
+    end
+    return Fw
 end
 
 function initR(param;
@@ -306,6 +316,14 @@ function R0(ri, rt, param)
     return ri[ikF] .+ rw[:, ikF]
 end
 
+function R0(fw, param)
+    kF = param.kF
+    kgrid = fw.mesh[2]
+    ikF = searchsortedfirst(kgrid, kF)
+    wn = fw.mesh[1]
+    return fw[:, ikF] ./ GG0(wn, kF, param)
+end
+
 function response(k, ri; norm=1)
     # return 1.0 + Interp.interp1D(view(ri.data, :), ri.mesh[1], k) / norm
     # return 1.0 + Interp.linear1D(view(ri.data, :), ri.mesh[1], k) / norm
@@ -319,7 +337,7 @@ function response(t, k, rt; norm=1)
 end
 
 function diagram_gen(rs, beta; order=2)
-    paramc = UEG.ParaMC(rs=rs, beta=beta, isDynamic=true, Fs=-0.0, mass2=0.01, order=order)
+    paramc = UEG.ParaMC(rs=rs, beta=beta, isDynamic=true, Fs=-0.0, mass2=0.0, order=order)
     UEG.MCinitialize!(paramc)
 
     kF = paramc.kF

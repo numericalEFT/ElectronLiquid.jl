@@ -6,7 +6,7 @@ using StaticArrays
 include("new_propagators.jl")
 using .Propagators
 using .Propagators: G0, interaction, response
-using .Propagators: diagram_gen, F2F!
+using .Propagators: diagram_gen, F2F!, add_source
 using .Propagators.FeynmanDiagram
 
 using ArgParse
@@ -96,38 +96,26 @@ function integrand(vars, config)
     ExprTree.evalKT!(diag[1], K, T, paramc)
     ExprTree.evalKT!(diag[2], K, T, paramc)
 
-    result1 = 0.0
-    idx = 1 # uu
-    dorder = 1
-    weight = diag[order].node.current
-    extTu = dextT[idx][dorder]
-    for (ri, r) in enumerate(droot[idx][dorder])
-        w = weight[r]
-        extT = extTu[ri]
-        tInL, tOutL, tInR, tOutR = T[extT[1]], T[extT[2]], T[extT[3]], T[extT[4]]
-        F = responsef(tInR - tInL, p, funcs)
-        G1 = G0(tOutL - 0, k, funcs)
-        G2 = G0(tOutR - t, -k, funcs)
-        factor = -1.0 * p^2 / (2π)^2
-        result1 += factor * G1 * G2 * w * F
-    end
+    result = [0.0, 0.0]
 
-    result2 = 0.0
-    idx = 2 # uu
-    dorder = 2
-    weight = diag[order].node.current
-    extTu = dextT[idx][dorder]
-    for (ri, r) in enumerate(droot[idx][dorder])
-        w = weight[r]
-        extT = extTu[ri]
-        tInL, tOutL, tInR, tOutR = T[extT[1]], T[extT[2]], T[extT[3]], T[extT[4]]
-        F = responsef(tInR - tInL, p, funcs)
-        G1 = G0(tOutL - 0, k, funcs)
-        G2 = G0(tOutR - t, -k, funcs)
-        factor = -1.0 * p^2 / (2π)^5
-        result1 += factor * G1 * G2 * w * F
+    for dorder in 1:1
+        weight = diag[dorder].node.current
+        for idx in 1:2
+            extTu = dextT[idx][dorder]
+            for (ri, r) in enumerate(droot[idx][dorder])
+                w = weight[r]
+                extT = extTu[ri]
+                tInL, tOutL, tInR, tOutR = T[extT[1]], T[extT[2]], T[extT[3]], T[extT[4]]
+                F = responsef(tInR - tInL, p, funcs)
+                G1 = G0(tOutL - 0, k, funcs)
+                G2 = G0(tOutR - t, -k, funcs)
+                factor = -1.0 * p^2 / (2π)^2
+                result[dorder] += factor * G1 * G2 * w * F
+            end
+        end
     end
-    return 1.0, result1, result2
+    result ./= 2.0
+    return 1.0, result[1], result[2]
 end
 
 function measure(vars, obs, weight, config)
@@ -149,9 +137,9 @@ function run(steps, param, alg=:vegas; order=order)
     order = 6
     rpai, rpat = Propagators.rpa(param; mint=mint, minK=minK, maxK=maxK, order=order)
 
-    mint = 0.001 * param.β
+    mint = 0.05 * param.β
     minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
-    order = 4
+    order = 3
     Ri, Rt, Ft = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     # println(size(Ri))
@@ -161,6 +149,10 @@ function run(steps, param, alg=:vegas; order=order)
     F2F!(Rt, Ft, param) # Rt actually stores Ft histogram
     # userdata
     funcs = Propagators.Funcs(param, rpai, rpat, Ri, Rt, Ft)
+
+    Fw = Propagators.add_source(Rt, param; source=0.0)
+    R0 = real(Propagators.R0(Fw, param))
+    println("R0=$(R0)")
 
     println("Prepare variables")
     extT, extK = Rt.mesh[1], Rt.mesh[2]
@@ -175,8 +167,8 @@ function run(steps, param, alg=:vegas; order=order)
 
     # ExtT, ExtK, X, T, P, Q
     dof = [
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 1, 2, 1, 0],
+        [1, 1, 0, 0, 0, 0],
+        [1, 1, 1, 2, 1, 0],
         [1, 1, 1, 4, 1, 3]
     ]
     obs = [zeros(ComplexF64, size(Rt)), zeros(ComplexF64, size(Rt)), zeros(ComplexF64, size(Rt))]
@@ -187,6 +179,7 @@ function run(steps, param, alg=:vegas; order=order)
         neval=steps, print=-1, block=8, type=ComplexF64)
     # println(result.mean)
     # funcs.Ris.data .= result.mean[1][1, :] .+ result.mean[2][1, :]
+    funcs.Ris.data .= 0.0
     funcs.Rt.data .= result.mean[2] .+ result.mean[3]
 
     return result, funcs
@@ -195,12 +188,9 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     result, funcs = run(steps, param, :vegasmc)
     Ri, Rt = funcs.Ris, funcs.Rt
-    # println(sum(abs.(result.mean[4]) / sum(abs.(result.mean[3]))))
-    # println(Ri.mesh[1])
-    println(real(Ri.data))
     println(real(Rt.data[1, :]))
-    # println(result[1][1])
-    R0 = real(Propagators.R0(Ri, Rt, param))
+    Fw = Propagators.add_source(Rt, param)
+    R0 = real(Propagators.R0(Fw, param))
     println("R0=$(R0)")
     # Propagators.save_pcf(savefname, param, funcs.Ris, funcs.Rt; R0=R0, result=result)
 end
