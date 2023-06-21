@@ -100,8 +100,9 @@ function integrand(vars, config)
 
     for dorder in 1:1
         weight = diag[dorder].node.current
-        for idx in 1:2
+        for idx in 1:1
             extTu = dextT[idx][dorder]
+            factor = -1.0 * p^2 / (2π)^2
             for (ri, r) in enumerate(droot[idx][dorder])
                 w = weight[r]
                 extT = extTu[ri]
@@ -109,12 +110,11 @@ function integrand(vars, config)
                 F = responsef(tInR - tInL, p, funcs)
                 G1 = G0(tOutL - 0, k, funcs)
                 G2 = G0(tOutR - t, -k, funcs)
-                factor = -1.0 * p^2 / (2π)^2
                 result[dorder] += factor * G1 * G2 * w * F
             end
         end
     end
-    result ./= 2.0
+    # result ./= 2.0
     return 1.0, result[1], result[2]
 end
 
@@ -137,9 +137,9 @@ function run(steps, param, alg=:vegas; order=order)
     order = 6
     rpai, rpat = Propagators.rpa(param; mint=mint, minK=minK, maxK=maxK, order=order)
 
-    mint = 0.05 * param.β
-    minK, maxK = 0.1 * sqrt(param.T * param.me), 10param.kF
-    order = 3
+    mint = 0.001 * param.β
+    minK, maxK = 0.01 * sqrt(param.T * param.me), 10param.kF
+    order = 4
     Ri, Rt, Ft = Propagators.loadR(fname, param; mint=mint, minK=minK, maxK=maxK, order=order)
     # Ri, Rt = Propagators.initR(param; mint=mint, minK=minK, maxK=maxK, order=order)
     # println(size(Ri))

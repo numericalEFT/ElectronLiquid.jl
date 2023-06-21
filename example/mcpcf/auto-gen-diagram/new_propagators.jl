@@ -18,9 +18,9 @@ export diagram_gen, F2F!, add_source
 
 # Ri excludes the source term
 
-const rtol = 1e-10 # rtol of DLR 
+const rtol = 1e-6 # rtol of DLR 
 const nlog_factor = 3.0 # factor controlling how many point per order of magnitude
-const βEUV = 1e6 # β*Euv for Rt
+const βEUV = 1e4 # β*Euv for Rt
 
 # wrapper of functions and parameters
 struct Funcs{P,II,IT,RI,RT,FT}
@@ -321,7 +321,7 @@ function R0(fw, param)
     kgrid = fw.mesh[2]
     ikF = searchsortedfirst(kgrid, kF)
     wn = fw.mesh[1]
-    return fw[:, ikF] ./ GG0(wn, kF, param)
+    return fw[:, ikF] ./ GG0(wn, kgrid[ikF], param)
 end
 
 function response(k, ri; norm=1)
