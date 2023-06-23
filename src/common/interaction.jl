@@ -417,28 +417,28 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
     end
 end
 
-function counterR_df(p::ParaMC, qd, τIn, τOut, order)
-    kF, maxK = p.kF, p.maxK
+# function counterR_df(p::ParaMC, qd, τIn, τOut, order)
+#     kF, maxK = p.kF, p.maxK
 
-    if qd > maxK
-        return 0.0
-    end
+#     if qd > maxK
+#         return 0.0
+#     end
 
-    dτ = abs(τOut - τIn)
+#     dτ = abs(τOut - τIn)
 
-    # if qd <= qgrid.grid[1]
-    # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-6 * kF
-    end
+#     # if qd <= qgrid.grid[1]
+#     # the current interpolation vanishes at q=0, which needs to be corrected!
+#     if qd <= 1e-6 * kF
+#         # q = qgrid.grid[1] + 1.0e-6
+#         qd = 1e-6 * kF
+#     end
 
-    if order <= p.order
-        return linear2D(p.cRs_f[order], p.qgrid, p.τgrid, qd, dτ)
-    else
-        error("not implemented!")
-    end
-end
+#     if order <= p.order
+#         return linear2D(p.cRs_f[order], p.qgrid, p.τgrid, qd, dτ)
+#     else
+#         error("not implemented!")
+#     end
+# end
 
 
 """
@@ -556,21 +556,21 @@ d δR_q/df = (r_q)²Π₀/(1-r_q Π₀)
 
 where Π₀ is the polarization of free electrons.
 """
-@inline function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
-    # @unpack qgrid, τgrid = p.qgrid, p.τgrid
-    kF, maxK = p.kF, p.maxK
+# @inline function interactionDynamic_df(p::ParaMC, qd, τIn, τOut)
+#     # @unpack qgrid, τgrid = p.qgrid, p.τgrid
+#     kF, maxK = p.kF, p.maxK
 
-    if qd > maxK
-        return 0.0
-    end
+#     if qd > maxK
+#         return 0.0
+#     end
 
-    dτ = abs(τOut - τIn)
+#     dτ = abs(τOut - τIn)
 
-    # if qd <= qgrid.grid[1]
-    # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
-    end
+#     # if qd <= qgrid.grid[1]
+#     # the current interpolation vanishes at q=0, which needs to be corrected!
+#     if qd <= 1e-6 * kF
+#         qd = 1e-6 * kF
+#     end
 
-    return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
-end
+#     return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
+# end

@@ -117,7 +117,8 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
                 if id.order[3] == 0
                     return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
                 else # return dR/df for the RG purpose. The static part is zero
-                    return 0.0
+                    # return 0.0
+                    error("not implemented!")
                 end
             else
                 error("not implemented!")
@@ -126,7 +127,8 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
             if id.order[3] == 0
                 return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
             else # return dR/df for the RG purpose. 
-                return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                # return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
+                error("not implemented!")
             end
         else
             error("not implemented!")
@@ -155,7 +157,8 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
             if id.order[3] == 0
                 return counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
             else
-                return counterR_df(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+                # return counterR_df(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
+                error("not implemented!")
             end
         else
             error("not implemented!")
