@@ -16,9 +16,10 @@ export ParaMC, Weight, getK
 ############################################################################
 
 # Specify the type of qgrid and τgrid explicitly, otherwise, there will be a type stability issue with interactionDynamic and interactionStatic
-const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64,CompositeGrids.SimpleG.ClosedBound},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64,CompositeGrids.SimpleG.ClosedBound}}}
+# const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64,CompositeGrids.SimpleG.ClosedBound},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64,CompositeGrids.SimpleG.ClosedBound}}}
 
-# CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64}}}
+# NOTE: Reverting to CompositeGrids v0.1.1 type for compatibility with SOSEM JLD2 archives
+const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64}}}
 
 @with_kw struct ParaMC
     ### fundamental parameters
