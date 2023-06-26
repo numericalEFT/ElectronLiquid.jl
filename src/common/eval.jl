@@ -98,6 +98,10 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
         # return -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
         return -Spectral.kernelFermiT_dω3(τ, ϵ, β)
         # return 0.0
+    elseif order == 4
+        return Spectral.kernelFermiT_dω4(τ, ϵ, β)
+    elseif order == 5
+        return -Spectral.kernelFermiT_dω5(τ, ϵ, β)
     else
         error("not implemented!")
     end
@@ -137,13 +141,13 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
             if interactionTauNum(id.para) == 1
                 if dim == 3
                     invK = 1.0 / (qd^2 + mass2)
-                    return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                    return factorial(order) * e0^2 / ϵ0 * invK * (mass2 * invK)^order
                 elseif dim == 2
                     invK = 1.0 / (qd + mass2)
-                    return e0^2 / 2ϵ0 * invK * (mass2 * invK)^order
+                    return factorial(order) * e0^2 / 2ϵ0 * invK * (mass2 * invK)^order
                     # elseif dim == 2
                     #     invK = 1.0 / sqrt(qd^2 + mass2)
-                    #     return e0^2 / ϵ0 * invK * (mass2 * invK)^order
+                    #     return factorial(order) * e0^2 / ϵ0 * invK * (mass2 * invK)^order
                 else
                     error("not implemented!")
                 end
