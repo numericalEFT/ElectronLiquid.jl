@@ -129,7 +129,7 @@ function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
         elseif id.type == Dynamic
             if id.order[3] == 0
                 return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
-            else # return dR/df for the RG purpose. 
+            else # return dR/df for the RG purpose.
                 return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
             end
         else
