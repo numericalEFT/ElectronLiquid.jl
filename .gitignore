@@ -16,9 +16,12 @@ host.txt
 *.jld2
 .history
 *.pdf
+*.png
+*.jpg
 __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
 .vscode
+.history
 LocalPreferences.toml
