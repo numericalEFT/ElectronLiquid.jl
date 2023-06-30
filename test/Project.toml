@@ -1,0 +1,5 @@
+[deps]
+FeynmanDiagram = "e424a512-dbd9-41ff-9883-094748823e72"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
+Lehmann = "95bf888a-8996-4655-9f35-1c0506bdfefe"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
