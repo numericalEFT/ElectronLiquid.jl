@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "4ae13a563f04e610277ecde13889e7103d4eef93"
+project_hash = "1f395fafc2f23a9b47af74a08af5eac053b5537f"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
@@ -447,6 +447,18 @@ version = "1.10.1"
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 version = "1.10.0"
+
+[[deps.TaylorSeries]]
+deps = ["LinearAlgebra", "Markdown", "Requires", "SparseArrays"]
+git-tree-sha1 = "50718b4fc1ce20cecf28d85215028c78b4d875c2"
+uuid = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
+version = "0.15.2"
+
+    [deps.TaylorSeries.extensions]
+    TaylorSeriesIAExt = "IntervalArithmetic"
+
+    [deps.TaylorSeries.weakdeps]
+    IntervalArithmetic = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
 
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
