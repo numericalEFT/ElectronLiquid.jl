@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "1f395fafc2f23a9b47af74a08af5eac053b5537f"
+project_hash = "1ff420a031c87b9a11bc35afae585629e5844a1e"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
@@ -44,6 +44,12 @@ weakdeps = ["Dates", "LinearAlgebra"]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "1.0.2+0"
+
+[[deps.CompositeGrids]]
+deps = ["DelimitedFiles", "FastGaussQuadrature", "LinearAlgebra", "Printf", "Quadmath", "Random", "StaticArrays", "Statistics"]
+git-tree-sha1 = "9d6e2432a77e7b0ae81fceba2381ae8e1b1896d6"
+uuid = "b5136c89-beeb-4521-9139-60d2cac8be56"
+version = "0.1.2"
 
 [[deps.Conda]]
 deps = ["Downloads", "JSON", "VersionParsing"]

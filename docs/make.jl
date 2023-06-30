@@ -15,6 +15,10 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "SubModules" => [
+            "Parameter" => "lib/UEG.md",
+            "CounterTerm" => "lib/CounterTerm.md",
+        ]
     ]
 )
 
