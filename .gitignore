@@ -22,6 +22,7 @@ __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
+docs/build
 .vscode
 .history
 LocalPreferences.toml
