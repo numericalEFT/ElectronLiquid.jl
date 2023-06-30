@@ -22,6 +22,8 @@ __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
+Manifest.toml
+
 docs/build
 .vscode
 .history
