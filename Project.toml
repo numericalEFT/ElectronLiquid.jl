@@ -21,7 +21,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
 
 [compat]
-CompositeGrids = "0.0, 0.1"
+CompositeGrids = "< 0.1.2"
 Cuba = "2"
 DataFrames = "1"
 DelimitedFiles = "1"
