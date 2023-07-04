@@ -54,13 +54,13 @@ end
 """
     function renormalization(order, data, δμ, δz=nothing; nbody=1, zrenorm=true)
     
-    First perform the chemical potential renormalization, then perform the z-factor renormalization
+First perform the chemical potential renormalization, then perform the z-factor renormalization
 
 # Arguments
-order : total order
-data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
-δμ    : chemical potential counterterm
-δz    : z-factor counterterm
+- `order` : total order
+- `data`  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+- `δμ`    : chemical potential counterterm
+- `δz`    : z-factor counterterm
 
 zrenorm : turn on or off the z-factor renormalization
 nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
@@ -77,18 +77,18 @@ end
 """
     function chemicalpotential_renormalization(order, data, δμ)
     
-    merge different diagrammatic orders with proper chemical potential renormalization
+merge different diagrammatic orders with proper chemical potential renormalization
 
-    By definition, the chemical potential renormalization is defined as
-    Σ1 = Σ11
-    Σ2 = Σ20+Σ11*δμ1
-    Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-    Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
+By definition, the chemical potential renormalization is defined as
+Σ1 = Σ11
+Σ2 = Σ20+Σ11*δμ1
+Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
+Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
 
 # Arguments
-order : total order
-data  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
-δμ    : chemical potential renormalization for each order
+- `order` : total order
+- `data`  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
+- `δμ`    : chemical potential renormalization for each order
 """
 function chemicalpotential_renormalization(order, data, δμ)
     # _partition = sort([k for k in keys(rdata)])
@@ -140,21 +140,21 @@ end
 """
     function z_renormalization(order, data, δz, nbody::Int)
 
-    By defintion, z=1+δz1+δz2+...
+By defintion, z=1+δz1+δz2+...
 
-    Then the z-factor renormalization resuffles the power series in the following way:
-    1. For the one-body vertex function
-        DR = z*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...) = D1 + (D2+D1*δz1) + (D3+D2*δz1+D1*δz2) + (D4+D3*δz1+D2*δz2+D1*δz3) + ...
-    2. For the two-body vertex function
-        DR = z^2*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...)^2 = D1 + (D2+2*D1*δz1) + (D3+2*D2*δz1+D1*(δz1^2+2*δz2) + (D4+2*D3*δz1+D2*(δz1^2+δz2)+2*D1*(δz1*δz2+δz3)) + ...
-    
-    Note that the z-factor renormalization doesn't alter the W-order and the G-order, therefore, D_{m,n,k} renormalizes just as D_{m}.
+Then the z-factor renormalization resuffles the power series in the following way:
+1. For the one-body vertex function
+    DR = z*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...) = D1 + (D2+D1*δz1) + (D3+D2*δz1+D1*δz2) + (D4+D3*δz1+D2*δz2+D1*δz3) + ...
+2. For the two-body vertex function
+    DR = z^2*D ==> (D1+D2+D3+D4+...)*(1+δz1+δz2+δz3+...)^2 = D1 + (D2+2*D1*δz1) + (D3+2*D2*δz1+D1*(δz1^2+2*δz2) + (D4+2*D3*δz1+D2*(δz1^2+δz2)+2*D1*(δz1*δz2+δz3)) + ...
+
+Note that the z-factor renormalization doesn't alter the W-order and the G-order, therefore, D_{m,n,k} renormalizes just as D_{m}.
 
 # Arguments
-order : total order
-data  : Vector of data, or Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order} or three integer Tuple{Normal_Order, G_Order, W_Order}
-δz    : z-factor renormalization for each order
-nbody : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
+- `order` : total order
+- `data`  : Vector of data, or Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order} or three integer Tuple{Normal_Order, G_Order, W_Order}
+- `δz`    : z-factor renormalization for each order
+- `nbody` : nbody=1 for the one-body vertex function (self-energy, or Γ3) and nbody=2 for the two-body vertex function
 """
 function z_renormalization(order, data, δz, nbody::Int)
     # @assert order <= 2 "Order $order hasn't been implemented!"
@@ -200,18 +200,18 @@ end
 """
     function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false)
 
-    Derive the chemicalpotential and z-factor counterterm for each order from the self-energy.
+Derive the chemicalpotential and z-factor counterterm for each order from the self-energy.
 
 # Arguments
-order : total order
-μ     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
-sw    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+- `order` : total order
+- `μ`     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+- `sw`    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 
 # Return (δzi, δμ, δz)
 The convention is the following:
-δzi : 1/z = 1+δzi_1+δzi_2+... 
-δμ  : chemical_potential_shift_without_z_renormalization = δμ_1+δμ_2+...
-δz  : z = 1+δz_1+δz_2+...
+- `δzi` : 1/z = 1+δzi_1+δzi_2+... 
+- `δμ`  : chemical_potential_shift_without_z_renormalization = δμ_1+δμ_2+...
+- `δz`  : z = 1+δz_1+δz_2+...
 
 # Remark:
 The chemical potential shift is the chemical potential shift without z-renormalization.
@@ -351,12 +351,12 @@ end
 """
     function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
 
-    read self-energy parameters from the file
+read self-energy parameters from the file
 
 # Arguments
-df     : DataFrame
-paraid : Dictionary of parameter names and values
-order  : the truncation order
+- `df`     : DataFrame
+- `paraid` : Dictionary of parameter names and values
+- `order`  : the truncation order
 """
 function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
     # println(parafile)

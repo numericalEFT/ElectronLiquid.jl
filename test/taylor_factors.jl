@@ -148,7 +148,6 @@ function integrand(vars, config)
     return integrand
 end
 
-
 @testset "Taylor factors" begin
     # Test Taylor factors using total density benchmark
     para = ParaMC(;
