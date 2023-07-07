@@ -18,23 +18,25 @@ rs = [0.5]
 # mass2 = [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4]
 # mass2 = [0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.0, 3.2, 3.5, 3.6, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 # mass2 = [4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
-mass2 = [4.0]
+mass2 = [4.0, 6.0]
 Fs = [-0.0,]
 beta = [50.0,]
 order = [4,]
 # order = [3,]
-# i_δk = [1, 2, 3, 4]
+# idx_δk = [1, 2, 3, 4]
 idx_δk = [1, 2, 3]
-# i_δk = [1, 2, 3, 4, 5, 6]
-δks = [0.015, 0.03, 0.05, 0.1]
-# δks = [0.03, 0.05, 0.1]
+# δks = [0.015, 0.03, 0.05, 0.1]
+# δks = [0.01, 0.03, 0.05, 0.1]
+δks = [0.03, 0.05, 0.1]
 
 const Zrenorm = true     # turn on/off Z renormalization 
-const filenameZ = "data_Z.jld2"
+# const filenameZ = "data_Z.jld2"
+const filenameZ = "data_Z_0629.jld2"
 # const filenameZ = "data_Z_all3.jld2"
 # const filenameZ = "data_Z_large.jld2"
 # const filenameZ = "data_Z_scan.jld2"
-const filenameK = "data_K.jld2"
+# const filenameK = "data_K.jld2"
+const filenameK = "data_K_0629.jld2"
 # const filenameK = "data_K_all3.jld2"
 # const filenameK = "data_K_large.jld2"
 # const filenameK = "data_K_scan.jld2"
@@ -413,7 +415,7 @@ function plot_optimal(meff; mass2=mass2, idx_dk=length(idx_δk))
     savefig("meffvslam_rs$(rs[1])_$(dim)d_CCQ_scan.pdf")
 end
 
-function plot_convergence(meff, dks; idx_mass2=1)
+function plot_convergence(meff, dks, idx_mass2=1, mass2=mass2)
     style = PyPlot.matplotlib."style"
     style.use(["science", "std-colors"])
     color = [cdict["blue"], cdict["red"], cdict["teal"], "black"]
@@ -432,10 +434,11 @@ function plot_convergence(meff, dks; idx_mass2=1)
     r_s, lam = rs[1], mass2[idx_mass2]
     xlabel("Order")
     ylabel("\$m^*/m\$")
+    ylim(0.92, 0.99)
     legend(title="dk/kF")
     title("rs=$(r_s), mass2=$lam")
     # savefig("meffvslam_rs$(rs[1])_$(dim)d_comput100_v1.pdf")
-    savefig("meffvsOrder_rs$(r_s)_lam$(lam)_$(dim)d_CCQ.pdf")
+    savefig("meffvsOrder_rs$(r_s)_lam$(lam)_$(dim)d_comput100.pdf")
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -465,7 +468,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # effmass = hcat(effmass...)
     effmass = cat(effmass..., dims=3)
     # plot_optimal(effmass, mass2=mass2_existed)
-    # plot_convergence(effmass, δks)
+    for i in eachindex(mass2_existed)
+        plot_convergence(effmass, δks, i, mass2_existed)
+    end
 
     # para = UEG.ParaMC(rs=0.5, beta=50.0, Fs=-0.0, order=4, mass2=1.2, isDynamic=isDynamic, dim=dim)
 end
