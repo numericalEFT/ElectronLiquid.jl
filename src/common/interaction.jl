@@ -9,7 +9,7 @@ export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStati
 """
     function lindhard(x)
 
-    Dimensionless Linhard function so that lindhard(0) = 1 for both 2D and 3D
+Dimensionless Linhard function so that lindhard(0) = 1 for both 2D and 3D
 
 # Arguments
 
@@ -247,7 +247,7 @@ end
 """
     function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.order, proper=false)
     
-    calculate counter-terms of the KO interaction
+calculate counter-terms of the KO interaction
 
 Assume
 ```math
