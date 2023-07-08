@@ -78,12 +78,12 @@ function u_from_f(para::ParaMC, kamp=para.kF, kamp2=kamp; verbose=0, N=32)
         # the only possible solution is x = sqrt((1-3c^2*(1+Fs))/(-2c^2*Fs)) 
         if 3 * c^2 * (1 + para.Fs) < 1.0
             x = sqrt(abs(Δ / 2 / para.Fs / c^2))
-            println("solution: ", x)
+            #println("solution: ", x)
             if x * para.kF / kamp > 1.0
                 x = 1.0
             end
             theta = asin(x) * 2.0
-            println(x, "--> ", theta)
+            #println(x, "--> ", theta)
             θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, theta, π], 16, 0.001, N)
         else
             θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, N)
