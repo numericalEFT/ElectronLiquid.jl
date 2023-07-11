@@ -1,4 +1,5 @@
 module UEG
+using DataStructures
 using StaticArrays
 using ..Parameters
 using ..ElectronGas: Parameter
@@ -21,7 +22,7 @@ export ParaMC, Weight, getK
 # NOTE: Reverting to CompositeGrids v0.1.1 type for compatibility with SOSEM JLD2 archives
 const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Arbitrary{Float64},CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.SimpleG.Log{Float64},CompositeGrids.SimpleG.Uniform{Float64}}}
 
-@with_kw struct ParaMC
+@with_kw mutable struct ParaMC
     ### fundamental parameters
     beta::Float64
     rs::Float64
@@ -65,6 +66,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
     # ######### only need to be initialized for MC simulation ###########################
+    initialized::Bool = false
     dW0::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
     # dW0_f::Matrix{Float64} = Matrix{Float64}(undef, length(qgrid), length(τgrid))
     cRs::Vector{Matrix{Float64}} = []
@@ -87,12 +89,14 @@ function MCinitialize!(para::ParaMC)
         push!(para.cRs, counterKO_T(para; order=o))
         # push!(para.cRs_f, counterKO_T_df(para; order=o))
     end
+    para.initialized = true
 end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 const DI, EX = 1, 2
 
 paraid(p::ParaMC) = Dict(
+    "order" => p.order,
     "dim" => p.dim,
     "rs" => p.rs,
     "beta" => p.beta,
@@ -105,7 +109,66 @@ paraid(p::ParaMC) = Dict(
     "isDynamic" => p.isDynamic,
 )
 
-short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort(paraid(p))], "_")
+short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+"""Mapping from ParaMC fields saved in short format to their corresponding types"""
+const short_paratypes = Dict(
+    "order" => Int,
+    "dim" => Int,
+    "rs" => Float64,
+    "beta" => Float64,
+    "mass2" => Float64,
+    "Fs" => Float64,
+    "Fa" => Float64,
+    "massratio" => Float64,
+    "spin" => Int,
+    "isFock" => Bool,
+    "isDynamic" => Bool,
+)
+
+"""Constructs a ParaMC from a short string representation."""
+function ParaMC(short::String)
+    # Split short string into key-value pairs
+    short_split = split(short, "_")
+    @assert iseven(length(short_split))
+    keys = short_split[1:2:end]
+    valstrings = short_split[2:2:end]
+    # Parse values by type
+    vals = []
+    for (key, valstring) in zip(keys, valstrings)
+        @assert haskey(short_paratypes, key)
+        val = parse(short_paratypes[key], valstring)
+        push!(vals, val)
+    end
+    # Construct kwargs (:dim => 3, :rs => 1.0, etc.)
+    kwargs = Dict(zip(Symbol.(keys), vals))
+    # Construct ParaMC object
+    return ParaMC(; kwargs...)
+end
+
+function Base.isequal(p1::ParaMC, p2::ParaMC)
+    # If either p1 or p2 is initialized, then include initializable
+    # fields for purposes of object equality. Otherwise, exclude them.
+    if p1.initialized || p2.initialized
+        uninitialized_fields = []
+    else
+        uninitialized_fields = [:dW0, :cRs]
+        # uninitialized_fields = [:dW0, dW0_f, :cRs, :cRs_f]
+    end
+    # p1 and p2 are equal if all fields are equal modulo uninitialized fields
+    for field in setdiff(fieldnames(ParaMC), uninitialized_fields)
+        if getproperty(p1, field) != getproperty(p1, field)
+            return false
+        end
+        # if field == :qgrid
+        #     (getproperty(a, :qgrid) ≈ getproperty(b, :qgrid)) == false && return false
+        # else
+        #     getproperty(a, field) != getproperty(b, field) && return false
+        # end
+    end
+    return true
+end
+Base.:(==)(p1::ParaMC, p2::ParaMC) = Base.isequal(p1, p2)
 
 """
 Hard-coded counterterm partitions for diagrams of max order `order` and minimal

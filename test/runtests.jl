@@ -5,6 +5,7 @@ using FiniteDifferences
 using Lehmann
 
 if isempty(ARGS)
+    include("para.jl")
     include("interaction.jl")
     include("renormalization.jl")
     include("counterterm.jl")
