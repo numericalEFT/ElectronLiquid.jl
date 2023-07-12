@@ -78,7 +78,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
         para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
         kF = para.kF
         for key in keys(f)
-            if UEG.paraid(f[key][1]) == UEG.paraid(para)
+            loadpara = UEG.ParaMC(key)
+            if UEG.paraid(loadpara) == UEG.paraid(para)
                 process(f[key], isSave)
             end
         end

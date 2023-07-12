@@ -13,7 +13,8 @@ function process(FileName, isSave)
     for key in keys(f)
         println(key)
         value = f[key]
-        para, ngrid, kgrid, data = value[1], value[2], value[3], value[4]
+        para = UEG.ParaMC(key)
+        ngrid, kgrid, data = value[1], value[2], value[3]
         dim, β, kF, me = para.dim, para.β, para.kF, para.me
         kF_label = searchsortedfirst(kgrid, kF)
         println(kF_label)

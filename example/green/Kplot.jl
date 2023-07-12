@@ -14,7 +14,7 @@ function loaddata(para, FileName=filename)
     f = jldopen(FileName, "r")
     # println(key)
     # println(keys(f))
-    p, tgrid, kgrid, g = f[key]
+    tgrid, kgrid, g = f[key]
     return tgrid, kgrid, g
 end
 
