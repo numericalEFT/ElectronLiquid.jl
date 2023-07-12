@@ -126,7 +126,7 @@ const short_paratypes = Dict(
     "isDynamic" => Bool,
 )
 
-"""Constructs a ParaMC from a short string representation."""
+"""Constructs a ParaMC object from its short string representation."""
 function ParaMC(short::String)
     # Split short string into key-value pairs
     short_split = split(short, "_")
@@ -147,24 +147,17 @@ function ParaMC(short::String)
 end
 
 function Base.isequal(p1::ParaMC, p2::ParaMC)
-    # If either p1 or p2 is initialized, then include initializable
-    # fields for purposes of object equality. Otherwise, exclude them.
+    # The `additional` field is ignored for purposes of equality.
+    # If either p1 or p2 is initialized, test initializable fields for equality; otherwise, ignore them.
     if p1.initialized || p2.initialized
-        uninitialized_fields = []
+        ignored_fields = [:additional]
     else
-        uninitialized_fields = [:dW0, :cRs]
-        # uninitialized_fields = [:dW0, dW0_f, :cRs, :cRs_f]
+        ignored_fields = [:additional, :dW0, :cRs]
+        # ignored_fields = [:additional, :dW0, :dW0_f, :cRs, :cRs_f]
     end
-    # p1 and p2 are equal if all fields are equal modulo uninitialized fields
-    for field in setdiff(fieldnames(ParaMC), uninitialized_fields)
-        if getproperty(p1, field) != getproperty(p1, field)
-            return false
-        end
-        # if field == :qgrid
-        #     (getproperty(a, :qgrid) ≈ getproperty(b, :qgrid)) == false && return false
-        # else
-        #     getproperty(a, field) != getproperty(b, field) && return false
-        # end
+    # p1 and p2 are equal if all fields are equal modulo ignored/uninitialized fields
+    for field in setdiff(fieldnames(ParaMC), ignored_fields)
+        getproperty(p1, field) != getproperty(p2, field) && return false
     end
     return true
 end
