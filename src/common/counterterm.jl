@@ -18,12 +18,31 @@ export getSigma
 # const parafileName = joinpath(@__DIR__, "para.csv") # ROOT/common/para.csv
 const parafileName = "para.csv" # ROOT/common/para.csv
 
+"""
+Hard-coded counterterm partitions for the self-energy in the form (n_loop, n_μ, n_λ).
+"""
 function partition(order::Int)
     # normal order, G order, W order
-    par = [(1, 0, 0),  # order 1
-        (2, 0, 0), (1, 1, 0), (1, 0, 1),  #order 2
-        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), #order 3
-        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0), (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2) #order 4
+    # NOTE: partitions of the form (0, nμ, nλ) vanish for Σ diagrams,
+    #       since there is no interaction line at zeroth loop order
+    par = [
+        # order 1
+        (1, 0, 0),
+        # order 2
+        (2, 0, 0), (1, 1, 0), (1, 0, 1),
+        # order 3
+        (3, 0, 0), (2, 1, 0), (2, 0, 1),
+        (1, 1, 1), (1, 2, 0), (1, 0, 2),
+        # order 4
+        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0),
+        (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2),
+        #order 5
+        (5, 0, 0), (4, 1, 0), (4, 0, 1), (3, 2, 0), (3, 1, 1), (3, 0, 2), (2, 3, 0), (2, 2, 1),
+        (2, 1, 2), (2, 0, 3), (1, 4, 0), (1, 3, 1), (1, 2, 2), (1, 1, 3), (1, 0, 4),
+        #order 6
+        (6, 0, 0), (5, 1, 0), (5, 0, 1), (4, 2, 0), (4, 1, 1), (4, 0, 2), (3, 3, 0), (3, 2, 1),
+        (3, 1, 2), (3, 0, 3), (2, 4, 0), (2, 3, 1), (2, 2, 2), (2, 1, 3), (2, 0, 4), (1, 5, 0),
+        (1, 4, 1), (1, 3, 2), (1, 2, 3), (1, 1, 4), (1, 0, 5),
     ]
     return sort([p for p in par if p[1] + p[2] + p[3] <= order])
 end

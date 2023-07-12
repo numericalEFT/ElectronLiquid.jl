@@ -161,13 +161,30 @@ function Base.isequal(p1::ParaMC, p2::ParaMC)
 end
 Base.:(==)(p1::ParaMC, p2::ParaMC) = Base.isequal(p1, p2)
 
+"""
+Hard-coded counterterm partitions for diagrams of max order `order` and minimal
+loop order `offset`, given in the form (n_loop, n_μ, n_λ). The default offset
+corresponds to partitions of the self-energy, where the minimal loop order is 1.
+"""
 function partition(order::Int; offset::Int=1)
     # normal order, G order, W order
     par = [
-        (0, 0, 0),  # order 0
-        (1, 0, 0), (0, 1, 0), (0, 0, 1),  # order 1
-        (2, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 1), (0, 2, 0), (0, 0, 2),  # order 2
-        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0), (1, 0, 2), (0, 3, 0), (0, 0, 3), (0, 2, 1), (0, 1, 2)  # order 3
+        # order 0
+        (0, 0, 0),
+        # order 1
+        (1, 0, 0), (0, 1, 0), (0, 0, 1),
+        # order 2
+        (2, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 1), (0, 2, 0), (0, 0, 2),
+        # order 3
+        (3, 0, 0), (2, 1, 0), (2, 0, 1), (1, 1, 1), (1, 2, 0),
+        (1, 0, 2), (0, 3, 0), (0, 0, 3), (0, 2, 1), (0, 1, 2),
+        #order 4
+        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 2, 0), (2, 1, 1), (2, 0, 2), (1, 3, 0), (1, 2, 1),
+        (1, 1, 2), (1, 0, 3), (0, 4, 0), (0, 3, 1), (0, 2, 2), (0, 1, 3), (0, 0, 4),
+        #order 5
+        (5, 0, 0), (4, 1, 0), (4, 0, 1), (3, 2, 0), (3, 1, 1), (3, 0, 2), (2, 3, 0), (2, 2, 1),
+        (2, 1, 2), (2, 0, 3), (1, 4, 0), (1, 3, 1), (1, 2, 2), (1, 1, 3), (1, 0, 4), (0, 5, 0),
+        (0, 4, 1), (0, 3, 2), (0, 2, 3), (0, 1, 4), (0, 0, 5),
     ]
     return sort([(p[1] + offset, p[2], p[3]) for p in par if p[1] + p[2] + p[3] <= order - offset])
 end
