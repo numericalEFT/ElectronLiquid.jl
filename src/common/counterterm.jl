@@ -225,6 +225,8 @@ Derive the chemicalpotential and z-factor counterterm for each order from the se
 - `order` : total order
 - `μ`     : ReΣ(kF, w=0),     Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
 - `sw`    : dImΣ(kF, w=0)/dw, Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+- `isfock`: if true (false) Fock renormalization is turned on (off)
+- `verbose`: verbosity level (0 (default): no output to stdout, 1: print to stdout)
 
 # Return (δzi, δμ, δz)
 The convention is the following:
@@ -276,10 +278,19 @@ function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=fals
 end
 
 
-function fromFile(parafile=parafileName)
+"""
+    function fromFile(parafile=parafileName; root_dir=@__DIR__)
 
-    parafile = joinpath(@__DIR__, parafile) # ROOT/common/para.csv
-    println("Reading para from $parafile")
+Loads self-energy counterterm data from a CSV file `parafile` and returns a DataFrame.
+
+# Arguments
+- `parafile` : name of the CSV file to load from
+- `root_dir` : the root directory of `parafile` (default: `<ElectronLiquid_Root>/common/`)
+- `verbose`  : verbosity level (0: no output to stdout, 1 (default): print to stdout)
+"""
+function fromFile(parafile=parafileName; root_dir=@__DIR__, verbose=1)
+    parafile = joinpath(root_dir, parafile) # ROOT/common/para.csv
+    verbose > 0 && println("Reading para from $parafile")
     try
         data, header = readdlm(parafile, ',', header=true)
         df = DataFrame(data, vec(header))
@@ -292,30 +303,40 @@ function fromFile(parafile=parafileName)
     end
 end
 
-function toFile(df, parafile=parafileName)
+"""
+    function fromFile(parafile=parafileName; root_dir=@__DIR__)
 
-    parafile = joinpath(@__DIR__, parafile) # ROOT/common/para.csv
+Saves self-energy counterterm data specified by a DataFrame `df` to a CSV file `parafile`.
+
+# Arguments
+- `df`       : DataFrame containing the self-energy counterterm data
+- `parafile` : name of the CSV file to save to
+- `root_dir` : the root directory of `parafile` (default: `<ElectronLiquid_Root>/common/`)
+- `verbose`  : verbosity level (0: no output to stdout, 1 (default): print to stdout)
+"""
+function toFile(df, parafile=parafileName; root_dir=@__DIR__, verbose=1)
+    parafile = joinpath(root_dir, parafile) # ROOT/common/para.csv
     if isnothing(df)
         @warn "Empty dataframe $df, nothing to save"
         return
     end
     sortdata!(df)
-    println("Save the parameters to the file $parafile")
+    verbose > 0 && println("Save the parameters to the file $parafile")
     writedlm(parafile, Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
 
 compareRow(row, _dict) = all(value isa AbstractFloat ? row[key] ≈ value : row[key] == value for (key, value) in _dict)
 
-sortdata!(df::DataFrame) = sort!(df, ["dim", "spin", "isDynamic", "isFock", "rs", "beta", "Fs", "Fa", "mass2"])
+sortdata!(df::DataFrame) = sort!(df, ["order", "dim", "spin", "isDynamic", "isFock", "rs", "beta", "Fs", "Fa", "mass2"])
 
-function compactOrder(orders)
-    @assert length(orders) == 3
-    o1, o2, o3 = orders
-    @assert o1 < 10 && o2 < 10 && o3 < 10
-    return o1 * 100 + o2 * 10 + o3
+function compactPartition(P)
+    @assert length(P) == 3
+    P1, P2, P3 = P
+    @assert P1 < 10 && P2 < 10 && P3 < 10
+    return P1 * 100 + P2 * 10 + P3
 end
 
-function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; replace=true)
+function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; replace=true, verbose=1)
     # if isempty(existing) == false
     #     #     #duplicated paraid, but may 
     #     #     if replace == false
@@ -334,9 +355,9 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
     #     end
     # end
     d = merge(paraid, data)
-    if haskey(d, "order")
-        if length(d["order"]) == 3
-            d["order"] = compactOrder(d["order"])
+    if haskey(d, "partition")
+        if length(d["partition"]) == 3
+            d["partition"] = compactPartition(d["partition"])
         end
     end
     if isnothing(df) || isempty(df) || nrow(df) == 0
@@ -344,21 +365,21 @@ function appendDict(df::Union{Nothing,DataFrame}, paraid::Dict, data::Dict; repl
     else
         # println("data\n$d")
         # remove the entries with larger error
-        # df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
+        # df = filter(row -> (!(compareRow(row, paraid) && (row["partition"] == d["partition"]) && row["Σw.err"] > d["Σw.err"] && row["μ.err"] > d["μ.err"])), df)
         # if replace
-        olddf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]))), df)
-        order = d["order"]
+        olddf = filter(row -> ((compareRow(row, paraid) && (row["partition"] == d["partition"]))), df)
+        P = d["partition"]
         if isempty(olddf)
-            println("will save $order for $paraid")
+            verbose > 0 && println("will save $P for $paraid")
             append!(df, d)
             sortdata!(df)
         else
-            bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
+            bigerrdf = filter(row -> ((compareRow(row, paraid) && (row["partition"] == d["partition"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
             if isempty(bigerrdf) == false
                 # replace only if the the new data has better quality for all quantitites
-                println("will replace $order for $paraid")
+                verbose > 0 && println("will replace $P for $paraid")
                 # println(bigerrdf)
-                df = filter(row -> (!(compareRow(row, paraid) && (row["order"] == d["order"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
+                df = filter(row -> (!(compareRow(row, paraid) && (row["partition"] == d["partition"]) && row["Σw.err"] >= d["Σw.err"] && row["μ.err"] >= d["μ.err"])), df)
                 append!(df, d)
                 sortdata!(df)
             end
@@ -370,16 +391,17 @@ end
 """
     function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
 
-read self-energy parameters from the file
+Derives the counterterms `mu` and `sw` from self-energy data stored in the CSV file `parafile`.
 
 # Arguments
-- `df`     : DataFrame
-- `paraid` : Dictionary of parameter names and values
-- `order`  : the truncation order
+- `para`   : the physical parameter set to load data for
+- `order`  : the maximum simulation order
+- `parafile` : name of the CSV file to load from
+- `root_dir` : the root directory of `parafile` (default: `<ElectronLiquid_Root>/common/`)
 """
-function getSigma(para::ParaMC; order=para.order, parafile=parafileName)
+function getSigma(para::ParaMC; order=para.order, parafile=parafileName, root_dir=@__DIR__)
     # println(parafile)
-    df = fromFile(parafile)
+    df = fromFile(parafile; root_dir=root_dir)
     @assert isnothing(df) == false "file $parafile failed to load"
     return getSigma(df, UEG.paraid(para), order)
 end
@@ -395,20 +417,20 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
     # println(df)
 
     mu = Dict()
-    for o in _partition
-        v = filter(r -> r["order"] == compactOrder(o), df)[1, "μ"]
-        err = filter(r -> r["order"] == compactOrder(o), df)[1, "μ.err"]
-        mu[o] = measurement(v, err)
+    for P in _partition
+        v = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ"]
+        err = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ.err"]
+        mu[P] = measurement(v, err)
     end
 
     sort!(df, "Σw.err") #sort error from small to large
     @assert isempty(df) == false "no data exist for $paraid"
 
     sw = Dict()
-    for o in _partition
-        v = filter(r -> r["order"] == compactOrder(o), df)[1, "Σw"]
-        err = filter(r -> r["order"] == compactOrder(o), df)[1, "Σw.err"]
-        sw[o] = measurement(v, err)
+    for P in _partition
+        v = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw"]
+        err = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw.err"]
+        sw[P] = measurement(v, err)
     end
 
     return mu, sw
@@ -436,10 +458,10 @@ end
 #     @assert isempty(df) == false "no data exist for $paraid"
 #     # println(df)
 
-#     δμ = [filter(r -> r["order"] == o, df)[1, "δμ"] for o in 1:order-1]
-#     err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
-#     # δz = [filter(r -> r["order"] == o, df)[1, ""] for o in 1:order-1]
-#     # err = [filter(r -> r["order"] == o, df)[1, "δμ.err"] for o in 1:order-1]
+#     δμ = [filter(r -> r["partition"] == o, df)[1, "δμ"] for o in 1:order-1]
+#     err = [filter(r -> r["partition"] == o, df)[1, "δμ.err"] for o in 1:order-1]
+#     # δz = [filter(r -> r["partition"] == o, df)[1, ""] for o in 1:order-1]
+#     # err = [filter(r -> r["partition"] == o, df)[1, "δμ.err"] for o in 1:order-1]
 #     # err = [mu for mu in df[!, "δμ.err"]]
 #     return measurement.(δμ, err)
 # end
@@ -465,8 +487,8 @@ end
 #     @assert isempty(df) == false "no data exist for $paraid"
 #     # println(df)
 
-#     δz = [filter(r -> r["order"] == o, df)[1, "δz"] for o in 1:order-1]
-#     err = [filter(r -> r["order"] == o, df)[1, "δz.err"] for o in 1:order-1]
+#     δz = [filter(r -> r["partition"] == o, df)[1, "δz"] for o in 1:order-1]
+#     err = [filter(r -> r["partition"] == o, df)[1, "δz.err"] for o in 1:order-1]
 #     return measurement.(δz, err)
 # end
 
