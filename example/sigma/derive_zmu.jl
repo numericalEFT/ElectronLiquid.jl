@@ -51,11 +51,11 @@ function process(datatuple, isSave)
 
     ############# save to csv  #################
     # println(df)
-    for o in keys(data)
-        # println(o)
+    for P in keys(data)
+        # println(P)
         # global df
         paraid = UEG.paraid(para)
-        df = CounterTerm.appendDict(df, paraid, Dict("order" => o, "μ" => _mu[o].val, "μ.err" => _mu[o].err, "Σw" => _z[o].val, "Σw.err" => _z[o].err); replace=true)
+        df = CounterTerm.appendDict(df, paraid, Dict("partition" => P, "μ" => _mu[P].val, "μ.err" => _mu[P].err, "Σw" => _z[P].val, "Σw.err" => _z[P].err); replace=true)
     end
 
     # println("new dataframe\n$df")
