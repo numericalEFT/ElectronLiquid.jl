@@ -71,7 +71,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
                 @warn("replacing existing data for $key")
                 delete!(f, key)
             end
-            f[key] = mission == :n ? (para, g) : (para, tgrid, kgrid, g)
+            f[key] = mission == :n ? (g,) : (tgrid, kgrid, g)
         end
     end
 end
