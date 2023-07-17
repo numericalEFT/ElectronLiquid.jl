@@ -83,33 +83,40 @@ function integrand(vars, config)
     t = extT[ExtT[1]]
     k = extK[ExtK[1]]
     x = X[1]
-    t1, t2, t3, t4 = T[1], T[2], T[3], T[4]
+    # t1, t2, t3, t4 = T[1], T[2], T[3], T[4]
     p = P[1]
     Qv = SVector{3,Float64}(Q[1], Q[2], Q[3])
 
     PLX = Pl(x, ℓ)
     # q = sqrt(k^2 + p^2 - 2 * k * p * x)
 
-    K = SMatrix{3,4,Float64}([-p*x -p*sqrt(1 - x^2) 0; -k 0 0; k 0 0; Q[1] Q[2] Q[3]]')
-    T = SVector{4,Float64}(t1, t2, t3, t4)
+    # K = SMatrix{3,4,Float64}([-p*x -p*sqrt(1 - x^2) 0; -k 0 0; k 0 0; Q[1] Q[2] Q[3]]')
+    # K = SMatrix{3,4,Float64}([-p*x -p*sqrt(1 - x^2) 0; -k 0 0; p*x p*sqrt(1 - x^2) 0; Q[1] Q[2] Q[3]]')
+    K = SMatrix{3,4,Float64}([-k 0 0; -p*x -p*sqrt(1 - x^2) 0; k 0 0; Q[1] Q[2] Q[3]]')
+    # K = SMatrix{3,4,Float64}([-k 0 0; k 0 0; -p*x -p*sqrt(1 - x^2) 0; Q[1] Q[2] Q[3]]')
+    # T = SVector{4,Float64}(t1, t2, t3, t4)
 
     ExprTree.evalKT!(diag[1], K, T, paramc)
     ExprTree.evalKT!(diag[2], K, T, paramc)
 
-    result = [0.0, 0.0]
+    result = zeros(Float64, 2)
 
     for dorder in 1:1
         weight = diag[dorder].node.current
-        for idx in 1:1
+        for idx in 2:2
             extTu = dextT[idx][dorder]
             factor = -1.0 * p^2 / (2π)^2
-            for (ri, r) in enumerate(droot[idx][dorder])
+            G1 = G0(T[1] - 0, k, funcs) # tInL===T[1]
+            roots = droot[idx][dorder]
+            # for (ri, r) in enumerate(droot[idx][dorder])
+            for ri in 1:length(roots)
+                r = roots[ri]
                 w = weight[r]
                 extT = extTu[ri]
                 tInL, tOutL, tInR, tOutR = T[extT[1]], T[extT[2]], T[extT[3]], T[extT[4]]
-                F = responsef(tInR - tInL, p, funcs)
-                G1 = G0(tOutL - 0, k, funcs)
-                G2 = G0(tOutR - t, -k, funcs)
+                F = responsef(tOutR - tOutL, p, funcs)
+                # G1 = G0(tInL - 0, k, funcs)
+                G2 = G0(tInR - t, -k, funcs)
                 result[dorder] += factor * G1 * G2 * w * F
             end
         end
@@ -129,7 +136,7 @@ function run(steps, param, alg=:vegas; order=order)
     println("Prepare propagators")
 
     paramc, diagram = diagram_gen(param.rs, param.beta; order=order)
-    println(paramc)
+    # println(paramc)
     # dpartition, diagpara, diag, droot, dextT = diagram
 
     mint = 0.001 * param.β
