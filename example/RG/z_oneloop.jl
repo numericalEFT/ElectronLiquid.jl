@@ -29,7 +29,7 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
     if scheme == :CS
         f = jldopen("data_f.jld2", "r")
         key = "$(UEG.short(para))"
-        para, Λgrid, fs, us = f[key]
+        Λgrid, fs, us = f[key]
     elseif scheme == :KO
         fs = [KO(para, lambda, lambda; verbose=0)[1] for (li, lambda) in enumerate(Λgrid)]
     else

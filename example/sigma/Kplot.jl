@@ -22,7 +22,8 @@ function loaddata(para, FileName=filename)
     f = jldopen(FileName, "r")
     # println(key)
     # println(keys(f))
-    p, ngrid, kgrid, sigma = f[key]
+    p = UEG.ParaMC(key)
+    ngrid, kgrid, sigma = f[key]
     # println(sigma)
     order = p.order
     _partition = UEG.partition(para.order)
