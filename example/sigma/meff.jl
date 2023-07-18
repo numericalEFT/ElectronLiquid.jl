@@ -87,7 +87,8 @@ function loaddata(para, FileName=filename)
     key = UEG.short(para)
     f = jldopen(FileName, "r")
 
-    p, ngrid, kgrid, sigma = f[key]
+    p = UEG.ParaMC(key)
+    ngrid, kgrid, sigma = f[key]
     # println(sigma)
     order = p.order
     _partition = UEG.partition(para.order)
@@ -299,7 +300,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
         para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=isDynamic, dim=dim)
         for key in keys(f)
-            if UEG.paraid(f[key][1]) == UEG.paraid(para)
+            loadpara = UEG.ParaMC(key)
+            if UEG.paraid(loadpara) == UEG.paraid(para)
                 # derive_z(f[key], isSave)
                 rSw_k, iSw_k, kgrid = process(para, Zrenorm, filenameK, i_δk)
                 plotS_k(para, rSw_k, iSw_k, kgrid)

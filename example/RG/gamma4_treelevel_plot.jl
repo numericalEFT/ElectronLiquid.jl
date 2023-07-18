@@ -22,7 +22,7 @@ jldopen("data_f.jld2", "a+") do f
         @warn("replacing existing data for $key")
         delete!(f, key)
     end
-    f[key] = (para, Λgrid, fs, us, dfs, dus)
+    f[key] = (Λgrid, fs, us, dfs, dus)
 end
 
 KOgrid = collect(LinRange(1.0 * para.kF, 5.0 * para.kF, 100))

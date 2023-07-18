@@ -37,8 +37,9 @@ for (_rs, _F, _beta, _order, _mass2) in Iterators.product(rs, Fs, beta, order, m
     kF = para.kF
     for key in keys(f)
         # println(key)
-        if UEG.paraid(f[key][1]) == UEG.paraid(para)
-            ndict = f[key][2]
+        loadpara = UEG.ParaMC(key)
+        if UEG.paraid(loadpara) == UEG.paraid(para)
+            ndict = f[key][1]
             result = CounterTerm.chemicalpotential_renormalization(_order, ndict, dmu)
             println(result)
         end
