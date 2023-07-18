@@ -109,7 +109,8 @@ function integrand(vars, config)
             G1 = G0(T[1] - 0, k, funcs) # tInL===T[1]
             roots = droot[idx][dorder]
             # for (ri, r) in enumerate(droot[idx][dorder])
-            for ri in 1:length(roots)
+            # for ri in 1:length(roots)
+            let ri = 1
                 r = roots[ri]
                 w = weight[r]
                 extT = extTu[ri]

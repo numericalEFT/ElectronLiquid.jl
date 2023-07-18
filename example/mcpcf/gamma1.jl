@@ -6,13 +6,6 @@ using ElectronLiquid.Measurements
 using FeynmanDiagram
 using MCIntegration
 
-
-rs = 3.0
-beta = 25
-Fs = -0.433
-order = 2
-neval = 1e7
-
 function integrandFG(idx, var, config)
     para, diag, root, extT, L, n = config.userdata
 
@@ -38,9 +31,11 @@ function integrandFG(idx, var, config)
 
     factor = 1.0
     if l == 0
-        factor = 1.0 / 2
+        # factor = 1.0 / 2
+        factor = 1.0
     elseif l == 1
-        factor = x / 2.0
+        # factor = x / 2.0
+        factor = x
     else
         error("not implemented")
     end
@@ -150,6 +145,12 @@ function Full_Gamma(para::ParaMC, diagram;
 
 end
 
+rs = 3.0
+beta = 25
+Fs = -0.433
+order = 2
+neval = 1e7
+
 paramc = UEG.ParaMC(rs=rs, beta=beta, Fs=Fs, order=order, isDynamic=true)
 UEG.MCinitialize!(paramc)
 
@@ -162,4 +163,4 @@ filter = [NoHartree, NoBubble]
 
 diagram = Ver4.diagram(paramc, partition; channel=channel, filter=filter)
 
-data, result = Full_Gamma(paramc, diagram)
+data, result = Full_Gamma(paramc, diagram; n=[0, 0, 0], neval=1e7)
