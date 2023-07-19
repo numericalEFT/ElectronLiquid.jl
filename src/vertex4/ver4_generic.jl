@@ -78,10 +78,12 @@ function _measureGeneric(idx, var, obs, relative_weight, config)
 
     for i in eachindex(ωn)
         if !isempty(rootuu)
-            obs[idx][1, i, n] += factor * sum(weight[root] * phase(varT, extTuu[ri], ωn[i], β) for (ri, root) in enumerate(rootuu)) * relative_weight.d / abs(w)
+            wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], ωn[i], β) for (ri, root) in enumerate(rootuu))
+            obs[idx][1, i, n] += wuu * abs(relative_weight.d) / abs(w)
         end
         if !isempty(rootud)
-            obs[idx][2, i, n] += factor * sum(weight[root] * phase(varT, extTud[ri], ωn[i], β) for (ri, root) in enumerate(rootud)) * relative_weight.e / abs(w)
+            wud = factor * sum(weight[root] * phase(varT, extTud[ri], ωn[i], β) for (ri, root) in enumerate(rootud))
+            obs[idx][2, i, n] += wud * abs(relative_weight.e) / abs(w)
         end
     end
 end

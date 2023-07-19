@@ -72,7 +72,7 @@ end
     ############################ generic PH one-angle average ###########################
     # paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0], [-1, 0, 0],], :PH, 0),]
     paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0],], :PH, 0),]
-    data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e5, print=-1)
+    data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e6, print=-1)
     obs = data[p]
     println(obs)
 
