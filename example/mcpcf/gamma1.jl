@@ -186,12 +186,12 @@ function Full_Gamma(para::ParaMC, diagram;
 
 end
 
-rs = 3.0
+rs = 1.0
 beta = 25
 # Fs = -0.433
 Fs = 0.0
 order = 1
-nmax = 4
+nmax = 0
 neval = 4e6
 
 paramc = UEG.ParaMC(rs=rs, beta=beta, Fs=Fs, order=order, isDynamic=true)
@@ -204,12 +204,14 @@ partition = [(1, 0, 0),]
 # channel = [PHr, PHEr, PPr]
 channel = []
 neighbor = UEG.neighbor(partition)
-filter = [NoHartree, NoBubble]
-
+# filter = [NoHartree, NoBubble]
+filter = []
 diagram = Ver4.diagram(paramc, partition; channel=channel, filter=filter)
 
 data, result = Full_Gamma(paramc, diagram; nmax=nmax, neval=neval)
 gmat = real(result.config.userdata[5] ./ result.config.normalization)
-gmat = (gmat[1, :, :] .+ gmat[2, :, :]) ./ 2
+print(gmat)
+# gmat = (gmat[1, :, :] .+ gmat[2, :, :]) ./ 2
+gmat = gmat[2, :, :]
 println(result)
 print(gmat)
