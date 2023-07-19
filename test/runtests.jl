@@ -5,9 +5,9 @@ using FiniteDifferences
 using Lehmann
 using Measurements
 
-function compare(data, expect)
+function compare(data, expect, ratio=5)
     # println(data, ", ", expect)
-    @test isapprox(data.val, expect, atol=5 * data.err)
+    @test isapprox(data.val, expect, atol=ratio * data.err)
 end
 
 if isempty(ARGS)
