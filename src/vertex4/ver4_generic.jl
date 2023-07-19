@@ -47,13 +47,18 @@ function _diagram_weight(idx, var, config)
     end
 
     rootuu, rootud = root[1][idx], root[2][idx]
+    # extTuu, extTud = extT[1][idx], extT[2][idx]
+    # ωn = para.ωn[1] #get the frequency grid to measure
+    # β = para.para.β
     if !isempty(rootuu)
         wuu = factor * sum(weight[root] for (ri, root) in enumerate(rootuu))
+        # wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], ωn, β) for (ri, root) in enumerate(rootuu))
     else
         wuu = zero(ComplexF64)
     end
     if !isempty(rootud)
         wud = factor * sum(weight[root] for (ri, root) in enumerate(rootud))
+        # wud = factor * sum(weight[root] * phase(varT, extTud[ri], ωn, β) for (ri, root) in enumerate(rootud))
     else
         wud = zero(ComplexF64)
     end
@@ -64,6 +69,7 @@ end
 function _measureGeneric(idx, var, obs, relative_weight, config)
     #relative_weight = abs(w)/(probability of sampling this diagram)
     w, factor = _diagram_weight(idx, var, config)
+    inverse_probability = abs(relative_weight) / abs(w)
     paras, diag, root, extT = config.userdata
     rootuu, rootud = root[1][idx], root[2][idx]
     extTuu, extTud = extT[1][idx], extT[2][idx]
@@ -79,11 +85,11 @@ function _measureGeneric(idx, var, obs, relative_weight, config)
     for i in eachindex(ωn)
         if !isempty(rootuu)
             wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], ωn[i], β) for (ri, root) in enumerate(rootuu))
-            obs[idx][1, i, n] += wuu * abs(relative_weight.d) / abs(w)
+            obs[idx][1, i, n] += wuu * inverse_probability
         end
         if !isempty(rootud)
             wud = factor * sum(weight[root] * phase(varT, extTud[ri], ωn[i], β) for (ri, root) in enumerate(rootud))
-            obs[idx][2, i, n] += wud * abs(relative_weight.e) / abs(w)
+            obs[idx][2, i, n] += wud * inverse_probability
         end
     end
 end
