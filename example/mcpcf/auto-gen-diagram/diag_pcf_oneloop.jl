@@ -88,7 +88,7 @@ function integrand(vars, config)
     Qv = SVector{3,Float64}(Q[1], Q[2], Q[3])
 
     PLX = Pl(x, ℓ)
-    # q = sqrt(k^2 + p^2 - 2 * k * p * x)
+    q = sqrt(k^2 + p^2 - 2 * k * p * x)
 
     # K = SMatrix{3,4,Float64}([-p*x -p*sqrt(1 - x^2) 0; -k 0 0; k 0 0; Q[1] Q[2] Q[3]]')
     # K = SMatrix{3,4,Float64}([-p*x -p*sqrt(1 - x^2) 0; -k 0 0; p*x p*sqrt(1 - x^2) 0; Q[1] Q[2] Q[3]]')
@@ -97,7 +97,7 @@ function integrand(vars, config)
     # T = SVector{4,Float64}(t1, t2, t3, t4)
 
     ExprTree.evalKT!(diag[1], K, T, paramc)
-    ExprTree.evalKT!(diag[2], K, T, paramc)
+    # ExprTree.evalKT!(diag[2], K, T, paramc)
 
     result = zeros(Float64, 2)
 
@@ -118,7 +118,15 @@ function integrand(vars, config)
                 F = responsef(tOutR - tOutL, p, funcs)
                 # G1 = G0(tInL - 0, k, funcs)
                 G2 = G0(tInR - t, -k, funcs)
-                result[dorder] += factor * G1 * G2 * w * F
+                # result[dorder] += factor * G1 * G2 * w * F
+                result[dorder] += factor * PLX * G1 * G2 * w * F
+                V = 1.0 / interaction(q, funcs)
+                W = interaction(T[2] - T[1], q, funcs) * V
+                # V = -W + V * fake(q, funcs) / param.β
+                # result[dorder] += factor * PLX * V * G1 * G2 * F
+                G3 = G0(T[2] - t, -k, funcs)
+                F2 = responsef(T[2] - T[1], p, funcs)
+                result[dorder] += factor * PLX * G1 * G3 * W * F2
             end
         end
     end
