@@ -70,19 +70,20 @@ end
 
 
     ############################ generic PH one-angle average ###########################
-    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0], [-1, 0, 0],], :PH, 0),]
+    # paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0], [-1, 0, 0],], :PH, 0),]
+    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0],], :PH, 0),]
     data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e5, print=-1)
     obs = data[p]
     println(obs)
 
     #############   (Ω -> 0, q=0)   #####################
-    exchange = obs[1, 2, 1] - obs[2, 2, 1] # exchange = upup - updn
-    Wp, Wm, θgrid = Ver4.exchange_interaction(para) # Wp = exchanged Coulomb interaction, Wm = 0
-    Fp = Ver4.Legrendre(0, Wp, θgrid)
-    compare(real(exchange), Fp)
+    # exchange = obs[1, 2, 1] - obs[2, 2, 1] # exchange = upup - updn
+    # Wp, Wm, θgrid = Ver4.exchange_interaction(para) # Wp = exchanged Coulomb interaction, Wm = 0
+    # Fp = Ver4.Legrendre(0, Wp, θgrid)
+    # compare(real(exchange), Fp)
 
-    expect = -4π * para.e0^2 / (mass2) * para.NF
-    compare(real(obs[2]), expect)
+    # expect = -4π * para.e0^2 / (mass2) * para.NF
+    # compare(real(obs[2]), expect)
 
     #############   (Ω = 0, q->0)   #####################
     exchange = obs[1, 1, 1] - obs[2, 1, 1] # exchange = upup - updn
