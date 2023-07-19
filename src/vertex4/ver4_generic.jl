@@ -2,26 +2,8 @@
 Calculate vertex4 averged on the Fermi surface
 """
 function _integrandGeneric(idx, var, config)
-
-    paras, diag, root, extT = config.userdata
-    factor = _diagram_weight(idx, var, config)
-    diagram = diag[idx]
-    weight = diagram.node.current
-
-    rootuu, rootud = root[1][idx], root[2][idx]
-
-    if !isempty(rootuu)
-        wuu = factor * sum(weight[root] for (ri, root) in enumerate(rootuu))
-    else
-        wuu = zero(ComplexF64)
-    end
-    if !isempty(rootud)
-        wud = factor * sum(weight[root] for (ri, root) in enumerate(rootud))
-    else
-        wud = zero(ComplexF64)
-    end
-
-    return Weight(wuu, wud)
+    weight, factor = _diagram_weight(idx, var, config)
+    return weight
 end
 
 function _diagram_weight(idx, var, config)
@@ -51,6 +33,7 @@ function _diagram_weight(idx, var, config)
 
     loopNum = config.dof[idx][1]
     diagram = diag[idx]
+    weight = diagram.node.current
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para.para)
 
@@ -62,11 +45,25 @@ function _diagram_weight(idx, var, config)
     else
         error("not implemented")
     end
-    return factor
+
+    rootuu, rootud = root[1][idx], root[2][idx]
+    if !isempty(rootuu)
+        wuu = factor * sum(weight[root] for (ri, root) in enumerate(rootuu))
+    else
+        wuu = zero(ComplexF64)
+    end
+    if !isempty(rootud)
+        wud = factor * sum(weight[root] for (ri, root) in enumerate(rootud))
+    else
+        wud = zero(ComplexF64)
+    end
+
+    return Weight(wuu, wud), factor
 end
 
-function _measureGeneric(idx, var, obs, weight, config)
-    factor = _diagram_weight(idx, var, config)
+function _measureGeneric(idx, var, obs, relative_weight, config)
+    #relative_weight = abs(w)/(probability of sampling this diagram)
+    w, factor = _diagram_weight(idx, var, config)
     paras, diag, root, extT = config.userdata
     rootuu, rootud = root[1][idx], root[2][idx]
     extTuu, extTud = extT[1][idx], extT[2][idx]
@@ -80,8 +77,12 @@ function _measureGeneric(idx, var, obs, weight, config)
     β = para.para.β
 
     for i in eachindex(ωn)
-        obs[idx][1, i, n] += factor * sum(weight[root] * phase(varT, extTuu[ri], ωn[i], β) for (ri, root) in enumerate(rootuu))
-        obs[idx][2, i, n] += factor * sum(weight[root] * phase(varT, extTud[ri], ωn[i], β) for (ri, root) in enumerate(rootud))
+        if !isempty(rootuu)
+            obs[idx][1, i, n] += factor * sum(weight[root] * phase(varT, extTuu[ri], ωn[i], β) for (ri, root) in enumerate(rootuu)) * relative_weight.d / abs(w)
+        end
+        if !isempty(rootud)
+            obs[idx][2, i, n] += factor * sum(weight[root] * phase(varT, extTud[ri], ωn[i], β) for (ri, root) in enumerate(rootud)) * relative_weight.e / abs(w)
+        end
     end
 end
 
