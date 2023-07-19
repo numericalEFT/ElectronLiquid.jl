@@ -41,6 +41,28 @@ end
 #     end
 # end
 
+"""
+    function Generic(paras::AbstractArray{Tuple{ParaMC,Float64,Int}}, diagram;
+        neval=1e6, #number of evaluations
+        print=0,
+        alpha=3.0, #learning ratio
+        config=nothing,
+        solver=:mcmc,
+        kwargs...
+    )
+
+Calculate self-energy with generic set of parameters.
+
+# Arguments
+- `paras`: array of tuples of parameters, momentum, and Matsubara frequency
+- `diagram`: diagram to be calculated
+- `neval`: number of evaluations
+- `print`: print level
+- `alpha`: learning ratio
+- `config`: configuration
+- `solver`: solver
+- `kwargs`: keyword arguments
+"""
 function Generic(paras::AbstractArray{Tuple{ParaMC,Float64,Int}}, diagram;
     neval=1e6, #number of evaluations
     print=0,

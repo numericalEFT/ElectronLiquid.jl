@@ -18,6 +18,20 @@ import ..ExprTreeF64
 
 import ..Weight
 
+struct OneAngleAveraged
+    para::ParaMC
+    kamp::Vector{Float64}
+    ωn::Vector{Vector{Int}} #allow measure multiple frequency simultaneously
+    channel::Symbol #:PH or :PP
+    l::Int #angular momentum
+    function OneAngleAveraged(para, kamp, ωn, channel, l)
+        @assert channel == :PH || channel == :PP "the channel should be :PH or :PP"
+        @assert length(kamp) == 2 "there two amplitude of K"
+        # @assert length(ωn) == 3 "the length of ωn should be 3, which corresponds to Lin, Rin, Lout."
+        return new(para, kamp, ωn, channel, l)
+    end
+end
+
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     return DiagParaF64(
@@ -118,6 +132,7 @@ end
 include("ver4KW.jl")
 include("ver4_PH_l.jl")
 include("ver4_PH_l_df.jl")
+include("ver4_generic.jl")
 include("exchange_interaction.jl")
 
 end

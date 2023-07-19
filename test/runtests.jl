@@ -5,6 +5,11 @@ using FiniteDifferences
 using Lehmann
 using Measurements
 
+function compare(data, expect)
+    # println(data, ", ", expect)
+    @test isapprox(data.val, expect, atol=5 * data.err)
+end
+
 if isempty(ARGS)
     include("para.jl")
     include("interaction.jl")
