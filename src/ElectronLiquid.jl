@@ -52,6 +52,10 @@ include("./sigma/sigma.jl")
 using .Sigma
 export Sigma
 
+include("./polarization/polarization.jl")
+using .Polarization
+export Polarization
+
 include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
