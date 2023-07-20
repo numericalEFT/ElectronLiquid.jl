@@ -38,18 +38,19 @@ function PP_interaction_dynamic(n, para::ParaMC, kamp=para.kF, kamp2=para.kF; ka
 end
 
 @testset "PP" begin
-    ### test Yukawa interaction ###########
     p = (1, 0, 0)
+    rs = 5.0
+    beta = 25
     mass2 = 1e-6
-    ####################### STATIC #########################
-    para = ElectronLiquid.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
+    neval = 1e6
+    para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
     UEG.MCinitialize!(para)
     println(para)
     diagram = Ver4.diagram(para, [p,])
 
     ############################ generic PH one-angle average ###########################
-    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0], [0, 1, 0], [0, 2, 0]], :PP, 0),]
-    data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e6, print=-1)
+    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 2, 0], [0, -4, -1], [10, 8, -11]], :PP, 0),]
+    data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1)
     obs = data[p]
     println("obs 1:", obs[:, 1, 1])
     println("obs 2:", obs[:, 2, 1])
