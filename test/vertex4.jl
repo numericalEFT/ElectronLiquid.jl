@@ -70,29 +70,29 @@ end
 
 
     ############################ generic PH one-angle average ###########################
-    # paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0], [-1, 0, 0],], :PH, 0),]
-    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, 0],], :PH, 0),]
+    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[-1, 0, 0], [0, 0, 0]], :PH, 0),]
     data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e5, print=-1)
     obs = data[p]
-    println(obs)
+    println("obs 1:", obs[:, 1, 1])
+    println("obs 2:", obs[:, 2, 1])
 
     #############   (Ω -> 0, q=0)   #####################
-    # exchange = obs[1, 2, 1] - obs[2, 2, 1] # exchange = upup - updn
-    # Wp, Wm, θgrid = Ver4.exchange_interaction(para) # Wp = exchanged Coulomb interaction, Wm = 0
-    # Fp = Ver4.Legrendre(0, Wp, θgrid)
-    # compare(real(exchange), Fp)
-
-    # expect = -4π * para.e0^2 / (mass2) * para.NF
-    # compare(real(obs[2]), expect)
-
-    #############   (Ω = 0, q->0)   #####################
     exchange = obs[1, 1, 1] - obs[2, 1, 1] # exchange = upup - updn
     Wp, Wm, θgrid = Ver4.exchange_interaction(para) # Wp = exchanged Coulomb interaction, Wm = 0
     Fp = Ver4.Legrendre(0, Wp, θgrid)
     compare(real(exchange), Fp)
 
+    expect = -4π * para.e0^2 / (mass2) * para.NF
+    compare(real(obs[2, 1, 1]), expect)
+
+    #############   (Ω = 0, q->0)   #####################
+    exchange = obs[1, 2, 1] - obs[2, 2, 1] # exchange = upup - updn
+    Wp, Wm, θgrid = Ver4.exchange_interaction(para) # Wp = exchanged Coulomb interaction, Wm = 0
+    Fp = Ver4.Legrendre(0, Wp, θgrid)
+    compare(real(exchange), Fp)
+
     expect = -4π * para.e0^2 / (mass2 + 4π * para.e0^2 * para.NF) * para.NF
-    compare(real(obs[2]), expect)
+    compare(real(obs[2, 2, 1]), expect)
 end
 
 @testset "Vertex4 One-loop" begin
@@ -110,4 +110,14 @@ end
     expect = 0.4723 # +- 0.0041
     compare(real(obs[2]), expect)
 
+    ############################ generic PH one-angle average ###########################
+    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[-1, 0, 0],], :PH, 0),]
+    data, result = Ver4.one_angle_averaged(paras, diagram; neval=1e5, print=-1)
+    obs = data[p]
+
+    expect = 1.0314 # +- 0.0044
+    compare(real(obs[1, 1, 1]), expect)
+
+    expect = 0.4723 # +- 0.0041
+    compare(real(obs[2, 1, 1]), expect)
 end
