@@ -18,6 +18,18 @@ import ..ExprTreeF64
 
 import ..Weight
 
+"""
+    struct OneAngleAveraged
+
+The parameters for the one-angle-averaged vertex4.
+
+# Members
+- `para`: the parameters for the MC integration
+- `kamp`: the amplitude of the external momentum: [left_leg, right_legs]
+- `ωn`: vector of the frequency of the external legs, each element is a 3-vector [left_in, left_out, right_in]
+- `channel`: the channel of the vertex4, :PH or :PP
+- `l`: the angular momentum of the angle average
+"""
 struct OneAngleAveraged
     para::ParaMC
     kamp::Vector{Float64}

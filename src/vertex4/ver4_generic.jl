@@ -94,6 +94,26 @@ function _measureGeneric(idx, var, obs, relative_weight, config)
     end
 end
 
+"
+
+    function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
+        neval=1e6, #number of evaluations
+        print=0,
+        alpha=3.0, #learning ratio
+        config=nothing,
+        kwargs...
+    )
+
+Calculate the angle averaged vertex4 in the particle-hole or particle-particle channel.
+
+# Arguments
+- `paras`: vector of parameters for the one-angle-averaged vertex4
+- `diagram`: diagram to be calculated
+- `neval`: number of evaluations
+- `print`: print level
+- `alpha`: learning ratio
+- `config`: configuration for the integration
+"
 function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     neval=1e6, #number of evaluations
     print=0,
