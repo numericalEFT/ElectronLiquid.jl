@@ -11,8 +11,8 @@ function _diagram_weight(idx, var, config)
 
     varK, varT, varX, varN = var[1], var[2], var[3], var[4]
 
-    x = varX[3][1]
-    n = varN[4][1]
+    x = varX[1]
+    n = varN[1]
 
     para = paras[n]
     l = para.l
@@ -155,7 +155,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration(
+        config = MCIntegration.Configuration(;
             var=(K, T, X, N),
             dof=dof,
             obs=obs,
