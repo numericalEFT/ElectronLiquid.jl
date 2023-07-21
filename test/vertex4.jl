@@ -93,6 +93,8 @@ end
 
     expect = -4π * para.e0^2 / (mass2 + 4π * para.e0^2 * para.NF) * para.NF
     compare(real(obs[2, 2, 1]), expect)
+
+    include("vertex4PP.jl")
 end
 
 @testset "Vertex4 One-loop" begin
