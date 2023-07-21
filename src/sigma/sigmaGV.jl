@@ -73,55 +73,6 @@ end
 #     end
 # end
 
-function LeafInfor(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
-    FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys) where {T,G<:FeynmanDiagram.Graph}
-    #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
-    num_g = length(graph_keys)
-    LeafType = [Vector{Int}() for _ in 1:num_g]
-    LeafInTau = [Vector{Int}() for _ in 1:num_g]
-    LeafOutTau = [Vector{Int}() for _ in 1:num_g]
-    LeafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-    Leaf = [Vector{Float64}() for _ in 1:num_g]
-    ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
-
-    for (ig, key) in enumerate(graph_keys)
-        ExtT_index[ig] = FeynGraphs[key][2]  # external tau variables
-        for j in eachindex(ExtT_index[ig])
-            for g in Leaves(FeynGraphs[key][1][j])
-                if g.type == FeynmanDiagram.ComputationalGraphs.GenericDiag
-                    push!(LeafType[ig], 0)
-                    In = Out = 1
-                    push!(Leaf[ig], 0.0)
-                    push!(LeafLoopIndex[ig], 1)
-                else
-                    if g.type == FeynmanDiagram.ComputationalGraphs.Interaction
-                        push!(LeafType[ig], 0)
-                        In = Out = g.vertices[1][1].label
-                        push!(LeafLoopIndex[ig], 1)
-                    elseif (isfermionic(g.vertices[1]))
-                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-                        if FermiLabel[In][2] in [-2, -3]
-                            push!(LeafType[ig], 0)
-                            push!(LeafLoopIndex[ig], 1)
-                        else
-                            push!(LeafType[ig], FermiLabel[In][2] * 2 + 1)
-                            push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
-                        end
-                    else
-                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-                        push!(LeafType[ig], BoseLabel[In][2] * 2 + 2)
-                        push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
-                    end
-                    push!(Leaf[ig], 1.0)
-                end
-                push!(LeafInTau[ig], FermiLabel[In][1])
-                push!(LeafOutTau[ig], FermiLabel[Out][1])
-            end
-        end
-    end
-    return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex, ExtT_index
-end
-
 function GV(para::ParaMC, diagram;
     kgrid=[para.kF,],
     ngrid=[0,],
@@ -140,7 +91,7 @@ function GV(para::ParaMC, diagram;
     MaxLoopNum = maximum([key[1] for key in partition]) + 2
     LoopPool = FermiLabel.labels[3]
 
-    LeafStat = LeafInfor(FeynGraphs, FermiLabel, BoseLabel, partition)
+    LeafStat = FeynmanDiagram.LeavesState(FeynGraphs, FermiLabel, BoseLabel, partition)
     root = zeros(Float64, 24)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1]) for (i, key) in enumerate(partition))
 

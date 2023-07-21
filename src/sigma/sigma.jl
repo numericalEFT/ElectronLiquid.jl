@@ -1,7 +1,7 @@
 module Sigma
 using Cuba
 
-using Printf, LinearAlgebra, AbstractTrees
+using Printf, LinearAlgebra
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
