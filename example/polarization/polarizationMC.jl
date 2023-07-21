@@ -19,8 +19,16 @@ response = ChargeCharge  # TODO: implement other responses
 measure_instantaneous = true
 # measure_instantaneous = false
 
-# number of uniform tgrid points to use when measure_instantaneous is false
+# number of uniform tgrid points to use for "T" mission when measure_instantaneous is false
 n_tau = 1001
+
+# number of uniform tgrid points to use for "W" mission
+n_omega = 11
+
+# mission = "T"
+# mission = "W"
+mission = ARGS[1]
+println("mission: ", mission)
 
 for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=isDynamic, dim=dim)
@@ -37,9 +45,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
             minK,
             korder,
         ).grid
-    tgrid = measure_instantaneous ? [para.β - 1e-8] : collect(LinRange(1e-8, para.β - 1e-8, n_tau))
 
-    # NOTE: Partitions of type (1, n_μ, n_λ) with n_λ ≥ 1 are zero for the polariation.
+    # NOTE: Partitions of type (1, n_μ, n_λ) with n_λ ≥ 1 are zero for the polarization.
     #       Here we generate them anyway, as they will be automatically ignored in the
     #       diagram generation step.
     partition = UEG.partition(_order) # (offset = 1, as for self-energy partitions)
@@ -58,15 +65,46 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     reweight_goal = [reweight_goal; reweight_pad]
     @assert length(reweight_goal) ≥ length(valid_partition) + 1
 
-    polarization, result = Polarization.KT(para, diagram;
-        neighbor=neighbor, reweight_goal=reweight_goal[1:(length(valid_partition)+1)],
-        kgrid=kgrid, tgrid=tgrid, neval=neval, parallel=:thread)
+    local data
+    if mission == "T"
+        ######### calculate Π(q, τ) #########
+        tgrid = measure_instantaneous ? [para.β - 1e-8] : collect(LinRange(1e-8, para.β - 1e-8, n_tau))
+        # Integrate Π(q, τ)
+        polarization, result = Polarization.KT(
+            para,
+            diagram;
+            neighbor=neighbor,
+            reweight_goal=reweight_goal[1:(length(valid_partition)+1)],
+            kgrid=kgrid,
+            tgrid=tgrid,
+            neval=neval,
+            parallel=:thread
+        )
+        data = (tgrid, kgrid, polarization)
+    elseif mission == "W"
+        ######### calculate Π(q, iωₘ) #########
+        ngrid = collect(0:n_omega)
+        # Integrate Π(q, iωₘ)
+        polarization, result = Polarization.KW(
+            para,
+            diagram;
+            neighbor=neighbor,
+            reweight_goal=reweight_goal[1:(length(valid_partition)+1)],
+            kgrid=kgrid,
+            ngrid=ngrid,
+            neval=neval,
+            parallel=:thread
+        )
+        data = (ngrid, kgrid, polarization)
+    else
+        error("unknown mission")
+    end
 
-    if isnothing(polarization) == false
-        if measure_instantaneous
+    if isnothing(data[end]) == false
+        if measure_instantaneous && mission == "T"
             savename = "data_instantaneous_polarization_$(response)_K.jld2"
         else
-            savename = "data_polarization_$(response)_KT.jld2"
+            savename = "data_polarization_$(response)_K$(mission).jld2"
         end
         jldopen(savename, "a+") do f
             key = "$(UEG.short(para))"
@@ -74,7 +112,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
                 @warn("replacing existing data for $key")
                 delete!(f, key)
             end
-            f[key] = (tgrid, kgrid, polarization)
+            f[key] = data
         end
     end
 end

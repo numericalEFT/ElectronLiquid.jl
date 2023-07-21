@@ -47,8 +47,20 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # NOTE: Parquet.polarization returns a dataframe; merge the spin channels
         #       and sum over the external spin: Π_chch = 4 Π_s = 2(Π↑↑ + Π↑↓)
         para = diagPara(paramc, p[1], filter, response)
-        df = Parquet.polarization(para, name=:Π)
-        d = mergeby(df.diagram; operator=Sum(), name=Symbol("Π $response"), factor=para.spin)[1]
+        extK = DiagTree.getK(para.totalLoopNum, 1)
+        df = Parquet.polarization(para, extK; name=:Π)
+        @assert allequal(df.extT) "All external times must be the same for the polarization diagrams!"
+        extT = df.extT[1]
+
+        # NOTE: We explicitly construct the diagram d so that extT is retained in root DiagramIds
+        polar_id = PolarId(para, response; k=extK, t=extT)
+        d = Diagram{Float64}(
+            polar_id,
+            Sum(),
+            df.diagram;
+            name=:Π,
+            factor=para.spin
+        )
         dp = DiagTree.derivative([d,], BareGreenId, p[2], index=1)
         dpp = DiagTree.derivative(dp, BareInteractionId, p[3], index=2)
 
@@ -71,17 +83,18 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
 
     root = [d.root for d in diag] #get the list of root nodes
     #assign the external Tau to the corresponding diagrams
+    extT = [[diag[ri].node.object[idx].para.extT::Tuple{Int,Int} for idx in r] for (ri, r) in enumerate(root)]
     #diag: vector of ExprTreeF64
-    result = (partition, diagpara, diag, root)
+    result = (partition, diagpara, diag, root, extT)
     return result
 end
 
 @inline function phase(varT, extT, l, β)
     tin, tout = varT[extT[1]], varT[extT[2]]
-    return exp(1im * π * 2l / β * (tout - tin))
+    return cos(π * 2l / β * (tout - tin))
 end
 
 include("polarizationKT.jl")
-# include("polarizationKW.jl")
+include("polarizationKW.jl")
 
 end

@@ -77,7 +77,7 @@ function spline(x, y, e)
     return __x, yfit
 end
 
-function plot_instantaneous_polarization_vs_k(para)
+function plot_instantaneous_polarization_kt(para)
     pi_tau_k, kgrid, tgrid = process(para; filename=filename_inst)
 
     dim, β, kF = para.dim, para.β, para.kF
@@ -123,7 +123,7 @@ function plot_instantaneous_polarization_vs_k(para)
     # show()
 end
 
-function plot_polarization_vs_k(para; tau_over_beta_target=0.0)
+function plot_polarization_kt_vs_k(para; tau_over_beta_target=0.0)
     pi_tau_k, kgrid, tgrid = process(para; filename=filename_full)
 
     dim, β, kF = para.dim, para.β, para.kF
@@ -158,18 +158,18 @@ function plot_polarization_vs_k(para; tau_over_beta_target=0.0)
     # NOTE: We measure -Π using Negele & Orland conventions
     ylabel("\$-\\Pi(q, \\tau=$(tau_over_beta_approx)\\beta)\$")
     legend(; loc="best")
-    savefig("polarization_tau=$(tau_over_beta_approx)beta.pdf")
+    savefig("polarization_q_tau=$(tau_over_beta_approx)beta.pdf")
     close("all")
     # show()
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    # Plot instantaneous polarization vs k
+    # Plot Π(q, τ = 0) vs k
     para_inst = ParaMC(rs=1.0, beta=40.0, Fs=-0.0, order=4, mass2=1.0, isDynamic=false)
-    plot_instantaneous_polarization_vs_k(para_inst)
+    plot_instantaneous_polarization_kt(para_inst)
 
-    # # Plot polarization vs k at a fixed τ / β
+    # # Plot Π(q, τ) vs k at a fixed τ / β
     # τ_over_β = 0.5
     # para_full = ParaMC(rs=1.0, beta=40.0, Fs=-0.0, order=4, mass2=1.0, isDynamic=false)
-    # plot_polarization_vs_k(para_full; tau_over_beta_target=τ_over_β)
+    # plot_polarization_kt_vs_k(para_full; tau_over_beta_target=τ_over_β)
 end
