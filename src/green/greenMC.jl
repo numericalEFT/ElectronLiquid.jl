@@ -19,7 +19,7 @@ include("../common/interaction.jl")
 const lgrid = [0, 1]
 const Nl = length(lgrid)
 
-println("Build the diagrams into an experssion tree ...")
+println("Build the diagrams into an expression tree ...")
 
 partition = [(0, 0, 0), (0, 1, 0), (0, 2, 0),
     (1, 0, 0),  # order 1
