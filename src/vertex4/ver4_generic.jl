@@ -135,7 +135,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     #     neighbor = UEG.neighbor(partition)
     # end
     if isnothing(config)
-        config = MCIntegration.Configuration(
+        config = MCIntegration.Configuration(;
             var=(K, T, X, N),
             dof=dof,
             obs=obs,
