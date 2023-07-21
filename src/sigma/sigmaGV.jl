@@ -74,7 +74,7 @@ end
 # end
 
 function LeafInfor(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
-    FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys) where {T,G<:Graph}
+    FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys) where {T,G<:FeynmanDiagram.Graph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
     num_g = length(graph_keys)
     LeafType = [Vector{Int}() for _ in 1:num_g]
