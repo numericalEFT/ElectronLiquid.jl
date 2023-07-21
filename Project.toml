@@ -4,6 +4,7 @@ authors = ["Kun Chen <chenkun0228@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 CompositeGrids = "b5136c89-beeb-4521-9139-60d2cac8be56"
 Cuba = "8a292aeb-7a57-582c-b821-06e4c11590b1"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -21,6 +22,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
 
 [compat]
+AbstractTrees = "0.3, 0.4"
 CompositeGrids = "0.0, 0.1"
 Cuba = "2"
 DataFrames = "1"

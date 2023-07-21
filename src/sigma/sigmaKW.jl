@@ -12,6 +12,11 @@ function integrandKW(idx, vars, config)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
     w = sum(weight[r] * phase(varT, extT[idx][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
+    # w = 0.0 + 0.0im
+    # for (ri, r) in enumerate(diagram.root)
+    #     extT[idx][ri][1] == extT[idx][ri][2] && continue
+    #     w += weight[r] * phase(varT, extT[idx][ri], wn, para.β)
+    # end
 
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(para.dim * loopNum)

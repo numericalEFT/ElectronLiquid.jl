@@ -1,7 +1,7 @@
 module Sigma
 using Cuba
 
-using Printf, LinearAlgebra
+using Printf, LinearAlgebra, AbstractTrees
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
@@ -43,6 +43,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
+    # diagrams = Vector{Diagram{Float64}}()
     for p in _partition
         para = diagPara(paramc, p[1], filter)
         sd::Vector{Diagram{Float64}} = Parquet.sigma(para).diagram
@@ -62,6 +63,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
             push!(diagpara, para)
             push!(partition, p)
             push!(diag, ExprTree.build(sdpp))
+            # append!(diagrams, sdpp)
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end
@@ -72,7 +74,17 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     #assign the external Tau to the corresponding diagrams
     extT = [[diag[ri].node.object[idx].para.extT::Tuple{Int,Int} for idx in r] for (ri, r) in enumerate(root)]
     result = (partition, diagpara, diag, root, extT)
+    # result = (partition, diagpara, diag, root, extT, diagrams)
     return result
+end
+
+function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+    FeynGraphs, FermiLabel, BoseLabel = FeynmanDiagram.SigmaDiagrams(_partition, paramc.dim)
+    diagpara = Vector{DiagParaF64}()
+    for p in _partition
+        push!(diagpara, diagPara(paramc, p[1], filter))
+    end
+    return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel)
 end
 
 @inline function phase(varT, extT, l, β)
@@ -84,5 +96,6 @@ include("sigma_generic.jl")
 include("sigmaKW.jl")
 include("sigmaCuba.jl")
 include("sigmaVegas.jl")
+include("sigmaGV.jl")
 
 end

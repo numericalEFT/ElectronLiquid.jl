@@ -7,6 +7,22 @@ using ..Lehmann
 using LinearAlgebra
 using ..ElectronGas
 
+function green(τ::T, ω::T, β::T) where {T}
+    #generate green function of fermion
+    if τ ≈ T(0.0)
+        τ = -1e-10
+    end
+    if τ > T(0.0)
+        return ω > T(0.0) ?
+               exp(-ω * τ) / (1 + exp(-ω * β)) :
+               exp(ω * (β - τ)) / (1 + exp(ω * β))
+    else
+        return ω > T(0.0) ?
+               -exp(-ω * (τ + β)) / (1 + exp(-ω * β)) :
+               -exp(-ω * τ) / (1 + exp(ω * β))
+    end
+end
+
 function green2(Ek, τ, beta)
     if τ ≈ 0.0
         τ = -1.0e-10
