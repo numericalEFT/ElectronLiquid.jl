@@ -43,7 +43,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     ],
     dR=false # whether to use the derivative of the renormalized interaction, for the RG purpose
 ) where {T}
-    # println("Build the vertex4 diagrams into an experssion tree ...")
+    # println("Build the vertex4 diagrams into an expression tree ...")
     # _partition = UEG.partition(order)
     # println("Diagram set: ", _partition)
 
@@ -86,7 +86,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # extTud = [diag.node.object[idx].para.extT for idx in rootud]
     end
 
-    # diag = [ExprTree.build(d) for d in ver4]    #experssion tree representation of diagrams 
+    # diag = [ExprTree.build(d) for d in ver4]    #expression tree representation of diagrams 
     rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
     rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
     #assign the external Tau to the corresponding diagrams
