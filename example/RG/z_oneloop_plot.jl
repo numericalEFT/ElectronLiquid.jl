@@ -25,11 +25,11 @@ for (_rs, _mass2, _beta, _order) in Iterators.product(rs, mass2, beta, order)
 
     f = jldopen("data_f.jld2", "r")
     key = "$(UEG.short(para))"
-    para, Λgrid, fs, us, dfs, dus = f[key]
+    Λgrid, fs, us, dfs, dus = f[key]
 
     f = jldopen("data_Z.jld2", "r")
     key = "$(UEG.short(para))"
-    para, ngrid, Λgrid, sigma = f[key]
+    ngrid, Λgrid, sigma = f[key]
 
     println(Λgrid)
     println(fs)

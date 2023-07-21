@@ -11,8 +11,8 @@ using JLD2
 # Zrenorm = true
 
 rs = [5.0,]
-mass2 = [0.01, ]
-Fs = [-0.0, ]
+mass2 = [0.01,]
+Fs = [-0.0,]
 beta = [25, 50, 100]
 order = [2,]
 neval = 1e6
@@ -51,7 +51,7 @@ function process(datatuple)
     _z = Dict()
     for (p, val) in ver3
         #by definition, z factor expects q=0, w->0 limit
-        _z[p] = real.(val[1, :, :, 1, 1]+val[2, :, :, 1, 1])  #only keep the kin and qout dependence
+        _z[p] = real.(val[1, :, :, 1, 1] + val[2, :, :, 1, 1])  #only keep the kin and qout dependence
     end
 
     z = CounterTerm.chemicalpotential_renormalization(para.order, _z, dmu)
@@ -60,7 +60,7 @@ function process(datatuple)
     z = [-ones(size(z[1])), z...] #add the bare gamma3, which is one
     println(z)
 
-    z = CounterTerm.z_renormalization(para.order+1, z, dz, 1)
+    z = CounterTerm.z_renormalization(para.order + 1, z, dz, 1)
     println(z)
 
     println(dz)
@@ -71,7 +71,7 @@ function process(datatuple)
         for (qi, q) in enumerate(qgrid)
             for (ki, k) in enumerate(kgrid)
                 s = real(z[o+1][1, ki, qi])
-                @printf("%12.6f  %12.6f    %16s\n", k / kF, q/kF, "$s")
+                @printf("%12.6f  %12.6f    %16s\n", k / kF, q / kF, "$s")
             end
         end
     end
@@ -98,7 +98,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
     kF = para.kF
     for key in keys(f)
-        if UEG.paraid(f[key][1]) == UEG.paraid(para)
+        loadpara = UEG.ParaMC(key)
+        if UEG.paraid(loadpara) == UEG.paraid(para)
             process(f[key])
         end
     end

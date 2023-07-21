@@ -18,6 +18,32 @@ import ..ExprTreeF64
 
 import ..Weight
 
+"""
+    struct OneAngleAveraged
+
+The parameters for the one-angle-averaged vertex4.
+
+# Members
+- `para`: the parameters for the MC integration
+- `kamp`: the amplitude of the external momentum: [left_leg, right_legs]
+- `ωn`: vector of the frequency of the external legs, each element is a 3-vector [left_in, left_out, right_in]
+- `channel`: the channel of the vertex4, :PH or :PP
+- `l`: the angular momentum of the angle average
+"""
+struct OneAngleAveraged
+    para::ParaMC
+    kamp::Vector{Float64}
+    ωn::Vector{Vector{Int}} #allow measure multiple frequency simultaneously
+    channel::Symbol #:PH or :PP
+    l::Int #angular momentum
+    function OneAngleAveraged(para, kamp, ωn, channel, l)
+        @assert channel == :PH || channel == :PP "the channel should be :PH or :PP"
+        @assert length(kamp) == 2 "there two amplitude of K"
+        # @assert length(ωn) == 3 "the length of ωn should be 3, which corresponds to Lin, Rin, Lout."
+        return new(para, kamp, ωn, channel, l)
+    end
+end
+
 function diagPara(para::ParaMC, order, filter, transferLoop)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     return DiagParaF64(
@@ -43,7 +69,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     ],
     dR=false # whether to use the derivative of the renormalized interaction, for the RG purpose
 ) where {T}
-    # println("Build the vertex4 diagrams into an experssion tree ...")
+    # println("Build the vertex4 diagrams into an expression tree ...")
     # _partition = UEG.partition(order)
     # println("Diagram set: ", _partition)
 
@@ -86,7 +112,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         # extTud = [diag.node.object[idx].para.extT for idx in rootud]
     end
 
-    # diag = [ExprTree.build(d) for d in ver4]    #experssion tree representation of diagrams 
+    # diag = [ExprTree.build(d) for d in ver4]    #expression tree representation of diagrams 
     rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
     rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
     #assign the external Tau to the corresponding diagrams
@@ -118,6 +144,7 @@ end
 include("ver4KW.jl")
 include("ver4_PH_l.jl")
 include("ver4_PH_l_df.jl")
+include("ver4_generic.jl")
 include("exchange_interaction.jl")
 
 end

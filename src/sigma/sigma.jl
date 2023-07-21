@@ -37,7 +37,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     ],
     dR=false # whether to use the derivative of the renormalized interaction, for the RG purpose
 ) where {T}
-    println("Build the sigma diagrams into an experssion tree ...")
+    println("Build the sigma diagrams into an expression tree ...")
     println("Diagram set: ", _partition)
 
     diag = Vector{ExprTreeF64}()

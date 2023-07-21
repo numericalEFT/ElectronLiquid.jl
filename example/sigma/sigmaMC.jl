@@ -63,7 +63,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
                 @warn("replacing existing data for $key")
                 delete!(f, key)
             end
-            f[key] = (para, ngrid, kgrid, sigma)
+            f[key] = (ngrid, kgrid, sigma)
         end
         for (ip, key) in enumerate(partition)
             println("Group ", key)

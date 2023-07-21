@@ -101,7 +101,9 @@ end
 function loaddata(para, FileName=filename)
     key = UEG.short(para)
     f = jldopen(FileName, "r")
-    p, ngrid, kgrid, sigma = f[key]
+
+    p = UEG.ParaMC(key)
+    ngrid, kgrid, sigma = f[key]
     # println(sigma)
     order = p.order
     _partition = UEG.partition(para.order)

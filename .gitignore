@@ -28,3 +28,4 @@ docs/build
 .vscode
 .history
 LocalPreferences.toml
+run/
