@@ -1,18 +1,19 @@
 using ElectronLiquid
 using CompositeGrids
 using JLD2, Printf
-# using MPI
 
-# MPI.Init()
 dim = 2
 rs = [0.5,]
 mass2 = [4.0,]
 Fs = [-0.0,]
 beta = [50.0]
 order = [2,]
-neval = 4e7
+# neval = 4e7
+neval = 1e6
 isDynamic = false
 isFock = false
+diagGenerate = :GV
+# diagGenerate = :Parquet
 
 # mission = :Z
 # mission = :K
@@ -27,7 +28,6 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         ######### calcualte Z factor ######################
         kgrid = [kF,]
         ngrid = [-1, 0]
-        # ngrid = [-1, 0, 1]
     elseif mission == "K"
         ######### calculate K dependence #####################
         Nk, korder = 4, 4
@@ -43,21 +43,28 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     # partition = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
     partition = UEG.partition(_order)
     neighbor = UEG.neighbor(partition)
-    # @time diagram = Sigma.diagram(para, partition)
-    @time diagram = Sigma.diagramGV(para, partition)
     reweight_goal = Float64[]
     for (order, sOrder, vOrder) in partition
         push!(reweight_goal, 4.0^(order + vOrder - 1))
     end
     push!(reweight_goal, 2.0)
 
-    # sigma, result = Sigma.KW(para, diagram;
-    sigma, result = Sigma.GV(para, diagram;
-        neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
-        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+    if diagGenerate == :GV
+        @time diagram = Sigma.diagramGV(para, partition)
+        sigma, result = Sigma.GV(para, diagram;
+            neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+    elseif diagGenerate == :Parquet
+        @time diagram = Sigma.diagram(para, partition)
+        sigma, result = Sigma.KW(para, diagram;
+            neighbor=neighbor, reweight_goal=reweight_goal[1:length(partition)+1],
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+    else
+        error("unknown diagrams' generated type")
+    end
 
     if isnothing(sigma) == false
-        jldopen("data_$(mission)_GV.jld2", "a+") do f
+        jldopen("data_$(mission).jld2", "a+") do f
             key = "$(UEG.short(para))"
             if haskey(f, key)
                 @warn("replacing existing data for $key")
