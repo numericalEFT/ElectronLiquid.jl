@@ -74,7 +74,7 @@ end
         # return 4π * e0^2 / ((q^2) * (1 - exp(-q^2 / (0.5 * kF)^2)) + (kF^2 + mass2) * exp(-q^2 / (0.5 * kF)^2)) + fs
     elseif dim == 2
         # return 2π * e0^2 / sqrt(q^2 + mass2) + fs # Yukawa
-        return  2π * e0^2 / (abs(q) + mass2) + fs
+        return 2π * e0^2 / (abs(q) + mass2) + fs
     else
         error("not implemented!")
     end
