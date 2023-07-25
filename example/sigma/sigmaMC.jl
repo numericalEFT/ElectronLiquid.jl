@@ -40,8 +40,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         error("unknown mission")
     end
 
-    partition = [(1, 0, 0), (2, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
-    # partition = UEG.partition(_order)
+    # partition = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
+    partition = UEG.partition(_order)
     neighbor = UEG.neighbor(partition)
     reweight_goal = Float64[]
     for (order, sOrder, vOrder) in partition
