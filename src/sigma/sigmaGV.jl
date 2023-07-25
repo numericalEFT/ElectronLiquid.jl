@@ -1,23 +1,26 @@
 function integrandGV(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
-    para, kgrid, ngrid, MaxLoopNum = config.userdata[1:4]
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx, extT_labels = config.userdata[5]
-    LoopPool = config.userdata[6]
-    root = config.userdata[7]
-    graphfuncs! = config.userdata[8]
+    para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
+    # para, kgrid, ngrid, MaxLoopNum = config.userdata[1:4]
+    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
+    interactionleaf = config.userdata[7][idx]
+    LoopPool, root = config.userdata[8:9]
+    graphfuncs! = config.userdata[10][idx]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
-    for (i, lf) in enumerate(leafType[idx])
-        if lf == 0
+    # println(idx)
+    # println(varT[1:5])
+    for (i, lftype) in enumerate(leafType[idx])
+        if lftype == 0
             continue
-        elseif isodd(lf) #fermionic 
+        elseif isodd(lftype) #fermionic 
             τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
             ϵ = dot(kq, kq) / (2me) - μ
-            order = (lf - 1) / 2
+            order = (lftype - 1) / 2
             if order == 0
                 leaf[idx][i] = Propagator.green(τ, ϵ, β)
             elseif order == 1
@@ -33,10 +36,14 @@ function integrandGV(idx, vars, config)
             else
                 error("not implemented!")
             end
+            # if idx == 8 && i == length(leafType[idx])
+            #     println(varT[leafτ_o[idx][i]], " ", varT[leafτ_o[idx][i]])
+            #     println(kq)
+            #     println(leaf[idx][i])
+            # end
         else
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
-            # leaf[idx][i] = 8π / (dot(kq, kq) + λ)
-            order = lf / 2 - 1
+            order = lftype / 2 - 1
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
                 leaf[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
@@ -48,7 +55,14 @@ function integrandGV(idx, vars, config)
             end
         end
     end
-    graphfuncs![idx](root, leaf[idx])  # allocations due to run-time variable `idx`
+
+    graphfuncs!(root, leaf[idx], interactionleaf)  # allocations due to run-time variable `idx`
+    # graphfuncs!(root, LeafPool)  # allocations due to run-time variable `idx`
+    # if idx == 3
+    #     println(root[1:2])
+    #     # println(leaf[idx])
+    #     # println(interactionleaf)
+    # end
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -87,13 +101,17 @@ function GV(para::ParaMC, diagram;
     para.isDynamic && UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel = diagram
+    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 2
     LoopPool = FermiLabel.labels[3]
+    PropagatorMap, InteractionMap = mappings
 
-    LeafStat = FeynmanDiagram.LeavesState(FeynGraphs, FermiLabel, BoseLabel, partition)
+    # LeafStat = FeynmanDiagram.LeavesState(FeynGraphs, FermiLabel, BoseLabel, partition)
+    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.LeavesState(FeynGraphs, FermiLabel, BoseLabel, partition)
+    # LeafStates = [LeafStat[key] for key in partition]
     root = zeros(Float64, 24)
-    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1]) for (i, key) in enumerate(partition))
+    # funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1]) for (i, key) in enumerate(partition))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
 
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
@@ -115,7 +133,8 @@ function GV(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, MaxLoopNum, LeafStat, LoopPool, root, funcGraphs!),
+            # userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, LeafStates, LoopPool, root, funcGraphs!),
+            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
             kwargs...
         )
     end
@@ -134,11 +153,11 @@ function GV(para::ParaMC, diagram;
 
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
-            if length(dof) == 1
-                avg, std = result.mean, result.stdev
-            else
-                avg, std = result.mean[o], result.stdev[o]
-            end
+            # if length(dof) == 1
+            #     avg, std = result.mean, result.stdev
+            # else
+            avg, std = result.mean[o], result.stdev[o]
+            # end
             r = measurement.(real(avg), real(std)) ./ (-2β)
             i = measurement.(imag(avg), imag(std)) ./ (-2β)
             data = Complex.(r, i)

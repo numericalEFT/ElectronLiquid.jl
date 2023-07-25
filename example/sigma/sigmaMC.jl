@@ -7,9 +7,9 @@ rs = [0.5,]
 mass2 = [4.0,]
 Fs = [-0.0,]
 beta = [50.0]
-order = [2,]
-# neval = 4e7
-neval = 1e6
+order = [3,]
+neval = 1e7
+# neval = 1e6
 isDynamic = false
 isFock = false
 diagGenerate = :GV
@@ -40,8 +40,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         error("unknown mission")
     end
 
-    # partition = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
-    partition = UEG.partition(_order)
+    partition = [(1, 0, 0), (2, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
+    # partition = UEG.partition(_order)
     neighbor = UEG.neighbor(partition)
     reweight_goal = Float64[]
     for (order, sOrder, vOrder) in partition
