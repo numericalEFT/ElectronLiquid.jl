@@ -112,7 +112,7 @@ function KW(para::ParaMC, diagram;
             report(result; pick=o -> (real(o[2, 1, 1, 1, 1, 1, 1])), name="ud")
         end
 
-        avg, std = result.mean, result.stdev
+        avg, std = result.mean[1], result.stdev[1]
         r = measurement.(real(avg), real(std))
         i = measurement.(imag(avg), imag(std))
         data = Complex.(r, i)
