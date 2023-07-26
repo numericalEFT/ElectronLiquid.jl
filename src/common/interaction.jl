@@ -5,6 +5,7 @@ using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
+const minq = 1e-16
 
 """
     function lindhard(x)
@@ -38,8 +39,8 @@ end
 @inline function polarKW(q, n::Int, para::ParaMC)
     return Polarization.Polarization0_ZeroTemp(q, n, para.basic) * para.spin * para.massratio
     # return Polarization.Polarization0_3dZeroTemp_LinearDispersion(q, n, para.basic) * para.spin * para.massratio
-    # if q < 1e-6
-    #     q = 1e-6
+    # if q < minq
+    #     q = minq
     # end
     # wn = (2π * n) / para.β
     # vF = para.kF / para.me
@@ -61,8 +62,8 @@ end
 
 #fast version
 @inline function KOinstant(q, e0, dim, mass2, fs, kF)
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < minq
+        q = minq
     end
     if dim == 3
         return 4π * e0^2 / (q^2 + mass2) + fs
@@ -74,7 +75,7 @@ end
         # return 4π * e0^2 / ((q^2) * (1 - exp(-q^2 / (0.5 * kF)^2)) + (kF^2 + mass2) * exp(-q^2 / (0.5 * kF)^2)) + fs
     elseif dim == 2
         # return 2π * e0^2 / sqrt(q^2 + mass2) + fs # Yukawa
-        return  2π * e0^2 / (abs(q) + mass2) + fs
+        return 2π * e0^2 / (abs(q) + mass2) + fs
     else
         error("not implemented!")
     end
@@ -140,8 +141,8 @@ Rq = r_q / (1 - r_q Π0) - f
 ```
 """
 function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < minq
+        q = minq
     end
     invKOinstant = 1.0 / KOinstant(q, para)
     Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
@@ -149,8 +150,8 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
 end
 
 function KO_W_df(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < minq
+        q = minq
     end
     # invKOinstant = 1.0 / KOinstant(q, para)
     # Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
@@ -406,9 +407,9 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
+    if qd <= minq * kF
         # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-6 * kF
+        qd = minq * kF
     end
 
     if order <= p.order
@@ -429,9 +430,9 @@ function counterR_df(p::ParaMC, qd, τIn, τOut, order)
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
+    if qd <= minq * kF
         # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-6 * kF
+        qd = minq * kF
     end
 
     if order <= p.order
@@ -471,8 +472,8 @@ where Π₀ is the polarization of free electrons.
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= minq * kF
+        qd = minq * kF
     end
 
     vd = KOinstant(qd, p)
@@ -521,8 +522,8 @@ kostatic - dynamic = v_q
     if qd > maxK
         return 0.0
     end
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= minq * kF
+        qd = minq * kF
     end
     # if there is no dynamic interactoin
     # return KOinstant(qd)
@@ -569,8 +570,8 @@ where Π₀ is the polarization of free electrons.
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= minq * kF
+        qd = minq * kF
     end
 
     return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
