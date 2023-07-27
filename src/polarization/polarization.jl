@@ -89,6 +89,31 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     return result
 end
 
+function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree],
+    response::Response=ChargeCharge) where {T}
+    gkeys = Vector{T}()
+    for p in _partition
+        if p[1] == 1 && p[3] > 0
+            @warn("partition $p doesn't have any diagram. It will be ignored.")
+        else
+            push!(gkeys, p)
+        end
+    end
+
+    if response == ChargeCharge
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.GVdiagrams(:chargePolar, gkeys, paramc.dim)
+    elseif response == SpinSpin
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.GVdiagrams(:spinPolar, gkeys, paramc.dim)
+    else
+        error("$response response not yet implemented!")
+    end
+    diagpara = Vector{DiagParaF64}()
+    for p in gkeys
+        push!(diagpara, diagPara(paramc, p[1], filter, response))
+    end
+    return (gkeys, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
+end
+
 @inline function phase(varT, extT, l, β)
     tin, tout = varT[extT[1]], varT[extT[2]]
     return cos(π * 2l / β * (tout - tin))
@@ -96,5 +121,6 @@ end
 
 include("polarizationKT.jl")
 include("polarizationKW.jl")
+include("polarizationGV.jl")
 
 end

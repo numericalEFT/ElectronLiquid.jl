@@ -41,41 +41,44 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     end
 
     # partition = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
-    partition = UEG.partition(_order)
-    neighbor = UEG.neighbor(partition)
+    _partition = UEG.partition(_order)
     reweight_goal = Float64[]
-    for (order, sOrder, vOrder) in partition
+    partition = Vector{eltype(_partition)}()
+    for (order, sOrder, vOrder) in _partition
+        order == 1 && vOrder > 0 && continue
         push!(reweight_goal, 4.0^(order + vOrder - 1))
+        push!(partition, (order, sOrder, vOrder))
     end
     push!(reweight_goal, 2.0)
+    neighbor = UEG.neighbor(partition)
 
     if diagGenerate == :GV
-        @time diagram = Sigma.diagramGV(para, partition)
-        sigma, result = Sigma.GV(para, diagram;
+        @time diagram = Polarization.diagramGV(para, partition)
+        polar, result = Polarization.GV(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
     elseif diagGenerate == :Parquet
-        @time diagram = Sigma.diagram(para, partition)
-        sigma, result = Sigma.KW(para, diagram;
+        @time diagram = Polarization.diagram(para, partition)
+        polar, result = Polarization.KW(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
     else
         error("unknown diagrams' generated type")
     end
 
-    if isnothing(sigma) == false
+    if isnothing(polar) == false
         jldopen("data_$(mission).jld2", "a+") do f
             key = "$(UEG.short(para))"
             if haskey(f, key)
                 @warn("replacing existing data for $key")
                 delete!(f, key)
             end
-            f[key] = (ngrid, kgrid, sigma)
+            f[key] = (ngrid, kgrid, polar)
         end
         for (ip, key) in enumerate(partition)
             println("Group ", key)
             @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
-            r, i = real(sigma[key]), imag(sigma[key])
+            r, i = real(polar[key]), imag(polar[key])
             for (in, n) in enumerate(ngrid)
                 println("n = $n")
                 for (iq, q) in enumerate(kgrid)
