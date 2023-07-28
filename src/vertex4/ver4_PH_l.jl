@@ -117,20 +117,12 @@ function PH(para::ParaMC, diagram;
         end
 
         datadict = Dict{eltype(partition),Any}()
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for k in 1:length(dof)
+            avg, std = result.mean[k], result.stdev[k]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for k in 1:length(dof)
-                avg, std = result.mean[k], result.stdev[k]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[k]] = data
-            end
+            datadict[partition[k]] = data
         end
         return datadict, result
     else

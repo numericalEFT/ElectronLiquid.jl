@@ -79,12 +79,12 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
 end
 
 function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
-    FeynGraphs, FermiLabel, BoseLabel = FeynmanDiagram.SigmaDiagrams(_partition, paramc.dim)
     diagpara = Vector{DiagParaF64}()
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
     end
-    return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel)
+    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, paramc.dim)
+    return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
 end
 
 @inline function phase(varT, extT, l, β)

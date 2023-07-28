@@ -111,20 +111,12 @@ function KW(para::ParaMC, diagram;
         # datadict = Dict{eltype(partition),Complex{Measurement{Float64}}}()
         datadict = Dict{eltype(partition),Any}()
 
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for o in 1:length(dof)
+            avg, std = result.mean[o], result.stdev[o]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for o in 1:length(dof)
-                avg, std = result.mean[o], result.stdev[o]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[o]] = data
-            end
+            datadict[partition[o]] = data
         end
         return datadict, result
     else
