@@ -92,7 +92,7 @@ function GV(para::ParaMC, diagram;
     LoopPool = FermiLabel.labels[3]
     PropagatorMap, InteractionMap = mappings
 
-    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.LeavesState(FeynGraphs, FermiLabel, BoseLabel, partition)
+    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
     root = zeros(Float64, 24)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
 

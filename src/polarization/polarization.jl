@@ -101,9 +101,9 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram
     end
 
     if response == ChargeCharge
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.GVdiagrams(:chargePolar, gkeys, paramc.dim)
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:chargePolar, gkeys, paramc.dim)
     elseif response == SpinSpin
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.GVdiagrams(:spinPolar, gkeys, paramc.dim)
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:spinPolar, gkeys, paramc.dim)
     else
         error("$response response not yet implemented!")
     end
