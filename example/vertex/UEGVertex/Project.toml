@@ -1,0 +1,10 @@
+name = "UEGVertex"
+uuid = "762081b3-4597-471f-84e4-2c3777c4d0f8"
+authors = ["Kun Chen <chenkun0228@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CompositeGrids = "b5136c89-beeb-4521-9139-60d2cac8be56"
+ElectronLiquid = "fe3a0b7f-0e79-43cc-aa0f-33de5212abe5"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+MCIntegration = "ea1e2de9-7db7-4b42-91ee-0cd1bf6df167"
