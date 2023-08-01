@@ -490,6 +490,63 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
 
     return mu, sw
 end
+"""
+    function densityCT(order, nw; isfock=false)
+
+Derive the chemicalpotential shift from the density.
+
+# Arguments
+- `order` : total order
+- `nw`     : ∫G(k,0⁻)dk,   Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+- `isfock`: if true (false) Fock renormalization is turned on (off)
+- `verbose`: verbosity level (0 (default): no output to stdout, 1: print to stdout)
+
+# Return δμ
+The convention is the following:
+- `δμ`  : chemical_potential_shift_with_renormalization_condition = δμ_1+δμ_2+...
+
+"""
+function densityCT(order, nw; isfock=false, verbose=0)
+    nwtype = typeof(collect(values(nw))[1])
+    δμ = zeros(nwtype, order - 1)
+    nR = mergeInteraction(nw)
+
+    if isfock
+        δμ[1] = zero(nwtype)
+        # if order >= 3
+        #     δμ[2] = -nR[(3,0)]/nR[(1,1)]
+        # end
+        # if order >= 4
+        #     δμ[3] = -(nR[(4,0)] + nR[(2,1)] * δμ[2]) / nR[(1,1)]
+        # end
+        # if order >= 5
+        #     δμ[4] = -(nR[(5,0)] + nR[(3,1)] * δμ[2] + nR[(2,1)] * δμ[3] + nR[(1,2)] * δμ[2]^2) / nR[(1,1)]
+        # end
+    else
+        if order >= 2
+            δμ[1] = -nR[(2, 0)] / nR[(1, 1)]
+        end
+    end
+    if order >= 3
+        δμ[2] = -(nR[(3, 0)] + nR[(2, 1)] * δμ[1] + nR[(1, 2)] * δμ[1]^2) / nR[(1, 1)]
+    end
+    if order >= 4
+        δμ[3] = -(nR[(4, 0)] + nR[(3, 1)] * δμ[1] + nR[(2, 1)] * δμ[2] +
+                  nR[(2, 2)] * δμ[1]^2 + nR[(1, 3)] * δμ[1]^3 + nR[(1, 2)] * 2 * δμ[2] * δμ[1]) / nR[(1, 1)]
+    end
+    if order >= 5
+        δμ[4] = -(nR[(5, 0)] + nR[(4, 1)] * δμ[1] + nR[(3, 1)] * δμ[2] + +nR[(2, 1)] * δμ[3] +
+                  nR[(3, 2)] * δμ[1]^2 + nR[(2, 3)] * δμ[1]^3 + nR[(2, 2)] * 2 * δμ[2] * δμ[1] +
+                  nR[(1, 4)] * δμ[1]^4 + nR[(1, 3)] * 3 * δμ[1]^2 * δμ[2] + nR[(1, 2)] * (2 * δμ[1] * δμ[3] + δμ[2]^2)) / nR[(1, 1)]
+    end
+    if verbose > 0
+        printstyled(@sprintf("%8s  %24s \n", "order", "δμ"), color=:green)
+        for o in 1:order-1
+            @printf("%8d  %24s \n", o, "$(δμ[o])")
+        end
+    end
+    return δμ
+end
 
 # """
 #     function muCT(df, paraid, order)
