@@ -12,59 +12,43 @@ beta = [25.0,]
 order = [4,]
 isDynamic = false
 
-const filename = "data_Z.jld2"
+const filename = "data_n.jld2"
 
 # const parafilename = "para.csv"
-const parafilename = "para_wn_1minus0.csv"
-
-function zfactor(data, β)
-    return @. (imag(data[2, 1]) - imag(data[1, 1])) / (2π / β)
-end
-
-function mu(data)
-    return real(data[1, 1])
-end
+# const parafilename = "para_wn_1minus0.csv"
 
 function process(para, datatuple, isSave)
-    df = CounterTerm.fromFile(parafilename)
-    ngrid, kgrid, data = datatuple
+    # df = CounterTerm.fromFile(parafilename)
+    data = datatuple[1]
     printstyled(UEG.short(para), color=:yellow)
     println()
 
     for p in sort([k for k in keys(data)])
-        println("$p: μ = $(mu(data[p]))   z = $(zfactor(data[p], para.β))")
+        println("$p: μ = $(data[p])")
     end
 
     _mu = Dict()
     for (p, val) in data
-        _mu[p] = mu(val)
-    end
-    _z = Dict()
-    for (p, val) in data
-        _z[p] = zfactor(val, para.β)
+        _mu[p] = val
     end
 
-    dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
-    println("dz: ", dzi)
-    for i in eachindex(dzi)
-        println("z[$i]: ", 1.0 / (1.0 + sum(dzi[1:i])))
-    end
-
+    # dzi, dmu, dz = CounterTerm.sigmaCT(para.order, _mu, _z)
+    dmu = CounterTerm.densityCT(para.order, _mu, verbose=1)
     for i in eachindex(dmu)
         println("dmu[$i]: ", dmu[i])
     end
 
-    ############# save to csv  #################
-    # println(df)
-    for P in keys(data)
-        # println(P)
-        # global df
-        paraid = UEG.paraid(para)
-        df = CounterTerm.appendDict(df, paraid, Dict("partition" => P, "μ" => _mu[P].val, "μ.err" => _mu[P].err, "Σw" => _z[P].val, "Σw.err" => _z[P].err); replace=true)
-    end
+    # ############# save to csv  #################
+    # # println(df)
+    # for P in keys(data)
+    #     # println(P)
+    #     # global df
+    #     paraid = UEG.paraid(para)
+    #     df = CounterTerm.appendDict(df, paraid, Dict("partition" => P, "μ" => _mu[P].val, "μ.err" => _mu[P].err, "Σw" => _z[P].val, "Σw.err" => _z[P].err); replace=true)
+    # end
 
-    # println("new dataframe\n$df")
-    isSave && CounterTerm.toFile(df, parafilename)
+    # # println("new dataframe\n$df")
+    # isSave && CounterTerm.toFile(df, parafilename)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
