@@ -116,12 +116,12 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, filename::Union
         diagram = Sigma.diagramGV(para, partition)
         sigma, result = Sigma.GV(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
     elseif diagtype == :Parquet
         diagram = Sigma.diagram(para, partition)
         sigma, result = Sigma.KW(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
     else
         error("unknown diagrams' generated type")
     end
