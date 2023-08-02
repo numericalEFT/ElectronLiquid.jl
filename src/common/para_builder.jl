@@ -110,7 +110,9 @@ paraid(p::ParaMC) = Dict(
 
 _iszero(x) = (x ≈ 0.0) && (x isa AbstractFloat)
 
-short(p::ParaMC) = join([_iszero(v) ? "$(k)_0.0" : "$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+robust_short(p::ParaMC) = join([_iszero(v) ? "$(k)_0.0" : "$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
 
 """Mapping from ParaMC fields saved in short format to their corresponding types"""
 const short_paratypes = Dict(
