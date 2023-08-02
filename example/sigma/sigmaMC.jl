@@ -40,49 +40,11 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         error("unknown mission")
     end
 
-    # partition = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
-    partition = UEG.partition(_order)
-    neighbor = UEG.neighbor(partition)
-    reweight_goal = Float64[]
-    for (order, sOrder, vOrder) in partition
-        push!(reweight_goal, 4.0^(order + vOrder - 1))
-    end
-    push!(reweight_goal, 2.0)
+    filename = "data_$(mission).jld2"
 
-    if diagGenerate == :GV
-        @time diagram = Sigma.diagramGV(para, partition)
-        sigma, result = Sigma.GV(para, diagram;
-            neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
-    elseif diagGenerate == :Parquet
-        @time diagram = Sigma.diagram(para, partition)
-        sigma, result = Sigma.KW(para, diagram;
-            neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:thread)
-    else
-        error("unknown diagrams' generated type")
-    end
+    sigma, result = Sigma.MC(para; kgrid=kgrid, ngrid=ngrid,
+        neval=neval, filename=filenmae,
+        diagtype=diagGenerate)
 
-    if isnothing(sigma) == false
-        jldopen("data_$(mission).jld2", "a+") do f
-            key = "$(UEG.short(para))"
-            if haskey(f, key)
-                @warn("replacing existing data for $key")
-                delete!(f, key)
-            end
-            f[key] = (ngrid, kgrid, sigma)
-        end
-        for (ip, key) in enumerate(partition)
-            println("Group ", key)
-            @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
-            r, i = real(sigma[key]), imag(sigma[key])
-            for (in, n) in enumerate(ngrid)
-                println("n = $n")
-                for (iq, q) in enumerate(kgrid)
-                    @printf("%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n", q[1] / kF, r[in, iq].val, r[in, iq].err, i[in, iq].val, i[in, iq].err)
-                end
-            end
-        end
-    end
 end
 
