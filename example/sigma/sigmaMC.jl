@@ -43,7 +43,7 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     filename = "data_$(mission).jld2"
 
     sigma, result = Sigma.MC(para; kgrid=kgrid, ngrid=ngrid,
-        neval=neval, filename=filenmae,
+        neval=neval, filename=filename,
         diagtype=diagGenerate)
 
 end
