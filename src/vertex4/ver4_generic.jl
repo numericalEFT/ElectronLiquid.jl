@@ -119,6 +119,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     print=0,
     alpha=3.0, #learning ratio
     config=nothing,
+    measurefreq=5,
     kwargs...
 )
 
@@ -160,6 +161,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
+            measurefreq=measurefreq,
             userdata=(paras, diag, root, extT),
             kwargs...
         )
