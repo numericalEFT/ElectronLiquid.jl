@@ -81,12 +81,12 @@ end
 #     e0::Float64
 # end
 
-function MCinitialize!(para::ParaMC)
+function MCinitialize!(para::ParaMC, bubble::Bool=true)
     para.dW0 .= KOdynamic_T(para)
     para.dW0_f .= KOdynamic_T_df(para)
     for o in 1:para.order-1
-        push!(para.cRs, counterKO_T(para; order=o))
-        push!(para.cRs_f, counterKO_T_df(para; order=o))
+        push!(para.cRs, counterKO_T(para; order=o, bubble=bubble))
+        push!(para.cRs_f, counterKO_T_df(para; order=o, bubble=bubble))
     end
     para.initialized = true
 end

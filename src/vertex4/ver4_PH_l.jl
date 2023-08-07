@@ -65,13 +65,23 @@ function PH(para::ParaMC, diagram;
     config=nothing,
     kwargs...
 )
-    UEG.MCinitialize!(para)
+    partition, diagpara, diag, root, extT = diagram
+
+    # UEG.MCinitialize!(para)
+    if NoBubble in diagpara[1].filter
+        UEG.MCinitialize!(para, false)
+    else
+        UEG.MCinitialize!(para, true)
+    end
+
+    for p in diagpara
+        @assert diagpara[1].filter == p.filter "filter should be the same"
+    end
 
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     Nl = length(l)
     Nk = length(kamp)
 
-    partition, diagpara, diag, root, extT = diagram
     @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
     @assert length(root[1]) == length(root[2])
     @assert length(extT[1]) == length(extT[2])
