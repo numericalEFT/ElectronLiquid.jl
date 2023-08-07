@@ -188,7 +188,7 @@ function MC_PH(para; kamp=[para.kF,], n=[-1, 0, 0, -1], l=[0,],
                     @warn("replacing existing data for $key")
                     delete!(f, key)
                 end
-                f[key] = (kamp, n, lgrid, ver4)
+                f[key] = (kamp, n, l, ver4)
             end
         end
     end
