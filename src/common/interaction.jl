@@ -519,7 +519,7 @@ kostatic - dynamic = v_q
     kF, maxK = p.kF, p.maxK
 
     if qd > maxK
-        return 0.0
+        return KOinstant(qd, p) / p.β #if qd is very large, the interactin is reduced to the bare one
     end
     if qd <= 1e-6 * kF
         qd = 1e-6 * kF
@@ -528,14 +528,15 @@ kostatic - dynamic = v_q
     # return KOinstant(qd)
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
-    # return KOinstant(qd, p) / β
+    # return KOinstant(qd, p) / p.β
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
     # if qd > 50 * kF
     #     println("$τIn, $τOut")
     #     println("$(KOstatic(qd) / β), $(interactionDynamic(qd, τIn, τOut)), $(fp / β)")
-    #     exit(0)
+    #     error("too large qd!")
     # end
+
     kostatic = KOstatic(qd, p)
     return kostatic / p.β - interactionDynamic(p, qd, τIn, τOut)
 end
