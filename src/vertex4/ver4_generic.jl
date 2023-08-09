@@ -63,7 +63,7 @@ function _diagram_weight(idx, var, config)
         wud = zero(ComplexF64)
     end
 
-    return Weight(wuu, wud), factor
+    return Weight{ComplexF64}(wuu, wud), factor
 end
 
 function _measureGeneric(idx, var, obs, relative_weight, config)
@@ -175,8 +175,8 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     if isnothing(result) == false
         if print >= 0
             report(result.config)
-            report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
-            report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+            # report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+            # report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
         end
 
         datadict = Dict{eltype(partition),Any}()
