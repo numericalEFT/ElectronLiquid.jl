@@ -525,10 +525,10 @@ kostatic - dynamic = v_q
         qd = 1e-6 * kF
     end
     # if there is no dynamic interactoin
-    # return KOinstant(qd)
+    # return KOinstant(qd) - p.fs
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
-    # return KOinstant(qd, p) / p.β
+    # return (KOinstant(qd, p) - p.fs) / p.β  #subtract the local part
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
     # if qd > 50 * kF
