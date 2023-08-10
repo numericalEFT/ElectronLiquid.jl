@@ -519,7 +519,7 @@ kostatic - dynamic = v_q
     kF, maxK = p.kF, p.maxK
 
     if qd > maxK
-        return KOinstant(qd, p) / p.β #if qd is very large, the interactin is reduced to the bare one
+        return (KOinstant(qd, p)-p.fs) / p.β #if qd is very large, the interactin is reduced to the bare one
     end
     if qd <= 1e-6 * kF
         qd = 1e-6 * kF
