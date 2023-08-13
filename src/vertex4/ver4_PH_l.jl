@@ -110,11 +110,11 @@ function PH(para::ParaMC, diagram;
     # end
 
     if isnothing(result) == false
-        if print >= 0
-            report(result.config)
-            report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
-            report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
-        end
+        # if print >= 0
+        #     report(result.config)
+        #     report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+        #     report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+        # end
 
         datadict = Dict{eltype(partition),Any}()
         for k in 1:length(dof)
@@ -129,4 +129,68 @@ function PH(para::ParaMC, diagram;
         return nothing, nothing
     end
 
+end
+
+function MC_PH(para; kamp=[para.kF,], n=[-1, 0, 0, -1], l=[0,],
+    neval=1e6, filename::Union{String,Nothing}=nothing,
+    filter=[NoHartree, NoBubble, Proper],
+    channel=[PHr, PHEr, PPr],
+    partition=UEG.partition(para.order),
+    verbose=0
+)
+
+    kF = para.kF
+    _order = para.order
+
+    # partition = UEG.partition(_order)
+
+
+    diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
+
+    partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    neighbor = UEG.neighbor(partition)
+
+    reweight_goal = Float64[]
+    for (order, sOrder, vOrder) in partition
+        # push!(reweight_goal, 8.0^(order + vOrder - 1))
+        push!(reweight_goal, 8.0^(order - 1))
+    end
+    push!(reweight_goal, 1.0)
+    println(length(reweight_goal))
+
+    ver4, result = Ver4.PH(para, diagram;
+        kamp=kamp, n=n, l=l,
+        neval=neval, print=verbose,
+        neighbor=neighbor,
+        reweight_goal=reweight_goal
+    )
+
+    if isnothing(ver4) == false
+        for (p, data) in ver4
+            printstyled("permutation: $p\n", color=:yellow)
+            for (li, _l) in enumerate(l)
+                printstyled("l = $_l\n", color=:green)
+                @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
+                for (ki, k) in enumerate(kamp)
+                    factor = 1.0
+                    d1, d2 = real(data[1, li, ki]) * factor, real(data[2, li, ki]) * factor
+                    s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
+                    di, ex = (s - a), (a) * 2.0
+                    @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$di", "$ex", "$s", "$a")
+                end
+            end
+        end
+
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (kamp, n, l, ver4)
+            end
+        end
+    end
+    return ver4, result
 end
