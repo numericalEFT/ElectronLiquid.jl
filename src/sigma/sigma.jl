@@ -108,7 +108,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, filename::Union
     neighbor = UEG.neighbor(partition)
     reweight_goal = Float64[]
     for (order, sOrder, vOrder) in partition
-        push!(reweight_goal, 4.0^(order + vOrder - 1))
+        push!(reweight_goal, 2.0^(2order + sOrder + vOrder - 2))
     end
     push!(reweight_goal, 2.0)
 
