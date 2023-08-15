@@ -2,7 +2,7 @@
 Calculate vertex4 averged on the Fermi surface
 """
 function integrandPH(idx, var, config)
-    para, diag, root, extT, kampgrid, lgrid, n = config.userdata
+    para, diag, root, extT, kampgrid, kamp2grid, lgrid, n = config.userdata
 
     kF, β = para.kF, para.β
     varK, varT = var[1], var[2]
@@ -11,9 +11,10 @@ function integrandPH(idx, var, config)
     l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
     kamp = kampgrid[var[5][1]]
+    kamp2 = kamp2grid[var[5][1]]
     varK.data[1, 1], varK.data[1, 2] = kamp, kamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
+    varK.data[:, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2), 0.0]
 
 
     diagram = diag[idx]
@@ -56,7 +57,8 @@ function measurePH(idx, var, obs, weight, config)
 end
 
 function PH(para::ParaMC, diagram;
-    kamp=[para.kF,], #amplitude of k of four external legs
+    kamp=[para.kF,], #amplitude of k of the left legs
+    kamp2 = kamp, #amplitude of k of the right leg
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
@@ -65,13 +67,23 @@ function PH(para::ParaMC, diagram;
     config=nothing,
     kwargs...
 )
-    UEG.MCinitialize!(para)
+    partition, diagpara, diag, root, extT = diagram
+
+    # UEG.MCinitialize!(para)
+    if NoBubble in diagpara[1].filter
+        UEG.MCinitialize!(para, false)
+    else
+        UEG.MCinitialize!(para, true)
+    end
+
+    for p in diagpara
+        @assert diagpara[1].filter == p.filter "filter should be the same"
+    end
 
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     Nl = length(l)
     Nk = length(kamp)
 
-    partition, diagpara, diag, root, extT = diagram
     @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
     @assert length(root[1]) == length(root[2])
     @assert length(extT[1]) == length(extT[2])
@@ -99,7 +111,7 @@ function PH(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
-            userdata=(para, diag, root, extT, kamp, l, n),
+            userdata=(para, diag, root, extT, kamp, kamp2, l, n),
             kwargs...
         )
     end
@@ -131,7 +143,7 @@ function PH(para::ParaMC, diagram;
 
 end
 
-function MC_PH(para; kamp=[para.kF,], n=[-1, 0, 0, -1], l=[0,],
+function MC_PH(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing,
     filter=[NoHartree, NoBubble, Proper],
     channel=[PHr, PHEr, PPr],
@@ -159,7 +171,7 @@ function MC_PH(para; kamp=[para.kF,], n=[-1, 0, 0, -1], l=[0,],
     println(length(reweight_goal))
 
     ver4, result = Ver4.PH(para, diagram;
-        kamp=kamp, n=n, l=l,
+        kamp=kamp, kamp2=kamp2, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
         reweight_goal=reweight_goal
