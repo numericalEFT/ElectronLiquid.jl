@@ -5,11 +5,12 @@ using Printf
 using JLD2
 
 # rs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
-rs = [1.0,]
+rs = [4.0,]
 mass2 = [1.0,]
 Fs = [-0.0,]
-beta = [40.0,]
-order = [2,]
+beta = [25.0,]
+order = [4,]
+isDynamic = false
 
 const filename = "data_Z.jld2"
 
@@ -24,9 +25,9 @@ function mu(data)
     return real(data[1, 1])
 end
 
-function process(datatuple, isSave)
+function process(para, datatuple, isSave)
     df = CounterTerm.fromFile(parafilename)
-    para, ngrid, kgrid, data = datatuple
+    ngrid, kgrid, data = datatuple
     printstyled(UEG.short(para), color=:yellow)
     println()
 
@@ -47,6 +48,10 @@ function process(datatuple, isSave)
     println("dz: ", dzi)
     for i in eachindex(dzi)
         println("z[$i]: ", 1.0 / (1.0 + sum(dzi[1:i])))
+    end
+
+    for i in eachindex(dmu)
+        println("dmu[$i]: ", dmu[i])
     end
 
     ############# save to csv  #################
@@ -75,12 +80,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
     f = jldopen(filename, "r")
 
     for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, order)
-        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=true)
+        para = UEG.ParaMC(rs=_rs, beta=_beta, Fs=_F, order=_order, mass2=_mass2, isDynamic=isDynamic)
         kF = para.kF
         for key in keys(f)
             loadpara = UEG.ParaMC(key)
             if UEG.paraid(loadpara) == UEG.paraid(para)
-                process(f[key], isSave)
+                process(para, f[key], isSave)
             end
         end
     end

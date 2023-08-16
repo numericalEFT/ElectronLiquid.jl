@@ -108,9 +108,13 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, filename::Union
     neighbor = UEG.neighbor(partition)
     reweight_goal = Float64[]
     for (order, sOrder, vOrder) in partition
-        push!(reweight_goal, 4.0^(order + vOrder - 1))
+        reweight_factor = 2.0^(2order + sOrder + vOrder - 2)
+        if (order, sOrder, vOrder) == (1, 0, 0)
+            reweight_factor = 4.0
+        end
+        push!(reweight_goal, reweight_factor)
     end
-    push!(reweight_goal, 2.0)
+    push!(reweight_goal, 4.0)
 
     if diagtype == :GV
         diagram = Sigma.diagramGV(para, partition)

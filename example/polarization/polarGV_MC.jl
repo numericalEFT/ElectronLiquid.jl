@@ -34,10 +34,10 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     partition = Vector{eltype(_partition)}()
     for (order, sOrder, vOrder) in _partition
         order == 1 && vOrder > 0 && continue
-        push!(reweight_goal, 4.0^(order + vOrder - 1))
+        push!(reweight_goal, 2.0^(2order + sOrder + vOrder - 2))
         push!(partition, (order, sOrder, vOrder))
     end
-    push!(reweight_goal, 2.0)
+    push!(reweight_goal, 4.0)
     neighbor = UEG.neighbor(partition)
 
     if diagGenerate == :GV

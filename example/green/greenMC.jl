@@ -7,14 +7,15 @@ mass2 = [0.01,]
 Fs = [-0.0,]
 beta = [25.0,]
 order = [3,]
-neval = 1e8
+neval = 1e6
 
-isDynamic = true
+# isDynamic = true
+isDynamic = false
 isFock = false
 
 # mission = :Z
-mission = :K
-# mission = :n
+# mission = :K
+mission = :n
 # mission = ARGS[1]
 # println("mission: ", mission)
 # exit(0)
