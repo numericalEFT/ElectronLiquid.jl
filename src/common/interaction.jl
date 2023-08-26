@@ -5,7 +5,7 @@ using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
-const minq = 1e-16
+const minq = 1e-32
 
 """
     function lindhard(x)
