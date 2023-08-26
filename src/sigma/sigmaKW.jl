@@ -12,6 +12,11 @@ function integrandKW(idx, vars, config)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
     w = sum(weight[r] * phase(varT, extT[idx][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
+    # w = 0.0 + 0.0im
+    # for (ri, r) in enumerate(diagram.root)
+    #     extT[idx][ri][1] == extT[idx][ri][2] && continue
+    #     w += weight[r] * phase(varT, extT[idx][ri], wn, para.β)
+    # end
 
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(para.dim * loopNum)
@@ -106,20 +111,12 @@ function KW(para::ParaMC, diagram;
         # datadict = Dict{eltype(partition),Complex{Measurement{Float64}}}()
         datadict = Dict{eltype(partition),Any}()
 
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for o in 1:length(dof)
+            avg, std = result.mean[o], result.stdev[o]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for o in 1:length(dof)
-                avg, std = result.mean[o], result.stdev[o]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[o]] = data
-            end
+            datadict[partition[o]] = data
         end
         return datadict, result
     else

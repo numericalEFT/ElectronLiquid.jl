@@ -2,7 +2,7 @@
 Calculate vertex4 averged on the Fermi surface
 """
 function integrandPH(idx, var, config)
-    para, diag, root, extT, kampgrid, lgrid, n = config.userdata
+    para, diag, root, extT, kampgrid, kamp2grid, lgrid, n = config.userdata
 
     kF, β = para.kF, para.β
     varK, varT = var[1], var[2]
@@ -11,9 +11,10 @@ function integrandPH(idx, var, config)
     l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
     kamp = kampgrid[var[5][1]]
+    kamp2 = kamp2grid[var[5][1]]
     varK.data[1, 1], varK.data[1, 2] = kamp, kamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
+    varK.data[:, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2), 0.0]
 
 
     diagram = diag[idx]
@@ -56,7 +57,8 @@ function measurePH(idx, var, obs, weight, config)
 end
 
 function PH(para::ParaMC, diagram;
-    kamp=[para.kF,], #amplitude of k of four external legs
+    kamp=[para.kF,], #amplitude of k of the left legs
+    kamp2 = kamp, #amplitude of k of the right leg
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
@@ -65,13 +67,23 @@ function PH(para::ParaMC, diagram;
     config=nothing,
     kwargs...
 )
-    UEG.MCinitialize!(para)
+    partition, diagpara, diag, root, extT = diagram
+
+    # UEG.MCinitialize!(para)
+    if NoBubble in diagpara[1].filter
+        UEG.MCinitialize!(para, false)
+    else
+        UEG.MCinitialize!(para, true)
+    end
+
+    for p in diagpara
+        @assert diagpara[1].filter == p.filter "filter should be the same"
+    end
 
     dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
     Nl = length(l)
     Nk = length(kamp)
 
-    partition, diagpara, diag, root, extT = diagram
     @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
     @assert length(root[1]) == length(root[2])
     @assert length(extT[1]) == length(extT[2])
@@ -99,7 +111,7 @@ function PH(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
-            userdata=(para, diag, root, extT, kamp, l, n),
+            userdata=(para, diag, root, extT, kamp, kamp2, l, n),
             kwargs...
         )
     end
@@ -110,31 +122,87 @@ function PH(para::ParaMC, diagram;
     # end
 
     if isnothing(result) == false
-        if print >= 0
-            report(result.config)
-            report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
-            report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
-        end
+        # if print >= 0
+        #     report(result.config)
+        #     report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+        #     report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+        # end
 
         datadict = Dict{eltype(partition),Any}()
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for k in 1:length(dof)
+            avg, std = result.mean[k], result.stdev[k]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for k in 1:length(dof)
-                avg, std = result.mean[k], result.stdev[k]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[k]] = data
-            end
+            datadict[partition[k]] = data
         end
         return datadict, result
     else
         return nothing, nothing
     end
 
+end
+
+function MC_PH(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], l=[0,],
+    neval=1e6, filename::Union{String,Nothing}=nothing,
+    filter=[NoHartree, NoBubble, Proper],
+    channel=[PHr, PHEr, PPr],
+    partition=UEG.partition(para.order),
+    verbose=0
+)
+
+    kF = para.kF
+    _order = para.order
+
+    # partition = UEG.partition(_order)
+
+
+    diagram = Ver4.diagram(para, partition; channel=channel, filter=filter)
+
+    partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    neighbor = UEG.neighbor(partition)
+
+    reweight_goal = Float64[]
+    for (order, sOrder, vOrder) in partition
+        # push!(reweight_goal, 8.0^(order + vOrder - 1))
+        push!(reweight_goal, 8.0^(order - 1))
+    end
+    push!(reweight_goal, 1.0)
+    println(length(reweight_goal))
+
+    ver4, result = Ver4.PH(para, diagram;
+        kamp=kamp, kamp2=kamp2, n=n, l=l,
+        neval=neval, print=verbose,
+        neighbor=neighbor,
+        reweight_goal=reweight_goal
+    )
+
+    if isnothing(ver4) == false
+        for (p, data) in ver4
+            printstyled("permutation: $p\n", color=:yellow)
+            for (li, _l) in enumerate(l)
+                printstyled("l = $_l\n", color=:green)
+                @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
+                for (ki, k) in enumerate(kamp)
+                    factor = 1.0
+                    d1, d2 = real(data[1, li, ki]) * factor, real(data[2, li, ki]) * factor
+                    s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
+                    di, ex = (s - a), (a) * 2.0
+                    @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$di", "$ex", "$s", "$a")
+                end
+            end
+        end
+
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (kamp, n, l, ver4)
+            end
+        end
+    end
+    return ver4, result
 end

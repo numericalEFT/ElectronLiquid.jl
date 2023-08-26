@@ -63,7 +63,7 @@ function _diagram_weight(idx, var, config)
         wud = zero(ComplexF64)
     end
 
-    return Weight(wuu, wud), factor
+    return Weight{ComplexF64}(wuu, wud), factor
 end
 
 function _measureGeneric(idx, var, obs, relative_weight, config)
@@ -119,6 +119,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     print=0,
     alpha=3.0, #learning ratio
     config=nothing,
+    measurefreq=5,
     kwargs...
 )
 
@@ -160,6 +161,7 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
+            measurefreq=measurefreq,
             userdata=(paras, diag, root, extT),
             kwargs...
         )
@@ -173,25 +175,17 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     if isnothing(result) == false
         if print >= 0
             report(result.config)
-            report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
-            report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+            # report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+            # report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
         end
 
         datadict = Dict{eltype(partition),Any}()
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for k in 1:length(dof)
+            avg, std = result.mean[k], result.stdev[k]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for k in 1:length(dof)
-                avg, std = result.mean[k], result.stdev[k]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[k]] = data
-            end
+            datadict[partition[k]] = data
         end
         return datadict, result
     else
