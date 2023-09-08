@@ -150,7 +150,7 @@ function PH(para::ParaMC, diagram;
 end
 
 function MC_PH(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
-    neval=1e6, filename::Union{String,Nothing}=nothing,
+    neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree, NoBubble, Proper],
     channel=[PHr, PHEr, PPr],
     partition=UEG.partition(para.order),
@@ -168,13 +168,15 @@ function MC_PH(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
 
-    reweight_goal = Float64[]
-    for (order, sOrder, vOrder) in partition
-        # push!(reweight_goal, 8.0^(order + vOrder - 1))
-        push!(reweight_goal, 8.0^(order - 1))
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            # push!(reweight_goal, 8.0^(order + vOrder - 1))
+            push!(reweight_goal, 8.0^(order - 1))
+        end
+        push!(reweight_goal, 1.0)
+        println(length(reweight_goal))
     end
-    push!(reweight_goal, 1.0)
-    println(length(reweight_goal))
 
     ver4, result = Ver4.PH(para, diagram;
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
