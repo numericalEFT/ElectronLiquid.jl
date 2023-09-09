@@ -65,6 +65,10 @@ include("./vertex3/vertex3.jl")
 using .Ver3
 export Ver3
 
+include("./freeEnergy/freeEnergy.jl")
+using .FreeEnergy
+export FreeEnergy
+
 # using SnoopPrecompile
 # @precompile_all_calls begin
 #     # In here put "toy workloads" that exercise the code you want to precompile

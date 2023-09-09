@@ -1,14 +1,12 @@
 function integrandGV(idx, vars, config)
-    varK, varT, varN, ExtKidx = vars
-    para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
-    interactionleaf = config.userdata[7][idx]
-    LoopPool, root = config.userdata[8:9]
-    graphfuncs! = config.userdata[10][idx]
+    varK, varT = vars
+    para, MaxLoopNum = config.userdata[1:2]
+    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
+    interactionleaf = config.userdata[4][idx]
+    LoopPool, root = config.userdata[5:6]
+    graphfuncs! = config.userdata[7][idx]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
-    extidx = ExtKidx[1]
-    varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
@@ -50,32 +48,16 @@ function integrandGV(idx, vars, config)
 
     graphfuncs!(root, leaf[idx], interactionleaf)  # allocations due to run-time variable `idx`
 
-    n = ngrid[varN[1]]
-    weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
-
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(dim * loopNum)
-    return weight * factor
+    return root[1] * factor
 end
 
-function measureGV(idx, vars, obs, weight, config) # for the mcmc algorithm
-    n = vars[3][1]  #matsubara frequency
-    k = vars[4][1]  #K
-    obs[idx][n, k] += weight
+function measureGV(idx, var, obs, weight, config) # for the mcmc algorithm
+    obs[idx] += weight
 end
-
-# function measureGV(vars, obs, weight, config) # for vegas and vegasmc algorithms
-#     N = length(config.dof)
-#     n = vars[3][1]  #matsubara frequency
-#     k = vars[4][1]  #K
-#     for idx in 1:N
-#         obs[idx][n, k] += weight
-#     end
-# end
 
 function GV(para::ParaMC, diagram;
-    kgrid=[para.kF,],
-    ngrid=[0,],
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
@@ -88,35 +70,28 @@ function GV(para::ParaMC, diagram;
 
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
-    MaxLoopNum = maximum([key[1] for key in partition]) + 2
+    MaxLoopNum = maximum([key[1] for key in partition]) + 1
     LoopPool = FermiLabel.labels[3]
     PropagatorMap, InteractionMap = mappings
 
     PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
-    root = zeros(Float64, 24)
+    root = zeros(Float64, 1)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
 
-    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
-    K.data[:, 1] .= 0.0
-    K.data[1, 1] = kgrid[1]
-    # T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
-    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
-    T.data[1:2] .= 0.0
-    X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt=false)
-    # ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF)
+    T = Continuous(0.0, β; alpha=alpha, adapt=true)
 
-    dof = [[p.innerLoopNum, p.totalTauNum, 1, 1] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum, p.totalTauNum] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
-    obs = [zeros(ComplexF64, length(ngrid), length(kgrid)) for _ in 1:length(dof)]
+    obs = [zero(Float64) for _ in 1:length(dof)]
 
     if isnothing(config)
         config = Configuration(;
-            var=(K, T, X, ExtKidx),
+            var=(K, T),
             dof=dof,
-            type=ComplexF64, # type of the integrand
+            type=Float64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
+            userdata=(para, MaxLoopNum, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
             kwargs...
         )
     end
@@ -136,10 +111,7 @@ function GV(para::ParaMC, diagram;
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            r = measurement.(real(avg), real(std)) ./ (-β)
-            i = measurement.(imag(avg), imag(std)) ./ (-β)
-            data = Complex.(r, i)
-            datadict[key] = data
+            datadict[key] = measurement(avg, std)
         end
         return datadict, result
     else

@@ -99,22 +99,26 @@ include("sigmaCuba.jl")
 include("sigmaVegas.jl")
 include("sigmaGV.jl")
 
-function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, filename::Union{String,Nothing}=nothing, diagtype=:Parquet)
+function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=nothing,
+    filename::Union{String,Nothing}=nothing, diagtype=:Parquet)
     kF = para.kF
     _order = para.order
 
     # partition = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
     partition = UEG.partition(_order)
     neighbor = UEG.neighbor(partition)
-    reweight_goal = Float64[]
-    for (order, sOrder, vOrder) in partition
-        reweight_factor = 2.0^(2order + sOrder + vOrder - 2)
-        if (order, sOrder, vOrder) == (1, 0, 0)
-            reweight_factor = 4.0
+
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            reweight_factor = 2.0^(2order + sOrder + vOrder - 2)
+            if (order, sOrder, vOrder) == (1, 0, 0)
+                reweight_factor = 4.0
+            end
+            push!(reweight_goal, reweight_factor)
         end
-        push!(reweight_goal, reweight_factor)
+        push!(reweight_goal, 4.0)
     end
-    push!(reweight_goal, 4.0)
 
     if diagtype == :GV
         diagram = Sigma.diagramGV(para, partition)

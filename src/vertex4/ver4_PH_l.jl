@@ -18,7 +18,7 @@ function integrandPH(idx, var, config)
     varK.data[1, 2] = kamp
     varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    varK.data[:, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2), 0.0]
+    varK.data[1:2, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2)]
 
 
     diagram = diag[idx]
@@ -98,6 +98,7 @@ function PH(para::ParaMC, diagram;
     # K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
     K.data[:, 1] .= UEG.getK(kF, para.dim, 1)
     K.data[:, 2] .= UEG.getK(kF, para.dim, 1)
+    K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
     X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
@@ -149,7 +150,7 @@ function PH(para::ParaMC, diagram;
 end
 
 function MC_PH(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
-    neval=1e6, filename::Union{String,Nothing}=nothing,
+    neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree, NoBubble, Proper],
     channel=[PHr, PHEr, PPr],
     partition=UEG.partition(para.order),
@@ -167,13 +168,15 @@ function MC_PH(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
 
-    reweight_goal = Float64[]
-    for (order, sOrder, vOrder) in partition
-        # push!(reweight_goal, 8.0^(order + vOrder - 1))
-        push!(reweight_goal, 8.0^(order - 1))
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            # push!(reweight_goal, 8.0^(order + vOrder - 1))
+            push!(reweight_goal, 8.0^(order - 1))
+        end
+        push!(reweight_goal, 1.0)
+        println(length(reweight_goal))
     end
-    push!(reweight_goal, 1.0)
-    println(length(reweight_goal))
 
     ver4, result = Ver4.PH(para, diagram;
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,

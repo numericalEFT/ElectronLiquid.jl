@@ -62,7 +62,7 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
 
     ##########   effective interaction and counterterm ###############
     qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 16)
-    τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 32, β *EF* 1e-6, 16)
+    τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 32, β * EF * 1e-6, 16)
 
     # ######### only need to be initialized for MC simulation ###########################
     initialized::Bool = false
@@ -82,6 +82,7 @@ end
 # end
 
 function MCinitialize!(para::ParaMC, bubble::Bool=true)
+    !para.isDynamic && return
     para.dW0 .= KOdynamic_T(para)
     para.dW0_f .= KOdynamic_T_df(para)
     for o in 1:para.order-1
