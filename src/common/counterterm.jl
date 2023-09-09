@@ -118,7 +118,7 @@ function chemicalpotential_renormalization(order, data, δμ)
     d = data
     # println("size: ", size(d[(1, 0)]))
     # z = Vector{eltype(values(d))}(undef, order)
-    sample = collect(values(d))[1] 
+    sample = collect(values(d))[1]
     z = [zero(sample) for i in 1:order]
     # z = Vector{eltype(values(d))}[]
     # z = []
@@ -131,15 +131,15 @@ function chemicalpotential_renormalization(order, data, δμ)
     end
     if order >= 3
         # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-        z[3] = d[(3, 0)] + δμ[1] .* d[(2, 1)] + δμ[1].^2 .* d[(1, 2)] + δμ[2] .* d[(1, 1)]
+        z[3] = d[(3, 0)] + δμ[1] .* d[(2, 1)] + δμ[1] .^ 2 .* d[(1, 2)] + δμ[2] .* d[(1, 1)]
     end
     if order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
         z[4] = d[(4, 0)] +
                d[(3, 1)] .* δμ[1] +
-               d[(2, 2)] .* δμ[1].^2 +
+               d[(2, 2)] .* δμ[1] .^ 2 +
                d[(2, 1)] .* δμ[2] +
-               d[(1, 3)] .* (δμ[1]).^3 +
+               d[(1, 3)] .* (δμ[1]) .^ 3 +
                d[(1, 2)] .* 2 .* δμ[1] .* δμ[2] +
                δμ[3] .* d[(1, 1)]
     end
@@ -148,13 +148,13 @@ function chemicalpotential_renormalization(order, data, δμ)
         z[5] =
             d[(5, 0)] +
             d[(4, 1)] .* δμ[1] +
-            d[(3, 2)] .* δμ[1].^2 +
-            d[(2, 3)] .* δμ[1].^3 +
-            d[(1, 4)] .* δμ[1].^4 +
+            d[(3, 2)] .* δμ[1] .^ 2 +
+            d[(2, 3)] .* δμ[1] .^ 3 +
+            d[(1, 4)] .* δμ[1] .^ 4 +
             d[(3, 1)] .* δμ[2] +
             d[(2, 2)] .* 2 .* δμ[1] .* δμ[2] +
-            d[(1, 3)] .* 3 .* δμ[1].^2 .* δμ[2] +
-            d[(1, 2)] .* (δμ[2].^2 + 2 * δμ[1] .* δμ[3]) +
+            d[(1, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
+            d[(1, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
             d[(2, 1)] .* δμ[3] +
             d[(1, 1)] .* δμ[4]
     end
@@ -291,20 +291,20 @@ function _inverse(z::AbstractVector{T}) where {T}
     order = length(z)
     zi = [zero(z[1]) for i in 1:length(z)]
     # zi = zeros(T, order)
-    if order >=1
+    if order >= 1
         zi[1] = -z[1]
     end
     if order >= 2
-        zi[2] = z[1].^2 - z[2]
+        zi[2] = z[1] .^ 2 - z[2]
     end
     if order >= 3
-        zi[3] = -z[1].^3 + 2z[1] .* z[2] - z[3]
+        zi[3] = -z[1] .^ 3 + 2z[1] .* z[2] - z[3]
     end
     if order >= 4
-        zi[4] = z[1].^4 - 3z[1].^2 .* z[2] + z[2].^2 + 2z[1] .* z[3] - z[4]
+        zi[4] = z[1] .^ 4 - 3z[1] .^ 2 .* z[2] + z[2] .^ 2 + 2z[1] .* z[3] - z[4]
     end
     if order >= 5
-        zi[5] = -z[1].^5 + 4z[1].^3 .* z[2] - 3z[1] .* z[2].^2 - 3z[1].^2 .* z[3] + 2z[2] .* z[3] + 2z[1] .* z[4] - z[5]
+        zi[5] = -z[1] .^ 5 + 4z[1] .^ 3 .* z[2] - 3z[1] .* z[2] .^ 2 - 3z[1] .^ 2 .* z[3] + 2z[2] .* z[3] + 2z[1] .* z[4] - z[5]
     end
     if order >= 6
         error("order must be <= 5")
