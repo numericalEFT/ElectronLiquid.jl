@@ -136,8 +136,8 @@ function GV(para::ParaMC, diagram;
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            r = measurement.(real(avg), real(std)) ./ (-2β)
-            i = measurement.(imag(avg), imag(std)) ./ (-2β)
+            r = measurement.(real(avg), real(std)) ./ (-β)
+            i = measurement.(imag(avg), imag(std)) ./ (-β)
             data = Complex.(r, i)
             datadict[key] = data
         end

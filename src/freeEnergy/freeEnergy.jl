@@ -27,22 +27,24 @@ function diagPara(para::ParaMC, order::Int, filter)
     )
 end
 
-function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+function diagramGV(paramc::ParaMC, _partition::Vector{T};
+    filter=[FeynmanDiagram.NoHartree], spinPolarPara::Float64=0.0) where {T}
     diagpara = Vector{DiagParaF64}()
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
     end
-    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:freeEnergy, _partition, paramc.dim)
+    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:freeEnergy, _partition, paramc.dim, spinPolarPara=spinPolarPara)
     return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
 end
 
 include("freeEnergyGV.jl")
 
 
-function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, diagtype=:GV,
-    filter=[NoHartree,], partition=UEG.partition(para.order), reweight_goal=nothing, verbose=0)
+function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
+    spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
+    filter=[NoHartree,], partition=UEG.partition(para.order), verbose=-1)
 
-    diagram = FreeEnergy.diagramGV(para, partition, filter=filter)
+    diagram = FreeEnergy.diagramGV(para, partition, filter=filter, spinPolarPara=spinPolarPara)
     partition = diagram[1]
     neighbor = UEG.neighbor(partition)
 
