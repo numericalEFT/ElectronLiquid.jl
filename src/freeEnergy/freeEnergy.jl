@@ -15,26 +15,36 @@ using ..Propagator
 
 function diagPara(para::ParaMC, order::Int, filter)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    DiagParaF64(
-        type=VacuumDiag,
-        innerLoopNum=order + 1,
-        hasTau=true,
-        loopDim=para.dim,
-        spin=para.spin,
-        firstLoopIdx=1,
-        interaction=inter,
-        filter=filter
-    )
+    if order == 0
+        return DiagParaF64(type=VacuumDiag, innerLoopNum=order + 1, hasTau=true, loopDim=para.dim, spin=para.spin, firstLoopIdx=1,
+            totalTauNum=1,
+            interaction=inter, filter=filter
+        )
+    else
+        return DiagParaF64(
+            type=VacuumDiag,
+            innerLoopNum=order + 1,
+            hasTau=true,
+            loopDim=para.dim,
+            spin=para.spin,
+            firstLoopIdx=1,
+            interaction=inter,
+            filter=filter
+        )
+    end
 end
 
 function diagramGV(paramc::ParaMC, _partition::Vector{T};
     filter=[FeynmanDiagram.NoHartree], spinPolarPara::Float64=0.0) where {T}
     diagpara = Vector{DiagParaF64}()
+    gkeys = Vector{T}()
     for p in _partition
+        p[1] == 0 && p[3] > 0 && continue
         push!(diagpara, diagPara(paramc, p[1], filter))
+        push!(gkeys, p)
     end
-    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:freeEnergy, _partition, paramc.dim, spinPolarPara=spinPolarPara)
-    return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
+    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:freeEnergy, gkeys, paramc.dim, spinPolarPara=spinPolarPara)
+    return (gkeys, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
 end
 
 include("freeEnergyGV.jl")
@@ -42,7 +52,7 @@ include("freeEnergyGV.jl")
 
 function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
-    filter=[NoHartree,], partition=UEG.partition(para.order), verbose=-1)
+    filter=[NoHartree,], partition=UEG.partition(para.order, offset=0), verbose=-1)
 
     diagram = FreeEnergy.diagramGV(para, partition, filter=filter, spinPolarPara=spinPolarPara)
     partition = diagram[1]

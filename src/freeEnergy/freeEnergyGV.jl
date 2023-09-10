@@ -18,6 +18,8 @@ function integrandGV(idx, vars, config)
             order = (lftype - 1) / 2
             if order == 0
                 leaf[idx][i] = Propagator.green(τ, ϵ, β)
+            elseif order == -1
+                leaf[idx][i] = Propagator.green(τ, ϵ, β) * (ϵ + μ)
             elseif order == 1
                 leaf[idx][i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
             elseif order == 2
@@ -111,7 +113,7 @@ function GV(para::ParaMC, diagram;
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            datadict[key] = measurement(avg, std)
+            datadict[key] = measurement(avg, std) / β
         end
         return datadict, result
     else
