@@ -198,7 +198,8 @@ function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
     Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
     for (ip, p) in enumerate(partitions)
-        if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        # if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
             push!(n, (ip, Nnorm))
         end
         for (idx, np) in enumerate(partitions)
