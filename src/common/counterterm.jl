@@ -109,7 +109,7 @@ By definition, the chemical potential renormalization is defined as
 - `data`  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
 - `δμ`    : chemical potential renormalization for each order
 """
-function chemicalpotential_renormalization(order, data, δμ)
+function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     @assert order <= 5 "Order $order hasn't been implemented!"
@@ -124,39 +124,39 @@ function chemicalpotential_renormalization(order, data, δμ)
     # z = []
     # println(typeof(z))
     if order >= 1
-        z[1] = d[(1, 0)]
+        z[1] = d[(1 + offset, 0)]
     end
     if order >= 2
-        z[2] = d[(2, 0)] + δμ[1] .* d[(1, 1)]
+        z[2] = d[(2 + offset, 0)] + δμ[1] .* d[(1 + offset, 1)]
     end
     if order >= 3
         # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-        z[3] = d[(3, 0)] + δμ[1] .* d[(2, 1)] + δμ[1] .^ 2 .* d[(1, 2)] + δμ[2] .* d[(1, 1)]
+        z[3] = d[(3 + offset, 0)] + δμ[1] .* d[(2 + offset, 1)] + δμ[1] .^ 2 .* d[(1 + offset, 2)] + δμ[2] .* d[(1 + offset, 1)]
     end
     if order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        z[4] = d[(4, 0)] +
-               d[(3, 1)] .* δμ[1] +
-               d[(2, 2)] .* δμ[1] .^ 2 +
-               d[(2, 1)] .* δμ[2] +
-               d[(1, 3)] .* (δμ[1]) .^ 3 +
-               d[(1, 2)] .* 2 .* δμ[1] .* δμ[2] +
-               δμ[3] .* d[(1, 1)]
+        z[4] = d[(4 + offset, 0)] +
+               d[(3 + offset, 1)] .* δμ[1] +
+               d[(2 + offset, 2)] .* δμ[1] .^ 2 +
+               d[(2 + offset, 1)] .* δμ[2] +
+               d[(1 + offset, 3)] .* (δμ[1]) .^ 3 +
+               d[(1 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+               d[(1 + offset, 1)] .* δμ[3]
     end
     if order >= 5
         # Σ5 = Σ50 + Σ41*δμ1 + ...
         z[5] =
-            d[(5, 0)] +
-            d[(4, 1)] .* δμ[1] +
-            d[(3, 2)] .* δμ[1] .^ 2 +
-            d[(2, 3)] .* δμ[1] .^ 3 +
-            d[(1, 4)] .* δμ[1] .^ 4 +
-            d[(3, 1)] .* δμ[2] +
-            d[(2, 2)] .* 2 .* δμ[1] .* δμ[2] +
-            d[(1, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
-            d[(1, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
-            d[(2, 1)] .* δμ[3] +
-            d[(1, 1)] .* δμ[4]
+            d[(5 + offset, 0)] +
+            d[(4 + offset, 1)] .* δμ[1] +
+            d[(3 + offset, 2)] .* δμ[1] .^ 2 +
+            d[(2 + offset, 3)] .* δμ[1] .^ 3 +
+            d[(1 + offset, 4)] .* δμ[1] .^ 4 +
+            d[(3 + offset, 1)] .* δμ[2] +
+            d[(2 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+            d[(1 + offset, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
+            d[(1 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
+            d[(2 + offset, 1)] .* δμ[3] +
+            d[(1 + offset, 1)] .* δμ[4]
     end
     return z
 end
