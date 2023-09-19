@@ -17,7 +17,7 @@ function integrandPH_df(idx, vars, config)
     kamp = kampgrid[kidx]
     varK.data[1, 1], varK.data[1, 2] = kamp, kamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    varK.data[:, 3] = [kamp * x, kamp * sqrt(1 - x^2), 0.0]
+    varK.data[1:2, 3] = [kamp * x, kamp * sqrt(1 - x^2)]
 
 
     diagram = diag[idx]
@@ -91,6 +91,7 @@ function PH_df(paras::Vector{ParaMC}, diagram;
     # K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
     K.data[:, 1] .= UEG.getK(kF, para.dim, 1)
     K.data[:, 2] .= UEG.getK(kF, para.dim, 1)
+    K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
     X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
@@ -128,20 +129,12 @@ function PH_df(paras::Vector{ParaMC}, diagram;
         end
 
         datadict = Dict{eltype(partition),Any}()
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for k in 1:length(dof)
+            avg, std = result.mean[k], result.stdev[k]
             r = measurement.(real(avg), real(std))
             i = measurement.(imag(avg), imag(std))
             data = Complex.(r, i)
-            datadict[partition[1]] = data
-        else
-            for k in 1:length(dof)
-                avg, std = result.mean[k], result.stdev[k]
-                r = measurement.(real(avg), real(std))
-                i = measurement.(imag(avg), imag(std))
-                data = Complex.(r, i)
-                datadict[partition[k]] = data
-            end
+            datadict[partition[k]] = data
         end
         return datadict, result
     else

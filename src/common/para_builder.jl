@@ -62,8 +62,8 @@ const GridType = CompositeGrids.CompositeG.Composite{Float64,CompositeGrids.Simp
     fa::Float64 = Fa / NFstar
 
     ##########   effective interaction and counterterm ###############
-    qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
-    τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
+    qgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 16)
+    τgrid::GridType = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 32, β * EF * 1e-6, 16)
 
     # ######### only need to be initialized for MC simulation ###########################
     initialized::Bool = false
@@ -82,12 +82,13 @@ end
 #     e0::Float64
 # end
 
-function MCinitialize!(para::ParaMC)
+function MCinitialize!(para::ParaMC, bubble::Bool=true)
+    !para.isDynamic && return
     para.dW0 .= KOdynamic_T(para)
     # para.dW0_f .= KOdynamic_T_df(para)
     for o in 1:para.order-1
-        push!(para.cRs, counterKO_T(para; order=o))
-        # push!(para.cRs_f, counterKO_T_df(para; order=o))
+        push!(para.cRs, counterKO_T(para; order=o, bubble=bubble))
+        push!(para.cRs_f, counterKO_T_df(para; order=o, bubble=bubble))
     end
     para.initialized = true
 end
@@ -109,7 +110,11 @@ paraid(p::ParaMC) = Dict(
     "isDynamic" => p.isDynamic,
 )
 
+_iszero(x) = (x ≈ 0.0) && (x isa AbstractFloat)
+
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+robust_short(p::ParaMC) = join([_iszero(v) ? "$(k)_0.0" : "$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
 
 """Mapping from ParaMC fields saved in short format to their corresponding types"""
 const short_paratypes = Dict(
@@ -195,7 +200,8 @@ function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
     Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
     for (ip, p) in enumerate(partitions)
-        if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        # if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
             push!(n, (ip, Nnorm))
         end
         for (idx, np) in enumerate(partitions)
@@ -219,5 +225,6 @@ function getK(amp, dim::Int, idx::Int=1)
 end
 
 include("interaction.jl")
+
 
 end

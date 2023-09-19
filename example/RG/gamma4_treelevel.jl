@@ -65,44 +65,36 @@ function KO(para::ParaMC, kamp=para.kF, kamp2=para.kF; a_s=0.0, N=100, mix=0.8, 
     else
         @assert spin_spin == false "Spin-Spin KO interaciton doesn't work yet."
     end
+end
 
-    # Fp, Fm = 0.0, 0.0
-    # Fp, Fm = Fs, Fa
-    # for i = 1:N
-    #     p_l = ParaMC(rs=para.rs, beta=para.beta, Fs=Fp, Fa=Fm, order=para.order, mass2=para.mass2, isDynamic=true, isFock=false)
-    #     # println(p_l.Fs)
-    #     wp, wm, angle = Ver4.exchange_interaction(p_l, kamp, kamp2; ct=false, verbose=verbose)
-    #     if spin_spin
-    #         # u = 2<R^-> = -2<R^+>
-    #         u = -Fp + 3Fm
-    #         Fp_new = ufp(p_l, -u / 2, kamp, kamp2; verbose=verbose)
-    #         Fm_new = ufm(p_l, u / 2, kamp, kamp2; verbose=verbose)
-    #         # Fp_new = -u + 3Fm
-    #         # println(Fp, " and ", Fm, " solution: ", u, " vs ", Fp_new, " vs ", Fm_new)
-    #     else
-    #         u = Ver4.Legrendre(0, wp, angle)
-    #         Fp_new = 4 * π / para.me * a_s - u
-    #         Fm_new = 0.0
-    #     end
-    #     if abs(Fp_new - Fp) < eps
-    #         break
-    #     else
-    #         if verbose > 1
-    #             println("iter $i: $Fp_new vs $Fp")
-    #         end
-    #     end
-    #     # println(Fm_new, spin_spin)
-    #     Fp = mix * Fp_new + (1 - mix) * Fp
-    #     Fm = mix * Fm_new + (1 - mix) * Fm
-    # end
-    # if verbose > 0
-    #     println("Self-consistent approach: ")
-    #     println("Fs = ", Fp)
-    #     println("Fa = ", Fm)
-    #     println("u = ", u)
-    #     println("4π a_s/m", 4π / para.me * a_s)
-    # end
-    # return Fp, Fm, u
+function u_from_f(para::ParaMC, kamp=para.kF, kamp2=kamp; verbose=0, N=32)
+    c = 2 * para.kF / para.qTF
+    Δ = 1 - 3 * c^2 * (1 + para.Fs)
+    if (para.Fs < -0.0 && Δ > 0.0) || (para.Fs > 0.0 && Δ < 0.0)
+        # here we approximate the Lindhard function with 1-x^2/3 where x=|q|/2kF
+        # the most dangerous q is given by the condition that the derivative of the denorminator is zero
+        # K[x]=(1+Fs*(1-x^2/3))*c^2*x^2 + (1-x^2/3)
+        # dK[x]/dx = 2/3*x*(-1+c^2(3+Fs(3-2x^2)))
+        # the only possible solution is x = sqrt((1-3c^2*(1+Fs))/(-2c^2*Fs)) 
+        if 3 * c^2 * (1 + para.Fs) < 1.0
+            x = sqrt(abs(Δ / 2 / para.Fs / c^2))
+            #println("solution: ", x)
+            if x * para.kF / kamp > 1.0
+                x = 1.0
+            end
+            theta = asin(x) * 2.0
+            #println(x, "--> ", theta)
+            θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, theta, π], 16, 0.001, N)
+        else
+            θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, N)
+        end
+    else
+        θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, N)
+    end
+    wp, wm, angle = Ver4.exchange_interaction(para, kamp, kamp2; ct=false, verbose=verbose, θgrid=θgrid)
+    # assert all wp elements are positive
+    # @assert all(wp .> 0.0) "wp grid is not positive"
+    return Ver4.Legrendre(0, wp, angle) + para.Fs, θgrid, wp
 end
 
 function dKO_dΛ(paras, Λgrid)

@@ -109,7 +109,7 @@ By definition, the chemical potential renormalization is defined as
 - `data`  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
 - `δμ`    : chemical potential renormalization for each order
 """
-function chemicalpotential_renormalization(order, data, δμ)
+function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
     @assert order <= 5 "Order $order hasn't been implemented!"
@@ -117,41 +117,46 @@ function chemicalpotential_renormalization(order, data, δμ)
     data = mergeInteraction(data)
     d = data
     # println("size: ", size(d[(1, 0)]))
-    z = Vector{eltype(values(d))}(undef, order)
+    # z = Vector{eltype(values(d))}(undef, order)
+    sample = collect(values(d))[1]
+    z = [zero(sample) for i in 1:order]
+    # z = Vector{eltype(values(d))}[]
+    # z = []
+    # println(typeof(z))
     if order >= 1
-        z[1] = d[(1, 0)]
+        z[1] = d[(1 + offset, 0)]
     end
     if order >= 2
-        z[2] = d[(2, 0)] + δμ[1] * d[(1, 1)]
+        z[2] = d[(2 + offset, 0)] + δμ[1] .* d[(1 + offset, 1)]
     end
     if order >= 3
         # Σ3 = Σ30+Σ11*δμ2+Σ12*δμ1^2+Σ21*δμ1
-        z[3] = d[(3, 0)] + δμ[1] * d[(2, 1)] + δμ[1]^2 * d[(1, 2)] + δμ[2] * d[(1, 1)]
+        z[3] = d[(3 + offset, 0)] + δμ[1] .* d[(2 + offset, 1)] + δμ[1] .^ 2 .* d[(1 + offset, 2)] + δμ[2] .* d[(1 + offset, 1)]
     end
     if order >= 4
         # Σ4 = Σ40+Σ11*δμ3+Σ12*(2*δμ1*δμ2)+Σ13*δμ1^3+Σ21*δμ2+Σ22*δμ1^2+Σ31*δμ1
-        z[4] = d[(4, 0)] +
-               d[(3, 1)] * δμ[1] +
-               d[(2, 2)] * δμ[1]^2 +
-               d[(2, 1)] * δμ[2] +
-               d[(1, 3)] * (δμ[1])^3 +
-               d[(1, 2)] * 2 * δμ[1] * δμ[2] +
-               δμ[3] * d[(1, 1)]
+        z[4] = d[(4 + offset, 0)] +
+               d[(3 + offset, 1)] .* δμ[1] +
+               d[(2 + offset, 2)] .* δμ[1] .^ 2 +
+               d[(2 + offset, 1)] .* δμ[2] +
+               d[(1 + offset, 3)] .* (δμ[1]) .^ 3 +
+               d[(1 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+               d[(1 + offset, 1)] .* δμ[3]
     end
     if order >= 5
         # Σ5 = Σ50 + Σ41*δμ1 + ...
         z[5] =
-            d[(5, 0)] +
-            d[(4, 1)] * δμ[1] +
-            d[(3, 2)] * δμ[1]^2 +
-            d[(2, 3)] * δμ[1]^3 +
-            d[(1, 4)] * δμ[1]^4 +
-            d[(3, 1)] * δμ[2] +
-            d[(2, 2)] * 2 * δμ[1] * δμ[2] +
-            d[(1, 3)] * 3 * δμ[1]^2 * δμ[2] +
-            d[(1, 2)] * (δμ[2]^2 + 2 * δμ[1] * δμ[3]) +
-            d[(2, 1)] * δμ[3] +
-            d[(1, 1)] * δμ[4]
+            d[(5 + offset, 0)] +
+            d[(4 + offset, 1)] .* δμ[1] +
+            d[(3 + offset, 2)] .* δμ[1] .^ 2 +
+            d[(2 + offset, 3)] .* δμ[1] .^ 3 +
+            d[(1 + offset, 4)] .* δμ[1] .^ 4 +
+            d[(3 + offset, 1)] .* δμ[2] +
+            d[(2 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+            d[(1 + offset, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
+            d[(1 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
+            d[(2 + offset, 1)] .* δμ[3] +
+            d[(1 + offset, 1)] .* δμ[4]
     end
     return z
 end
@@ -190,7 +195,7 @@ function z_renormalization(order, data, δz, nbody::Int)
             others = orders[2:end]
             for o in 1:maxO-1
                 lower = (maxO - o, others...)
-                nd[orders] += data[lower] * δz[o]
+                nd[orders] += data[lower] .* δz[o]
             end
         end
         return nd
@@ -204,7 +209,7 @@ function z_renormalization(order, data, δz, nbody::Int)
         for _order in 1:order
             maxO = _order #the highest order
             for o in 1:maxO-1
-                nd[_order] += data[maxO-o] * δz[o]
+                nd[_order] += data[maxO-o] .* δz[o]
             end
         end
         return nd
@@ -238,11 +243,15 @@ The convention is the following:
 The chemical potential shift is the chemical potential shift without z-renormalization.
 """
 function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=false, verbose=0)
-    swtype = typeof(collect(values(sw))[1])
-    mutype = typeof(collect(values(μ))[1])
-    δzi = zeros(swtype, order)
-    δz = zeros(swtype, order)
-    δμ = zeros(mutype, order)
+    println(sw)
+    # swtype = typeof(collect(values(sw))[1])
+    # mutype = typeof(collect(values(μ))[1])
+    sw1 = collect(values(sw))[1]
+    mu1 = collect(values(μ))[1]
+
+    δzi = [zero(sw1) for i in 1:order]
+    δz = [zero(sw1) for i in 1:order]
+    δμ = [zero(mu1) for i in 1:order]
     for o in 1:order
         # println("zR: ", zR)
         μR = mergeInteraction(μ)
@@ -263,10 +272,11 @@ function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=fals
         end
     end
 
-    zi = Taylor1([1.0, δzi...], order)
-    z = 1 / zi
-    δz = [getcoeff(z, o) for o in 1:order]
-
+    # _δzi = [i == 0 ? one(sw1) : δzi[i] for i in 0:order]
+    # zi = Taylor1(_δzi, order)
+    # z = 1 / zi
+    # δz = [getcoeff(z, o) for o in 1:order]
+    δz = _inverse(δzi)
 
     if verbose > 0
         printstyled(@sprintf("%8s  %24s  %24s  %24s\n", "order", "δzi", "δμ", "δz"), color=:green)
@@ -275,6 +285,86 @@ function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=fals
         end
     end
     return δzi, δμ, δz
+end
+
+function _inverse(z::AbstractVector{T}) where {T}
+    order = length(z)
+    zi = [zero(z[1]) for i in 1:length(z)]
+    # zi = zeros(T, order)
+    if order >= 1
+        zi[1] = -z[1]
+    end
+    if order >= 2
+        zi[2] = z[1] .^ 2 - z[2]
+    end
+    if order >= 3
+        zi[3] = -z[1] .^ 3 + 2z[1] .* z[2] - z[3]
+    end
+    if order >= 4
+        zi[4] = z[1] .^ 4 - 3z[1] .^ 2 .* z[2] + z[2] .^ 2 + 2z[1] .* z[3] - z[4]
+    end
+    if order >= 5
+        zi[5] = -z[1] .^ 5 + 4z[1] .^ 3 .* z[2] - 3z[1] .* z[2] .^ 2 - 3z[1] .^ 2 .* z[3] + 2z[2] .* z[3] + 2z[1] .* z[4] - z[5]
+    end
+    if order >= 6
+        error("order must be <= 5")
+    end
+    return zi
+end
+
+
+"""
+    function densityCT(order, nw; isfock=false)
+Derive the chemicalpotential shift from the density.
+# Arguments
+- `order` : total order
+- `nw`     : ∫G(k,0⁻)dk,   Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}, or three integer Tuple{Normal_Order, W_Order, G_Order}
+- `isfock`: if true (false) Fock renormalization is turned on (off)
+- `verbose`: verbosity level (0 (default): no output to stdout, 1: print to stdout)
+# Return δμ
+The convention is the following:
+- `δμ`  : chemical_potential_shift_with_renormalization_condition = δμ_1+δμ_2+...
+"""
+function densityCT(order, nw; isfock=false, verbose=0)
+    nwtype = typeof(collect(values(nw))[1])
+    δμ = zeros(nwtype, order)
+    nR = mergeInteraction(nw)
+
+    if isfock
+        δμ[1] = zero(nwtype)
+        # if order >= 3
+        #     δμ[2] = -nR[(3,0)]/nR[(1,1)]
+        # end
+        # if order >= 4
+        #     δμ[3] = -(nR[(4,0)] + nR[(2,1)] * δμ[2]) / nR[(1,1)]
+        # end
+        # if order >= 5
+        #     δμ[4] = -(nR[(5,0)] + nR[(3,1)] * δμ[2] + nR[(2,1)] * δμ[3] + nR[(1,2)] * δμ[2]^2) / nR[(1,1)]
+        # end
+    else
+        if order >= 1
+            δμ[1] = -nR[(1, 0)] / nR[(0, 1)]
+        end
+    end
+    if order >= 2
+        δμ[2] = -(nR[(2, 0)] + nR[(1, 1)] * δμ[1] + nR[(0, 2)] * δμ[1]^2) / nR[(0, 1)]
+    end
+    if order >= 3
+        δμ[3] = -(nR[(3, 0)] + nR[(2, 1)] * δμ[1] + nR[(1, 1)] * δμ[2] +
+                  nR[(1, 2)] * δμ[1]^2 + nR[(0, 3)] * δμ[1]^3 + nR[(0, 2)] * 2 * δμ[2] * δμ[1]) / nR[(0, 1)]
+    end
+    if order >= 4
+        δμ[4] = -(nR[(4, 0)] + nR[(3, 1)] * δμ[1] + nR[(2, 1)] * δμ[2] + +nR[(1, 1)] * δμ[3] +
+                  nR[(2, 2)] * δμ[1]^2 + nR[(1, 3)] * δμ[1]^3 + nR[(1, 2)] * 2 * δμ[2] * δμ[1] +
+                  nR[(0, 4)] * δμ[1]^4 + nR[(0, 3)] * 3 * δμ[1]^2 * δμ[2] + nR[(0, 2)] * (2 * δμ[1] * δμ[3] + δμ[2]^2)) / nR[(0, 1)]
+    end
+    if verbose > 0
+        printstyled(@sprintf("%8s  %24s \n", "order", "δμ"), color=:green)
+        for o in 1:order
+            @printf("%8d  %24s \n", o, "$(δμ[o])")
+        end
+    end
+    return δμ
 end
 
 

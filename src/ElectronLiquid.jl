@@ -19,6 +19,7 @@ mutable struct Weight{T} <: FieldVector{2,T}
     Weight{T}() where {T} = new{T}(0.0, 0.0)
     Weight(d::T, e::T) where {T} = new{T}(d, e)
     Weight{T}(d::T, e::T) where {T} = new{T}(d, e)
+    Weight{T}(d, e) where {T} = new{T}(d, e)
 end
 
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
@@ -63,6 +64,10 @@ export Ver4
 include("./vertex3/vertex3.jl")
 using .Ver3
 export Ver3
+
+include("./freeEnergy/freeEnergy.jl")
+using .FreeEnergy
+export FreeEnergy
 
 # using SnoopPrecompile
 # @precompile_all_calls begin

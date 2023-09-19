@@ -74,7 +74,7 @@ end
         # return 4π * e0^2 / ((q^2) * (1 - exp(-q^2 / (0.5 * kF)^2)) + (kF^2 + mass2) * exp(-q^2 / (0.5 * kF)^2)) + fs
     elseif dim == 2
         # return 2π * e0^2 / sqrt(q^2 + mass2) + fs # Yukawa
-        return  2π * e0^2 / (abs(q) + mass2) + fs
+        return 2π * e0^2 / (abs(q) + mass2) + fs
     else
         error("not implemented!")
     end
@@ -519,23 +519,24 @@ kostatic - dynamic = v_q
     kF, maxK = p.kF, p.maxK
 
     if qd > maxK
-        return 0.0
+        return (KOinstant(qd, p)-p.fs) / p.β #if qd is very large, the interactin is reduced to the bare one
     end
     if qd <= 1e-6 * kF
         qd = 1e-6 * kF
     end
     # if there is no dynamic interactoin
-    # return KOinstant(qd)
+    # return KOinstant(qd) - p.fs
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
-    # return KOinstant(qd, p) / β
+    # return (KOinstant(qd, p) - p.fs) / p.β  #subtract the local part
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
     # if qd > 50 * kF
     #     println("$τIn, $τOut")
     #     println("$(KOstatic(qd) / β), $(interactionDynamic(qd, τIn, τOut)), $(fp / β)")
-    #     exit(0)
+    #     error("too large qd!")
     # end
+
     kostatic = KOstatic(qd, p)
     return kostatic / p.β - interactionDynamic(p, qd, τIn, τOut)
 end

@@ -1,4 +1,6 @@
-@testset "Interaction" begin
+using CompositeGrids
+
+@testset "Interaction f derivative" begin
     mass2 = 1e-5
     Fs = -1.0
     dF = 0.0001
@@ -22,4 +24,33 @@
     # println(dW0_df[1:10])
     # println(avg[1:10])
     # println(diff[1:10])
+end
+
+@testset "Static Interaction time integration" begin
+    ####################### RPA STATIC #########################
+    mass2 = 1e-6
+    Fs = -0.0
+    para = UEG.ParaMC(rs=5.0, beta=25.0, Fs=Fs, order=1, mass2=mass2, isDynamic=true)
+    UEG.MCinitialize!(para)
+    println(length(para.τgrid))
+
+    for q in para.qgrid.grid
+        v = [UEG.interactionStatic(para, q, 0.0,  τ) for τ in para.τgrid.grid]
+        v_wn = Interp.integrate1D(v, para.τgrid)
+        # println(v_wn, " vs ", UEG.KOinstant(q, para))
+        @test abs(v_wn - UEG.KOinstant(q, para))/abs(v_wn) < 2e-4
+    end
+
+    Fs = -0.5
+    para = UEG.ParaMC(rs=5.0, beta=25.0, Fs=Fs, order=1, mass2=mass2, isDynamic=true)
+    UEG.MCinitialize!(para)
+    println(length(para.τgrid))
+
+    for q in para.qgrid.grid
+        v = [UEG.interactionStatic(para, q, 0.0,  τ) for τ in para.τgrid.grid]
+        v_wn = Interp.integrate1D(v, para.τgrid)
+        # println(q/para.kF, " -> ", v_wn, " vs ", UEG.KOinstant(q, para)-para.fs)
+        v0 = UEG.KOinstant(q, para)-para.fs #subtracting the local part
+        @test abs(v_wn - v0)/abs(v_wn) < 2e-4
+    end
 end

@@ -6,7 +6,7 @@ function integrandDensityKT(idx, vars, config)
     weight = diagram.node.current
 
     # (ExtTin, ExtTout) = (0, β⁻)
-    @assert varT.data[1] == 0  
+    @assert varT.data[1] == 0
     @assert varT.data[2] == para.β - 1e-8
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
@@ -87,16 +87,10 @@ function densityKT(para::ParaMC, diagram;
         # datadict = Dict{eltype(partition),Complex{Measurement{Float64}}}()
         datadict = Dict{eltype(partition),Any}()
 
-        if length(dof) == 1
-            avg, std = result.mean, result.stdev
+        for o in 1:length(dof)
+            avg, std = result.mean[o], result.stdev[o]
             data = measurement.(avg, std)
-            datadict[partition[1]] = data
-        else
-            for o in 1:length(dof)
-                avg, std = result.mean[o], result.stdev[o]
-                data = measurement.(avg, std)
-                datadict[partition[o]] = data
-            end
+            datadict[partition[o]] = data
         end
         return datadict, result
     else
