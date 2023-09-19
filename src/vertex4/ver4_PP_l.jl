@@ -2,7 +2,7 @@
 function MC_PP(para; kamp=[para.kF,], kamp2=kamp, n=[[0, 1, -1],], l=0,
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree, NoBubble],
-    channel=[PHr, PHEr],
+    channel=[PHr, PHEr, PPr],
     partition=UEG.partition(para.order),
     print=0
 )

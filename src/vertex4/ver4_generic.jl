@@ -126,7 +126,14 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     dim, β, kF = paras[1].para.dim, paras[1].para.β, paras[1].para.kF
     Nw = length(paras[1].ωn)
     for p in paras
-        p.para.isDynamic && UEG.MCinitialize!(p.para)
+        # p.para.isDynamic && UEG.MCinitialize!(p.para)
+        if p.para.isDynamic
+            if NoBubble in diagpara[1].filter
+                UEG.MCinitialize!(para, false)
+            else
+                UEG.MCinitialize!(para, true)
+            end
+        end
         @assert length(p.ωn) == Nw "All parameters must have the same frequency list"
         @assert p.para.dim == dim "All parameters must have the same dimension"
         @assert p.para.β ≈ β "All parameters must have the same inverse temperature"
