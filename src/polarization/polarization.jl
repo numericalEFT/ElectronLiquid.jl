@@ -1,4 +1,5 @@
 module Polarization
+using JLD2
 
 using Printf, LinearAlgebra
 using ..CompositeGrids
@@ -123,12 +124,21 @@ include("polarizationKT.jl")
 include("polarizationKW.jl")
 include("polarizationGV.jl")
 
-function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[0,], neval=1e6, reweight_goal=nothing,
+function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[0,],
+    filter=[NoHartree,], partition=UEG.partition(para.order), diagtype=:GV,
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
-    filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:GV)
-    kF = para.kF
-    neighbor = UEG.neighbor(partition)
+    neval=1e6, reweight_goal=nothing, filename::Union{String,Nothing}=nothing)
 
+    if diagtype == :GV
+        diagram = Polarization.diagramGV(para, partition, response=response, filter=filter, spinPolarPara=spinPolarPara)
+    elseif diagtype == :Parquet
+        diagram = Polarization.diagram(para, partition, response=response, filter=filter)
+    else
+        error("unknown diagrams' generated type")
+    end
+
+    partition = diagram[1]
+    neighbor = UEG.neighbor(partition)
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
         for (order, sOrder, vOrder) in partition
@@ -139,7 +149,6 @@ function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[
     end
 
     if diagtype == :GV
-        diagram = Polarization.diagramGV(para, partition, response=response, spinPolarPara=spinPolarPara)
         polar, result = Polarization.GV(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
@@ -148,8 +157,6 @@ function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[
         polar, result = Polarization.KW(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
-    else
-        error("unknown diagrams' generated type")
     end
 
     if isnothing(polar) == false
@@ -170,7 +177,7 @@ function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[
             for (in, n) in enumerate(ngrid)
                 println("n = $n")
                 for (iq, q) in enumerate(kgrid)
-                    @printf("%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n", q[1] / kF, r[in, iq].val, r[in, iq].err, i[in, iq].val, i[in, iq].err)
+                    @printf("%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n", q[1] / para.kF, r[in, iq].val, r[in, iq].err, i[in, iq].val, i[in, iq].err)
                 end
             end
         end
