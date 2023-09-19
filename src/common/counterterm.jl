@@ -108,6 +108,7 @@ By definition, the chemical potential renormalization is defined as
 - `order` : total order
 - `data`  : Dict{Order_Tuple, Actual_Data}, where Order_Tuple is a tuple of two integer Tuple{Normal_Order+W_Order, G_Order}
 - `δμ`    : chemical potential renormalization for each order
+- `offset` (Int, optional): the first order (=normal+W_order) offset (defaults to 0).
 """
 function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     # _partition = sort([k for k in keys(rdata)])

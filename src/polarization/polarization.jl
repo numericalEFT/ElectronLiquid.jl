@@ -90,7 +90,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
 end
 
 function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree],
-    response::Response=ChargeCharge) where {T}
+    response::Response=ChargeCharge, spinPolarPara::Float64=0.0) where {T}
     gkeys = Vector{T}()
     for p in _partition
         if p[1] == 1 && p[3] > 0
@@ -101,9 +101,9 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram
     end
 
     if response == ChargeCharge
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:chargePolar, gkeys, paramc.dim)
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:chargePolar, gkeys, paramc.dim, spinPolarPara=spinPolarPara)
     elseif response == SpinSpin
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:spinPolar, gkeys, paramc.dim)
+        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:spinPolar, gkeys, paramc.dim, spinPolarPara=spinPolarPara)
     else
         error("$response response not yet implemented!")
     end
@@ -122,5 +122,60 @@ end
 include("polarizationKT.jl")
 include("polarizationKW.jl")
 include("polarizationGV.jl")
+
+function MC(para; response::Response=ChargeCharge, kgrid=[0.0, para.kF], ngrid=[0,], neval=1e6, reweight_goal=nothing,
+    spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
+    filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:GV)
+    kF = para.kF
+    neighbor = UEG.neighbor(partition)
+
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            reweight_factor = 2.0^(order - 1)
+            push!(reweight_goal, reweight_factor)
+        end
+        push!(reweight_goal, 1.0)
+    end
+
+    if diagtype == :GV
+        diagram = Polarization.diagramGV(para, partition, response=response, spinPolarPara=spinPolarPara)
+        polar, result = Polarization.GV(para, diagram;
+            neighbor=neighbor, reweight_goal=reweight_goal,
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+    elseif diagtype == :Parquet
+        diagram = Polarization.diagram(para, partition)
+        polar, result = Polarization.KW(para, diagram;
+            neighbor=neighbor, reweight_goal=reweight_goal,
+            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+    else
+        error("unknown diagrams' generated type")
+    end
+
+    if isnothing(polar) == false
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (ngrid, kgrid, polar)
+            end
+        end
+        for (ip, key) in enumerate(partition)
+            println("Group ", key)
+            @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
+            r, i = real(polar[key]), imag(polar[key])
+            for (in, n) in enumerate(ngrid)
+                println("n = $n")
+                for (iq, q) in enumerate(kgrid)
+                    @printf("%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n", q[1] / kF, r[in, iq].val, r[in, iq].err, i[in, iq].val, i[in, iq].err)
+                end
+            end
+        end
+    end
+    return polar, result
+end
 
 end
