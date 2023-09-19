@@ -53,7 +53,7 @@ include("freeEnergyGV_2dscreened.jl")
 
 function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
-    isScreened::Bool=false, # whether to use the screened Coulomb interaction
+    isLayered2D::Bool=false, # whether to use the screened Coulomb interaction
     filter=[NoHartree,], partition=UEG.partition(para.order, offset=0), verbose=-1)
 
     diagram = FreeEnergy.diagramGV(para, partition, filter=filter, spinPolarPara=spinPolarPara)
@@ -69,15 +69,8 @@ function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_g
         push!(reweight_goal, 1.0)
     end
 
-    if isScreened == false
-        freeE, result = FreeEnergy.GV(para, diagram; neighbor=neighbor, print=verbose,
-            reweight_goal=reweight_goal, neval=neval, parallel=:nothread)
-    else
-        # screened 2D Coulomb interaction
-        @assert para.dim == 2 "Only 2D is supported for the tanh screened Coulomb interaction"
-        freeE, result = FreeEnergy.GVscreened(para, diagram; neighbor=neighbor, print=verbose,
-            reweight_goal=reweight_goal, neval=neval, parallel=:nothread)
-    end
+    freeE, result = FreeEnergy.GV(para, diagram; isLayered2D=isLayered2D, neighbor=neighbor, print=verbose,
+        reweight_goal=reweight_goal, neval=neval, parallel=:nothread)
 
     if isnothing(freeE) == false
         if isnothing(filename) == false

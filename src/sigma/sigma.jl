@@ -102,9 +102,15 @@ include("sigmaGV.jl")
 
 function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=nothing,
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
-    filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:Parquet)
+    filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:Parquet,
+    isLayered2D=false # whether to use the screened Coulomb interaction in 2D or not 
+)
     kF = para.kF
     neighbor = UEG.neighbor(partition)
+
+    if isLayered2D
+        @assert (para.dim == 2) && diagtype == :GV "Only 2D and GV diagrams supports the tanh screened Coulomb interaction"
+    end
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
@@ -121,6 +127,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
     if diagtype == :GV
         diagram = Sigma.diagramGV(para, partition, spinPolarPara=spinPolarPara)
         sigma, result = Sigma.GV(para, diagram;
+            isLayered2D=isLayered2D,
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
     elseif diagtype == :Parquet
