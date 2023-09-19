@@ -2,9 +2,8 @@ function integrandGV(idx, vars, config)
     varK, varT = vars
     para, MaxLoopNum = config.userdata[1:2]
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
-    interactionleaf = config.userdata[4][idx]
-    LoopPool, root = config.userdata[5:6]
-    graphfuncs! = config.userdata[7][idx]
+    LoopPool, root = config.userdata[4:5]
+    graphfuncs! = config.userdata[6][idx]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
@@ -48,7 +47,7 @@ function integrandGV(idx, vars, config)
         end
     end
 
-    graphfuncs!(root, leaf[idx], interactionleaf)  # allocations due to run-time variable `idx`
+    graphfuncs!(root, leaf[idx])  # allocations due to run-time variable `idx`
 
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(dim * loopNum)
@@ -71,16 +70,17 @@ function GV(para::ParaMC, diagram;
     para.isDynamic && UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
+    # partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
+    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, leafMap = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 1
     LoopPool = FermiLabel.labels[3]
-    PropagatorMap, InteractionMap = mappings
 
-    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
+    leafStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
     root = zeros(Float64, 1)
-    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], leafMap[key]) for (i, key) in enumerate(partition))
 
-    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF)
+    # K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF)
+    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 100.0 * kF)
     T = Continuous(0.0, β; alpha=alpha, adapt=true)
 
     dof = [[p.innerLoopNum, p.totalTauNum] for p in diagpara] # K, T, ExtKidx
@@ -93,7 +93,7 @@ function GV(para::ParaMC, diagram;
             dof=dof,
             type=Float64, # type of the integrand
             obs=obs,
-            userdata=(para, MaxLoopNum, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
+            userdata=(para, MaxLoopNum, leafStat, LoopPool, root, funcGraphs!),
             kwargs...
         )
     end
