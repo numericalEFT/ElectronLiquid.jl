@@ -4,7 +4,7 @@ function integrandGV(idx, vars, config)
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
     LoopPool, root = config.userdata[7:8]
     graphfuncs! = config.userdata[9][idx]
-    isLayered2D = cofig.userdata[end]
+    isLayered2D = config.userdata[end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     extidx = ExtKidx[1]
