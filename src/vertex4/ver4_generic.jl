@@ -125,13 +125,14 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
 
     dim, β, kF = paras[1].para.dim, paras[1].para.β, paras[1].para.kF
     Nw = length(paras[1].ωn)
+    partition, diagpara, diag, root, extT = diagram
     for p in paras
         # p.para.isDynamic && UEG.MCinitialize!(p.para)
         if p.para.isDynamic
             if NoBubble in diagpara[1].filter
-                UEG.MCinitialize!(para, false)
+                UEG.MCinitialize!(p.para, false)
             else
-                UEG.MCinitialize!(para, true)
+                UEG.MCinitialize!(p.para, true)
             end
         end
         @assert length(p.ωn) == Nw "All parameters must have the same frequency list"
@@ -140,7 +141,6 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
         @assert p.para.kF ≈ kF "All parameters must have the same Fermi momentum"
     end
 
-    partition, diagpara, diag, root, extT = diagram
     @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
     @assert length(root[1]) == length(root[2])
     @assert length(extT[1]) == length(extT[2])
