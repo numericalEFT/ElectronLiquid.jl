@@ -2,9 +2,8 @@ function integrandGV(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
-    interactionleaf = config.userdata[7][idx]
-    LoopPool, root = config.userdata[8:9]
-    graphfuncs! = config.userdata[10][idx]
+    LoopPool, root = config.userdata[7:8]
+    graphfuncs! = config.userdata[9][idx]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     extidx = ExtKidx[1]
@@ -48,10 +47,9 @@ function integrandGV(idx, vars, config)
         end
     end
 
-    graphfuncs!(root, leaf[idx], interactionleaf)  # allocations due to run-time variable `idx`
+    graphfuncs!(root, leaf[idx])  # allocations due to run-time variable `idx`
 
     n = ngrid[varN[1]]
-    # println(extT_labels, " ", idx)
     weight = root[1] * phase(varT, extT_labels[idx][1], n, β)
 
     loopNum = config.dof[idx][1]
@@ -88,14 +86,13 @@ function GV(para::ParaMC, diagram;
     para.isDynamic && UEG.MCinitialize!(para)
 
     dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
+    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, leafMap = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 1
     LoopPool = FermiLabel.labels[3]
-    PropagatorMap, InteractionMap = mappings
 
-    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
+    leafStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
     root = zeros(Float64, 1)
-    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], leafMap[key]) for (i, key) in enumerate(partition))
 
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
@@ -104,8 +101,7 @@ function GV(para::ParaMC, diagram;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt=false)
-    # ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
@@ -117,7 +113,7 @@ function GV(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
+            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, leafStat, LoopPool, root, funcGraphs!),
             kwargs...
         )
     end

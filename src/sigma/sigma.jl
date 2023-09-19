@@ -79,12 +79,13 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     return result
 end
 
-function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+function diagramGV(paramc::ParaMC, _partition::Vector{T};
+    filter=[FeynmanDiagram.NoHartree], spinPolarPara::Float64=0.0) where {T}
     diagpara = Vector{DiagParaF64}()
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
     end
-    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, paramc.dim)
+    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, paramc.dim, spinPolarPara=spinPolarPara)
     return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
 end
 
@@ -100,12 +101,9 @@ include("sigmaVegas.jl")
 include("sigmaGV.jl")
 
 function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=nothing,
-    filename::Union{String,Nothing}=nothing, diagtype=:Parquet)
+    spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
+    filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:Parquet)
     kF = para.kF
-    _order = para.order
-
-    # partition = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
-    partition = UEG.partition(_order)
     neighbor = UEG.neighbor(partition)
 
     if isnothing(reweight_goal)
@@ -121,7 +119,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
     end
 
     if diagtype == :GV
-        diagram = Sigma.diagramGV(para, partition)
+        diagram = Sigma.diagramGV(para, partition, spinPolarPara=spinPolarPara)
         sigma, result = Sigma.GV(para, diagram;
             neighbor=neighbor, reweight_goal=reweight_goal,
             kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
