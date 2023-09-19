@@ -48,7 +48,6 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T};
 end
 
 include("freeEnergyGV.jl")
-include("freeEnergyGV_2dscreened.jl")
 
 
 function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
