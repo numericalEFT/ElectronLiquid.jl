@@ -5,6 +5,7 @@ using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
+const Q_CUTOFF = 1e-32
 
 """
     function lindhard(x)
@@ -61,8 +62,8 @@ end
 
 #fast version
 @inline function KOinstant(q, e0, dim, mass2, fs, kF)
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < Q_CUTOFF
+        q = Q_CUTOFF
     end
     if dim == 3
         return 4π * e0^2 / (q^2 + mass2) + fs
@@ -140,8 +141,8 @@ Rq = r_q / (1 - r_q Π0) - f
 ```
 """
 function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < Q_CUTOFF
+        q = Q_CUTOFF
     end
     invKOinstant = 1.0 / KOinstant(q, para)
     Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
@@ -149,8 +150,8 @@ function KO_W(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
 end
 
 function KO_W_df(q, n::Integer, para::ParaMC; Pi=polarKW(q, n, para))
-    if abs(q) < 1e-6
-        q = 1e-6
+    if abs(q) < Q_CUTOFF
+        q = Q_CUTOFF
     end
     # invKOinstant = 1.0 / KOinstant(q, para)
     # Rs = 1.0 ./ (invKOinstant - Pi) - para.fs
@@ -406,9 +407,9 @@ function counterR(p::ParaMC, qd, τIn, τOut, order)
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
+    if qd <= Q_CUTOFF * kF
         # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-6 * kF
+        qd = Q_CUTOFF * kF
     end
 
     if order <= p.order
@@ -429,9 +430,9 @@ function counterR_df(p::ParaMC, qd, τIn, τOut, order)
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
+    if qd <= Q_CUTOFF * kF
         # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-6 * kF
+        qd = Q_CUTOFF * kF
     end
 
     if order <= p.order
@@ -471,8 +472,8 @@ where Π₀ is the polarization of free electrons.
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= Q_CUTOFF * kF
+        qd = Q_CUTOFF * kF
     end
 
     vd = KOinstant(qd, p)
@@ -519,10 +520,10 @@ kostatic - dynamic = v_q
     kF, maxK = p.kF, p.maxK
 
     if qd > maxK
-        return (KOinstant(qd, p)-p.fs) / p.β #if qd is very large, the interactin is reduced to the bare one
+        return (KOinstant(qd, p) - p.fs) / p.β #if qd is very large, the interactin is reduced to the bare one
     end
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= Q_CUTOFF * kF
+        qd = Q_CUTOFF * kF
     end
     # if there is no dynamic interactoin
     # return KOinstant(qd) - p.fs
@@ -570,8 +571,8 @@ where Π₀ is the polarization of free electrons.
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-6 * kF
-        qd = 1e-6 * kF
+    if qd <= Q_CUTOFF * kF
+        qd = Q_CUTOFF * kF
     end
 
     return linear2D(p.dW0_f, p.qgrid, p.τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq

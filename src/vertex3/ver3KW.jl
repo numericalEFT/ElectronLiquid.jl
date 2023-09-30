@@ -86,23 +86,21 @@ function KW(para::ParaMC, diagram;
     obs = [zeros(ComplexF64, 2, Nkin, Nqout, Nwin, Nwqout) for p in diagpara] # observable for the Fock diagram 
 
     if isnothing(config)
-        config = MCIntegration.Configuration(
-            var=(K, T, vKin, vQout, vWin, vWqout),
+        config = MCIntegration.Configuration(; var=(K, T, vKin, vQout, vWin, vWqout),
             dof=dof,
             obs=obs,
             type=Weight,
             userdata=(para, diag, root, extT, kin, qout, nkin, nqout),
-            kwargs...
-        )
+            kwargs...)
     end
     result = integrate(integrandKW; config=config, measure=measureKW, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
-        if print >= 0
-            report(result.config)
-            report(result; pick=o -> (real(o[1, 1, 1, 1, 1])), name="uu")
-            report(result; pick=o -> (real(o[2, 1, 1, 1, 1])), name="ud")
-        end
+        # if print >= 0
+        #     report(result.config)
+        #     report(result; pick=o -> (real(o[1, 1, 1, 1, 1])), name="uu")
+        #     report(result; pick=o -> (real(o[2, 1, 1, 1, 1])), name="ud")
+        # end
 
         datadict = Dict{eltype(partition),Any}()
         for k in 1:length(dof)
