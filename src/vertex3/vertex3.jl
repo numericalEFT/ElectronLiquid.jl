@@ -109,5 +109,6 @@ end
 # end
 
 include("ver3KW.jl")
+include("ver3angleavg.jl")
 
 end
