@@ -110,16 +110,22 @@ function GV(para::ParaMC, diagram;
     root = zeros(Float64, 24)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], leafMap[key]) for (i, key) in enumerate(partition))
 
+    println("static compile has finished!")
+    GC.gc()
+
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kgrid[1]
     # T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
-    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
-    T.data[1:2] .= 0.0
+    # T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2) # for old-version sigma GVdiagrams
+    # T.data[1:2] .= 0.0
+    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
+    T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
     ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
-    dof = [[p.innerLoopNum, p.totalTauNum, 1, 1] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, X, ExtKidx
+    # dof = [[p.innerLoopNum, p.totalTauNum, 1, 1] for p in diagpara] # K, T, X, ExtKidx, for old-version sigma GVdiagrams
     # observable of sigma diagram of different permutations
     obs = [zeros(ComplexF64, length(ngrid), length(kgrid)) for _ in 1:length(dof)]
 
@@ -149,8 +155,10 @@ function GV(para::ParaMC, diagram;
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            r = measurement.(real(avg), real(std)) ./ (-β)
-            i = measurement.(imag(avg), imag(std)) ./ (-β)
+            r = -measurement.(real(avg), real(std))
+            i = -measurement.(imag(avg), imag(std))
+            # r = measurement.(real(avg), real(std)) ./ (-β)  # for old-version sigma GVdiagrams
+            # i = measurement.(imag(avg), imag(std)) ./ (-β)
             data = Complex.(r, i)
             datadict[key] = data
         end
