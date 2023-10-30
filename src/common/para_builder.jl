@@ -85,6 +85,8 @@ function MCinitialize!(para::ParaMC, bubble::Bool=true)
     !para.isDynamic && return
     para.dW0 .= KOdynamic_T(para)
     para.dW0_f .= KOdynamic_T_df(para)
+    para.cRs::Vector{Matrix{Float64}} = []
+    para.cRs_f::Vector{Matrix{Float64}} = []
     for o in 1:para.order-1
         push!(para.cRs, counterKO_T(para; order=o, bubble=bubble))
         push!(para.cRs_f, counterKO_T_df(para; order=o, bubble=bubble))

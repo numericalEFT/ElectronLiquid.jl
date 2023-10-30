@@ -1,16 +1,18 @@
-function integrandKW(idx, var, config)
-    para, diag, root, extT, kin, qout, nkin, nqout = config.userdata
+function integrandAA(idx, var, config)
+    para, diag, root, extT, kamp, kamp2, nkin, nqout = config.userdata
 
     kF, β = para.kF, para.β
-    varK, varT = var[1], var[2]
+    varK, varT, varX = var[1], var[2], var[7]
     loopNum = config.dof[idx][1]
     # error(loopNum)
-    _kin, _qout = kin[var[3][1]], qout[var[4][1]]
+    _kin, _kout = kamp[var[3][1]], kamp2[var[4][1]]
     _nkin, _nqout = nkin[var[5][1]], nqout[var[6][1]]
 
     # println(kinL, ", ", koutL, ", ", kinR)
-    varK.data[:, 1] .= _qout
-    varK.data[:, 2] .= _kin
+    x = varX[1][1]
+    varK.data[1, 1] = _kout * x - _kin
+    varK.data[2, 1] = _kout * sqrt(1 - x^2)
+    varK.data[1, 2] = _kin
 
     diagram = diag[idx]
     weight = diagram.node.current
@@ -41,17 +43,16 @@ function integrandKW(idx, var, config)
     # return Weight(zero(ComplexF64), wud * para.NF)
 end
 
-function measureKW(idx, var, obs, weight, config)
-    kin, qout = var[3][1], var[4][1]
+function measureAA(idx, var, obs, weight, config)
+    kin, kout = var[3][1], var[4][1]
     nkin, nqout = var[5][1], var[6][1]
-    obs[idx][1, kin, qout, nkin, nqout] += weight.d
-    obs[idx][2, kin, qout, nkin, nqout] += weight.e
+    obs[idx][1, kin, kout, nkin, nqout] += weight.d
+    obs[idx][2, kin, kout, nkin, nqout] += weight.e
 end
 
-function KW(para::ParaMC, diagram;
-    kin=[getK(para.kF, para.dim, 1),],
+function AA(para::ParaMC, diagram;
+    kamp=[para.kF,], kamp1=[kamp[1],],
     nkin=[0,],
-    qout=[getK(0.0, para.dim, 1),],
     nqout=[0,],
     neval=1e6, #number of evaluations
     print=0,
@@ -71,29 +72,29 @@ function KW(para::ParaMC, diagram;
     K = MCIntegration.FermiK(para.dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
-    # X = MCIntegration.Continuous(-1.0, 1.0) #x=cos(θ)
+    X = MCIntegration.Continuous(-1.0, 1.0) #x=cos(θ)
 
-    Nkin, Nqout = length(kin), length(qout)
+    Nkin, Nkout = length(kamp), length(kamp1)
     Nwin, Nwqout = length(nkin), length(nqout)
 
     vKin = MCIntegration.Discrete(1, Nkin, alpha=alpha)
-    vQout = MCIntegration.Discrete(1, Nqout, alpha=alpha)
+    vKout = MCIntegration.Discrete(1, Nkout, alpha=alpha)
 
     vWin = MCIntegration.Discrete(1, Nwin, alpha=alpha)
     vWqout = MCIntegration.Discrete(1, Nwqout, alpha=alpha)
 
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = [zeros(ComplexF64, 2, Nkin, Nqout, Nwin, Nwqout) for p in diagpara] # observable for the Fock diagram 
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    obs = [zeros(ComplexF64, 2, Nkin, Nkout, Nwin, Nwqout) for p in diagpara] # observable for the Fock diagram 
 
     if isnothing(config)
-        config = MCIntegration.Configuration(; var=(K, T, vKin, vQout, vWin, vWqout),
+        config = MCIntegration.Configuration(; var=(K, T, vKin, vKout, vWin, vWqout, X),
             dof=dof,
             obs=obs,
             type=Weight,
-            userdata=(para, diag, root, extT, kin, qout, nkin, nqout),
+            userdata=(para, diag, root, extT, kamp, kamp1, nkin, nqout),
             kwargs...)
     end
-    result = integrate(integrandKW; config=config, measure=measureKW, solver=:mcmc, neval=neval, print=print, kwargs...)
+    result = integrate(integrandAA; config=config, measure=measureAA, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
         # if print >= 0

@@ -7,10 +7,12 @@ using ..Lehmann
 using LinearAlgebra
 using ..ElectronGas
 
+const TAU_CUTOFF = 1e-10
+
 function green(τ::T, ω::T, β::T) where {T}
     #generate green function of fermion
     if τ ≈ T(0.0)
-        τ = -1e-10
+        τ = -TAU_CUTOFF
     end
     if τ > T(0.0)
         return ω > T(0.0) ?
@@ -25,7 +27,7 @@ end
 
 function green2(Ek, τ, beta)
     if τ ≈ 0.0
-        τ = -1.0e-10
+        τ = -TAU_CUTOFF
     end
 
     s = 1.0
@@ -54,7 +56,7 @@ end
 
 function green3(Ek, τ, beta=β)
     if τ ≈ 0.0
-        τ = -1.0e-10
+        τ = -TAU_CUTOFF
     end
 
     s = 1.0
@@ -101,7 +103,7 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     order = id.order[1]
     if order == 0  # g[μ]
         if τ ≈ 0.0
-            return Spectral.kernelFermiT(-1e-8, ϵ, β)
+            return Spectral.kernelFermiT(-TAU_CUTOFF, ϵ, β)
         else
             return Spectral.kernelFermiT(τ, ϵ, β)
         end
