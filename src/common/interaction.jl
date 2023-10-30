@@ -5,7 +5,7 @@ using ..Lehmann
 
 export Coulombinstant, KOinstant, KOstatic, interactionDynamic, interactionStatic, counterR
 
-const Q_CUTOFF = 1e-32
+const Q_CUTOFF = 1e-10
 
 """
     function lindhard(x)

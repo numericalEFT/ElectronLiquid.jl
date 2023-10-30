@@ -7,7 +7,7 @@ using ..Lehmann
 using LinearAlgebra
 using ..ElectronGas
 
-const TAU_CUTOFF = 1e-32
+const TAU_CUTOFF = 1e-10
 
 function green(τ::T, ω::T, β::T) where {T}
     #generate green function of fermion
