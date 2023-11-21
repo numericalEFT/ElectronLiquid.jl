@@ -4,7 +4,7 @@ Calculate vertex4 averged on the Fermi surface
 function integrandPH(idx, var, config)
     para, diag, root, extT, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata
 
-    kF, β = para.kF, para.β
+    dim, β = para.dim, para.β
     varK, varT = var[1], var[2]
     x = config.var[3][1]
     # error("$(varK.data[:, 1])")
@@ -18,8 +18,11 @@ function integrandPH(idx, var, config)
     varK.data[1, 2] = kamp
     varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    varK.data[1:2, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2)]
-
+    if dim == 3
+        varK.data[1:2, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2)]
+    else
+        varK.data[1:2, 3] = [kamp2 * cos(x), kamp2 * sin(x)]
+    end
 
     diagram = diag[idx]
     weight = diagram.node.current
@@ -28,14 +31,7 @@ function integrandPH(idx, var, config)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
 
-    factor = 1.0
-    if l == 0
-        factor = 1.0 / 2
-    elseif l == 1
-        factor = x / 2.0
-    else
-        error("not implemented")
-    end
+    factor = legendfactor(x, l, dim)
 
     if !isempty(rootuu)
         wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], n, β) for (ri, root) in enumerate(rootuu))
@@ -48,7 +44,7 @@ function integrandPH(idx, var, config)
         wud = zero(ComplexF64)
     end
 
-    factor = para.NF / (2π)^(para.dim * loopNum)
+    factor = para.NF / (2π)^(dim * loopNum)
     return Weight(wuu * factor, wud * factor)
 end
 
@@ -93,24 +89,23 @@ function PH(para::ParaMC, diagram;
     @assert length(root[1]) == length(root[2])
     @assert length(extT[1]) == length(extT[2])
 
-    K = MCIntegration.FermiK(para.dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
-    # K.data[:, 1] .= UEG.getK(kamp[1], para.dim, 1)
-    # K.data[:, 2] .= UEG.getK(kamp[1], para.dim, 1)
-    K.data[:, 1] .= UEG.getK(kF, para.dim, 1)
-    K.data[:, 2] .= UEG.getK(kF, para.dim, 1)
+    K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
+    K.data[:, 1] .= UEG.getK(kF, dim, 1)
+    K.data[:, 2] .= UEG.getK(kF, dim, 1)
     K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
-    X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    if dim == 3
+        X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    elseif dim == 2
+        X = MCIntegration.Continuous(0.0, 2π, alpha=alpha) #x=θ
+    end
     L = MCIntegration.Discrete(1, Nl, alpha=alpha) # angular momentum
     AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # angular momentum
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = [zeros(ComplexF64, 2, Nl, Nk) for p in diagpara]
 
-    # if isnothing(neighbor)
-    #     neighbor = UEG.neighbor(partition)
-    # end
     if isnothing(config)
         config = MCIntegration.Configuration(;
             var=(K, T, X, L, AMP),

@@ -38,13 +38,7 @@ function _diagram_weight(idx, var, config)
     ExprTree.evalKT!(diagram, varK.data, varT.data, para.para)
 
     factor = para.para.NF / (2π)^(dim * loopNum)
-    if l == 0
-        factor *= 1.0 / 2
-    elseif l == 1
-        factor *= x / 2.0
-    else
-        error("not implemented")
-    end
+    factor *= legendfactor(x, l, dim)
 
     rootuu, rootud = root[1][idx], root[2][idx]
     # extTuu, extTud = extT[1][idx], extT[2][idx]
@@ -153,7 +147,11 @@ function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     # all time variables will be sampled within [0.0, 1.0]
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha) # the first one is external
     T.data[1] = 0.0
-    X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    if dim == 3
+        X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    elseif dim == 2
+        X = MCIntegration.Continuous(0.0, 2π, alpha=alpha) #x=θ
+    end
     N = MCIntegration.Discrete(1, length(paras), alpha=alpha) #index of paras
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
