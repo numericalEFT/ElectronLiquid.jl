@@ -122,6 +122,30 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     return (partition, diagpara, diag, [rootuu, rootud], [extTuu, extTud])
 end
 
+@inline function legendfactor(x, l, dim)
+    if dim == 3
+        if l == 0
+            factor = 0.5
+        elseif l == 1
+            factor = x / 2.0
+        elseif l == 2
+            factor = (3x^2 - 1) / 4.0
+        elseif l == 3
+            factor = (5x^3 - 3x) / 4.0
+        elseif l == 4
+            factor = (35x^4 - 30x^2 + 3) / 16.0
+        elseif l == 5
+            factor = (63x^5 - 70x^3 + 15x) / 16.0
+        else
+            error("not implemented for $l channel in $dim-D")
+        end
+    elseif dim == 2
+        factor = cos(l * x) / 2π
+    else
+        error("not implemented in $dim-D")
+    end
+    return factor
+end
 
 @inline function phase(varT, extT, ninL, noutL, ninR, β)
     # println(extT)

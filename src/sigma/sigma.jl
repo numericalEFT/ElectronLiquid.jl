@@ -85,9 +85,8 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T};
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
     end
-    # FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:sigma_old, _partition, paramc.dim, spinPolarPara=spinPolarPara) # for old-version sigma GVdiagrams
-    FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, paramc.dim, spinPolarPara=spinPolarPara)
-    return (_partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
+    FeynGraphs, labelProd, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, spinPolarPara=spinPolarPara)
+    return (_partition, diagpara, FeynGraphs, labelProd, mappings)
 end
 
 @inline function phase(varT, extT, l, β)

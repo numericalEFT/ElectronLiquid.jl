@@ -2,20 +2,20 @@ function integrandGV(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
-    LoopPool, root = config.userdata[7:8]
+    momLoopPool, root = config.userdata[7:8]
     graphfuncs! = config.userdata[9][idx]
     isLayered2D = config.userdata[end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
-    FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
         elseif isodd(lftype) #fermionic 
             τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
-            kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             ϵ = dot(kq, kq) / (2me) - μ
             order = (lftype - 1) / 2
             if order == 0
@@ -34,7 +34,7 @@ function integrandGV(idx, vars, config)
                 error("not implemented!")
             end
         else
-            kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             order = lftype / 2 - 1
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
@@ -102,11 +102,11 @@ function GV(para::ParaMC, diagram;
     end
 
     dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, leafMap = diagram
+    partition, diagpara, FeynGraphs, labelProd, leafMap = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 2
-    LoopPool = FermiLabel.labels[3]
+    momLoopPool = FrontEnds.LoopPool(:K, dim, labelProd.labels[end])
 
-    leafStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
+    leafStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, labelProd, partition)
     root = zeros(Float64, 24)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], leafMap[key]) for (i, key) in enumerate(partition))
 
@@ -135,7 +135,7 @@ function GV(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, leafStat, LoopPool, root, funcGraphs!, isLayered2D),
+            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, leafStat, momLoopPool, root, funcGraphs!, isLayered2D),
             kwargs...
         )
     end

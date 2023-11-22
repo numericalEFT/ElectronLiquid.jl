@@ -102,9 +102,9 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram
     end
 
     if response == ChargeCharge
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:chargePolar, gkeys, paramc.dim, spinPolarPara=spinPolarPara)
+        FeynGraphs, labelProd, mappings = FeynmanDiagram.diagdictGV(:chargePolar, gkeys, spinPolarPara=spinPolarPara)
     elseif response == SpinSpin
-        FeynGraphs, FermiLabel, BoseLabel, mappings = FeynmanDiagram.diagdictGV(:spinPolar, gkeys, paramc.dim, spinPolarPara=spinPolarPara)
+        FeynGraphs, labelProd, mappings = FeynmanDiagram.diagdictGV(:spinPolar, gkeys, spinPolarPara=spinPolarPara)
     else
         error("$response response not yet implemented!")
     end
@@ -112,7 +112,7 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram
     for p in gkeys
         push!(diagpara, diagPara(paramc, p[1], filter, response))
     end
-    return (gkeys, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings)
+    return (gkeys, diagpara, FeynGraphs, labelProd, mappings)
 end
 
 @inline function phase(varT, extT, l, β)

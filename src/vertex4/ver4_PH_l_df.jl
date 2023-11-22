@@ -12,7 +12,7 @@ function integrandPH_df(idx, vars, config)
     kidx = extKidx[1]
     para = paras[kidx]
 
-    kF, β = para.kF, para.β
+    dim, β = para.dim, para.β
 
     kamp = kampgrid[kidx]
     varK.data[1, 1], varK.data[1, 2] = kamp, kamp
@@ -27,14 +27,7 @@ function integrandPH_df(idx, vars, config)
 
     ExprTree.evalKT!(diagram, varK.data, varT.data, para)
 
-    factor = 1.0
-    if l == 0
-        factor = 1.0 / 2
-    elseif l == 1
-        factor = x / 2.0
-    else
-        error("not implemented")
-    end
+    factor = legendfactor(x, l, dim)
 
     if !isempty(rootuu)
         wuu = factor * sum(weight[root] * phase(varT, extTuu[ri], n, β) for (ri, root) in enumerate(rootuu))
@@ -47,7 +40,7 @@ function integrandPH_df(idx, vars, config)
         wud = zero(ComplexF64)
     end
 
-    factor = para.NF / (2π)^(para.dim * loopNum)
+    factor = para.NF / (2π)^(dim * loopNum)
     return Weight(wuu * factor, wud * factor)
 end
 
@@ -94,7 +87,11 @@ function PH_df(paras::Vector{ParaMC}, diagram;
     K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
-    X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    if dim == 3
+        X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    elseif dim == 2
+        X = MCIntegration.Continuous(0.0, 2π, alpha=alpha) #x=θ
+    end
     L = MCIntegration.Discrete(1, Nl, alpha=alpha) # angular momentum
     AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # kamp
 
