@@ -1,8 +1,8 @@
 module Sigma
 using Cuba
-using JLD2
+using JLD2, CSV
 
-using Printf, LinearAlgebra
+using Printf, LinearAlgebra, DataFrames
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
@@ -82,11 +82,47 @@ end
 function diagramGV(paramc::ParaMC, _partition::Vector{T};
     filter=[FeynmanDiagram.NoHartree], spinPolarPara::Float64=0.0) where {T}
     diagpara = Vector{DiagParaF64}()
+    extT_labels = Vector{Vector{Int}}[]
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
+        if p[1] == 1
+            push!(extT_labels, [[1,1]])
+        else
+            push!(extT_labels, [[1,1], [1,2]])
+        end
     end
-    FeynGraphs, labelProd, mappings = FeynmanDiagram.diagdictGV(:sigma, _partition, spinPolarPara=spinPolarPara)
-    return (_partition, diagpara, FeynGraphs, labelProd, mappings)
+
+    if spinPolarPara != 0 
+        FeynGraphs, labelProd = FeynmanDiagram.diagdictGV(:sigma, _partition, spinPolarPara=spinPolarPara)
+        return (_partition, diagpara, FeynGraphs, labelProd, extT_labels)
+    else
+        return (_partition, diagpara, extT_labels)
+    end
+end
+
+function GVcompile_toFile(maxOrder::Int, FeynGraphs, labelProd, root_dir=joinpath(@__DIR__, "source_codeGV/"))
+    partition = UEG.partition(maxOrder)
+
+    ### compile and save the generated Julia function to a source code file.
+    leaf_maps = Vector{Dict{Int,FeynmanGraph}}()
+    for key in partition
+        key_str = join(string.(key))
+        leafmap = Compilers.compile_code(FeynGraphs[key][1], root_dir * "func_sigmaGV.jl"; func_name="eval_graph$(key_str)!")
+        push!(leaf_maps, leafmap)
+    end
+
+    ### save the leafs information to a CSV file
+    leafStates = FeynmanDiagram.leafstates(leaf_maps, labelProd)
+    len = length(leafStates)
+    for (ikey, key) in enumerate(partition)
+        key_str = join(string.(key))
+        df = DataFrame([leafStates[idx][ikey] for idx in 1:len], :auto)
+        CSV.write(root_dir * "leafinfo_GV$key_str.csv", df)
+    end
+
+    ### save the loop basis to a CSV file for the given maximum order
+    df = DataFrame(labelProd.labels[end], :auto)
+    CSV.write(root_dir * "loopBasis_GVmaxOrder$maxOrder.csv", df)
 end
 
 @inline function phase(varT, extT, l, β)
@@ -126,10 +162,17 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
 
     if diagtype == :GV
         diagram = Sigma.diagramGV(para, partition, spinPolarPara=spinPolarPara)
-        sigma, result = Sigma.GV(para, diagram;
-            isLayered2D=isLayered2D,
-            neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        if spinPolarPara == 0.0
+            sigma, result = Sigma.GV_unpolarized(para, diagram;
+                isLayered2D=isLayered2D,
+                neighbor=neighbor, reweight_goal=reweight_goal,
+                kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        else
+            sigma, result = Sigma.GV(para, diagram;
+                isLayered2D=isLayered2D,
+                neighbor=neighbor, reweight_goal=reweight_goal,
+                kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        end
     elseif diagtype == :Parquet
         diagram = Sigma.diagram(para, partition)
         sigma, result = Sigma.KW(para, diagram;
@@ -165,5 +208,65 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
     return sigma, result
 end
 
+include("source_codeGV/func_sigmaGV_o5.jl")
+# include("source_codeGV/func_sigmaGV.jl")
+const evalfunc_map = Dict(
+    (1, 0, 0) => eval_graph100!,
+    (1, 0, 1) => eval_graph101!,
+    (1, 0, 2) => eval_graph102!,
+    (1, 0, 3) => eval_graph103!,
+    (1, 0, 4) => eval_graph104!,
+    # (1, 0, 5) => eval_graph105!,
+    (1, 1, 0) => eval_graph110!,
+    (1, 1, 1) => eval_graph111!,
+    (1, 1, 2) => eval_graph112!,
+    (1, 1, 3) => eval_graph113!,
+    # (1, 1, 4) => eval_graph114!,
+    (1, 2, 0) => eval_graph120!,
+    (1, 2, 1) => eval_graph121!,
+    (1, 2, 2) => eval_graph122!,
+    # (1, 2, 3) => eval_graph123!,
+    (1, 3, 0) => eval_graph130!,
+    (1, 3, 1) => eval_graph131!,
+    # (1, 3, 2) => eval_graph132!,
+    (1, 4, 0) => eval_graph140!,
+    # (1, 4, 1) => eval_graph141!,
+    # (1, 5, 0) => eval_graph150!,
+    (2, 0, 0) => eval_graph200!,
+    (2, 0, 1) => eval_graph201!,
+    (2, 0, 2) => eval_graph202!,
+    (2, 0, 3) => eval_graph203!,
+    # (2, 0, 4) => eval_graph204!,
+    (2, 1, 0) => eval_graph210!,
+    (2, 1, 1) => eval_graph211!,
+    (2, 1, 2) => eval_graph212!,
+    # (2, 1, 3) => eval_graph213!,
+    (2, 2, 0) => eval_graph220!,
+    (2, 2, 1) => eval_graph221!,
+    # (2, 2, 2) => eval_graph222!,
+    (2, 3, 0) => eval_graph230!,
+    # (2, 3, 1) => eval_graph231!,
+    # (2, 4, 0) => eval_graph240!,
+    (3, 0, 0) => eval_graph300!,
+    (3, 0, 1) => eval_graph301!,
+    (3, 0, 2) => eval_graph302!,
+    # (3, 0, 3) => eval_graph303!,
+    (3, 1, 0) => eval_graph310!,
+    (3, 1, 1) => eval_graph311!,
+    # (3, 1, 2) => eval_graph312!,
+    (3, 2, 0) => eval_graph320!,
+    # (3, 2, 1) => eval_graph321!,
+    # (3, 3, 0) => eval_graph330!,
+    (4, 0, 0) => eval_graph400!,
+    (4, 0, 1) => eval_graph401!,
+    # (4, 0, 2) => eval_graph402!,
+    (4, 1, 0) => eval_graph410!,
+    # (4, 1, 1) => eval_graph411!,
+    # (4, 2, 0) => eval_graph420!,
+    (5, 0, 0) => eval_graph500!,
+    # (5, 0, 1) => eval_graph501!,
+    # (5, 1, 0) => eval_graph510!,
+    # (6, 0, 0) => eval_graph600!,
+    )
 
 end
