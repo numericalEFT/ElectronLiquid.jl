@@ -1,3 +1,15 @@
+
+struct LeafState
+    type::Int
+    inTau_idx::Int
+    outTau_idx::Int
+    loop_idx::Int
+
+    function LeafState(type::Int, inTau_idx::Int, outTau_idx::Int, loop_idx::Int)
+        return new(type, inTau_idx, outTau_idx, loop_idx)
+    end
+end
+
 function integrandGV(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
@@ -171,55 +183,56 @@ end
 function integrandGV_unpolarized(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6][idx]
-    momLoopPool, root = config.userdata[7:8]
-    isLayered2D = config.userdata[9]
-    partition = config.userdata[end]
-    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
+    leafstates, leafval = config.userdata[6][idx], config.userdata[7][idx]
+    momLoopPool, root = config.userdata[8:9]
+    isLayered2D = config.userdata[10]
+    partition = config.userdata[11]
 
+    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
-    for (i, lftype) in enumerate(leafType)
+    for (i, lfstat) in enumerate(leafstates)
+        lftype, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
         if lftype == 0
             continue
         elseif isodd(lftype) #fermionic 
-            τ = varT[leafτ_o[i]] - varT[leafτ_i[i]]
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[i])
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
             order = (lftype - 1) / 2
             if order == 0
-                leaf[i] = Propagator.green(τ, ϵ, β)
+                leafval[i] = Propagator.green(τ, ϵ, β)
             elseif order == 1
-                leaf[i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
+                leafval[i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
             elseif order == 2
-                leaf[i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+                leafval[i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
             elseif order == 3
-                leaf[i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+                leafval[i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
             elseif order == 4
-                leaf[i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
+                leafval[i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
             elseif order == 5
-                leaf[i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
+                leafval[i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
             else
                 error("not implemented!")
             end
         else
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[i])
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             order = lftype / 2 - 1
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
-                leaf[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+                leafval[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
                 if isLayered2D == false
                     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leaf[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                    leafval[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
                 else
                     if order == 0
                         q = sqrt(dot(kq, kq) + 1e-16)
                         invK = 1.0 / q
-                        leaf[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                        leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
                     else
-                        leaf[i] = 0.0 # no high-order counterterms
+                        leafval[i] = 0.0 # no high-order counterterms
                     end
                 end
             else
@@ -229,120 +242,7 @@ function integrandGV_unpolarized(idx, vars, config)
     end
 
     group = partition[idx]
-    evalfunc_map[group](root, leaf)
-    # if group == (1, 0, 0)
-    #     eval_graph100!(root, leaf)
-    # elseif group == (1, 0, 1)
-    #     eval_graph101!(root, leaf)
-    # elseif group == (1, 0, 2)
-    #     eval_graph102!(root, leaf)
-    # elseif group == (1, 0, 3)
-    #     eval_graph103!(root, leaf)
-    # elseif group == (1, 0, 4)
-    #     eval_graph104!(root, leaf)
-    # elseif group == (1, 0, 5)
-    #     eval_graph105!(root, leaf)
-    # elseif group == (1, 1, 0)
-    #     eval_graph110!(root, leaf)
-    # elseif group == (1, 1, 1)
-    #     eval_graph111!(root, leaf)
-    # elseif group == (1, 1, 2)
-    #     eval_graph112!(root, leaf)
-    # elseif group == (1, 1, 3)
-    #     eval_graph113!(root, leaf)
-    # elseif group == (1, 1, 4)
-    #     eval_graph114!(root, leaf)
-    # elseif group == (1, 2, 0)
-    #     eval_graph120!(root, leaf)
-    # elseif group == (1, 2, 1)
-    #     eval_graph121!(root, leaf)
-    # elseif group == (1, 2, 2)
-    #     eval_graph122!(root, leaf)
-    # elseif group == (1, 2, 3)
-    #     eval_graph123!(root, leaf)
-    # elseif group == (1, 3, 0)
-    #     eval_graph130!(root, leaf)
-    # elseif group == (1, 3, 1)
-    #     eval_graph131!(root, leaf)
-    # elseif group == (1, 3, 2)
-    #     eval_graph132!(root, leaf)
-    # elseif group == (1, 4, 0)
-    #     eval_graph140!(root, leaf)
-    # elseif group == (1, 4, 1)
-    #     eval_graph141!(root, leaf)
-    # elseif group == (1, 5, 0)
-    #     eval_graph150!(root, leaf)
-    # elseif group == (2, 0, 0)
-    #     eval_graph200!(root, leaf)
-    # elseif group == (2, 0, 1)
-    #     eval_graph201!(root, leaf)
-    # elseif group == (2, 0, 2)
-    #     eval_graph202!(root, leaf)
-    # elseif group == (2, 0, 3)
-    #     eval_graph203!(root, leaf)
-    # elseif group == (2, 0, 4)
-    #     eval_graph204!(root, leaf)
-    # elseif group == (2, 1, 0)
-    #     eval_graph210!(root, leaf)
-    # elseif group == (2, 1, 1)
-    #     eval_graph211!(root, leaf)
-    # elseif group == (2, 1, 2)
-    #     eval_graph212!(root, leaf)
-    # elseif group == (2, 1, 3)
-    #     eval_graph213!(root, leaf)
-    # elseif group == (2, 2, 0)
-    #     eval_graph220!(root, leaf)
-    # elseif group == (2, 2, 1)
-    #     eval_graph221!(root, leaf)
-    # elseif group == (2, 2, 2)
-    #     eval_graph222!(root, leaf)
-    # elseif group == (2, 3, 0)
-    #     eval_graph230!(root, leaf)
-    # elseif group == (2, 3, 1)
-    #     eval_graph231!(root, leaf)
-    # elseif group == (2, 4, 0)
-    #     eval_graph240!(root, leaf)
-    # elseif group == (3, 0, 0)
-    #     eval_graph300!(root, leaf)
-    # elseif group == (3, 0, 1)
-    #     eval_graph301!(root, leaf)
-    # elseif group == (3, 0, 2)
-    #     eval_graph302!(root, leaf)
-    # elseif group == (3, 0, 3)
-    #     eval_graph303!(root, leaf)
-    # elseif group == (3, 1, 0)
-    #     eval_graph310!(root, leaf)
-    # elseif group == (3, 1, 1)
-    #     eval_graph311!(root, leaf)
-    # elseif group == (3, 1, 2)
-    #     eval_graph312!(root, leaf)
-    # elseif group == (3, 2, 0)
-    #     eval_graph320!(root, leaf)
-    # elseif group == (3, 2, 1)
-    #     eval_graph321!(root, leaf)
-    # elseif group == (3, 3, 0)
-    #     eval_graph330!(root, leaf)
-    # elseif group == (4, 0, 0)
-    #     eval_graph400!(root, leaf)
-    # elseif group == (4, 0, 1)
-    #     eval_graph401!(root, leaf)
-    # elseif group == (4, 0, 2)
-    #     eval_graph402!(root, leaf)
-    # elseif group == (4, 1, 0)
-    #     eval_graph410!(root, leaf)
-    # elseif group == (4, 1, 1)
-    #     eval_graph411!(root, leaf)
-    # elseif group == (4, 2, 0)
-    #     eval_graph420!(root, leaf)
-    # elseif group == (5, 0, 0)
-    #     eval_graph500!(root, leaf)
-    # elseif group == (5, 0, 1)
-    #     eval_graph501!(root, leaf)
-    # elseif group == (5, 1, 0)
-    #     eval_graph510!(root, leaf)
-    # elseif group == (6, 0, 0)
-    #     eval_graph600!(root, leaf)
-    # end
+    evalfunc_map[group](root, leafval)
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -379,13 +279,17 @@ function GV_unpolarized(para::ParaMC, diagram;
     loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
 
-    # leafstates = []
-    leafstates = Vector{Tuple{Vector{Float64},Vector{Int},Vector{Int},Vector{Int},Vector{Int}}}()
+    leafstates = Vector{Vector{LeafState}}()
+    leafvalues = Vector{Vector{Float64}}()
     for key in partition
         key_str = join(string.(key))
         df = CSV.read(root_dir * "leafinfo_GV$key_str.csv", DataFrame)
-        # leafinfo = [df[!, col] for col in names(df)]
-        push!(leafstates, Tuple([df[!, col] for col in names(df)]))
+        leafstates_par = Vector{LeafState}()
+        for row in eachrow(df)
+            push!(leafstates_par, LeafState(row[2:end]...))
+        end
+        push!(leafstates, leafstates_par)
+        push!(leafvalues, df[!,names(df)[1]])
     end
 
     root = zeros(Float64, 24)
@@ -408,7 +312,7 @@ function GV_unpolarized(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, leafstates, momLoopPool, root, isLayered2D, partition),
+            userdata=(para, kgrid, ngrid, MaxLoopNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition),
             kwargs...
         )
     end
