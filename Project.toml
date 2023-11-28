@@ -21,6 +21,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 
 [compat]
 CompositeGrids = "0.0, 0.1"
@@ -37,4 +38,5 @@ Measurements = "2.9"
 Parameters = "0.12"
 StaticArrays = "1"
 TaylorSeries = "0.15"
+CSV = "0.10"
 julia = "1.6"

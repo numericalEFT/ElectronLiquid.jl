@@ -2,9 +2,9 @@ function integrandGV(idx, vars, config)
     varK, varT = vars
     para, MaxLoopNum = config.userdata[1:2]
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
-    interactionleaf = config.userdata[4][idx]
-    LoopPool, root = config.userdata[5:6]
-    graphfuncs! = config.userdata[7][idx]
+    LoopPool, root = config.userdata[4:5]
+    graphfuncs! = config.userdata[6][idx]
+    isLayered2D = config.userdata[end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
@@ -40,15 +40,25 @@ function integrandGV(idx, vars, config)
                 invK = 1.0 / (dot(kq, kq) + λ)
                 leaf[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
-                invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                leaf[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                if isLayered2D == false
+                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+                    leaf[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                else
+                    if order == 0
+                        q = sqrt(dot(kq, kq) + 1e-16)
+                        invK = 1.0 / q
+                        leaf[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                    else
+                        leaf[idx][i] = 0.0 # no high-order counterterms
+                    end
+                end
             else
                 error("not implemented!")
             end
         end
     end
 
-    graphfuncs!(root, leaf[idx], interactionleaf)  # allocations due to run-time variable `idx`
+    graphfuncs!(root, leaf[idx])  # allocations due to run-time variable `idx`
 
     loopNum = config.dof[idx][1]
     factor = 1.0 / (2π)^(dim * loopNum)
@@ -65,22 +75,28 @@ function GV(para::ParaMC, diagram;
     alpha=3.0, #learning ratio
     config=nothing,
     solver=:mcmc,
+    isLayered2D::Bool=false,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.GV"
     para.isDynamic && UEG.MCinitialize!(para)
 
+    if isLayered2D
+        @assert para.dim == 2 "Only 2D is supported for the tanh screened Coulomb interaction"
+    end
+
     dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
+    # partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, mappings = diagram
+    partition, diagpara, FeynGraphs, FermiLabel, BoseLabel, leafMap = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 1
     LoopPool = FermiLabel.labels[3]
-    PropagatorMap, InteractionMap = mappings
 
-    PropagatorStat, InteractionStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
+    leafStat, extT_labels = FeynmanDiagram.leafstates(FeynGraphs, FermiLabel, BoseLabel, partition)
     root = zeros(Float64, 1)
-    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], PropagatorMap[key], InteractionMap[key]) for (i, key) in enumerate(partition))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1], leafMap[key]) for (i, key) in enumerate(partition))
 
-    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF)
+    # K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF)
+    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 100.0 * kF)
     T = Continuous(0.0, β; alpha=alpha, adapt=true)
 
     dof = [[p.innerLoopNum, p.totalTauNum] for p in diagpara] # K, T, ExtKidx
@@ -93,7 +109,7 @@ function GV(para::ParaMC, diagram;
             dof=dof,
             type=Float64, # type of the integrand
             obs=obs,
-            userdata=(para, MaxLoopNum, PropagatorStat, InteractionStat[1], LoopPool, root, funcGraphs!),
+            userdata=(para, MaxLoopNum, leafStat, LoopPool, root, funcGraphs!, isLayered2D),
             kwargs...
         )
     end

@@ -18,6 +18,7 @@ makedocs(;
         "SubModules" => [
             "Parameter" => "lib/UEG.md",
             "CounterTerm" => "lib/CounterTerm.md",
+            "Ver4" => "lib/Ver4.md",
         ]
     ]
 )

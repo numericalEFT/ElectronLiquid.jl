@@ -52,6 +52,7 @@ include("freeEnergyGV.jl")
 
 function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
+    isLayered2D::Bool=false, # whether to use the screened Coulomb interaction
     filter=[NoHartree,], partition=UEG.partition(para.order, offset=0), verbose=-1)
 
     diagram = FreeEnergy.diagramGV(para, partition, filter=filter, spinPolarPara=spinPolarPara)
@@ -67,7 +68,7 @@ function MC(para; neval=1e6, filename::Union{String,Nothing}=nothing, reweight_g
         push!(reweight_goal, 1.0)
     end
 
-    freeE, result = FreeEnergy.GV(para, diagram; neighbor=neighbor, print=verbose,
+    freeE, result = FreeEnergy.GV(para, diagram; isLayered2D=isLayered2D, neighbor=neighbor, print=verbose,
         reweight_goal=reweight_goal, neval=neval, parallel=:nothread)
 
     if isnothing(freeE) == false
