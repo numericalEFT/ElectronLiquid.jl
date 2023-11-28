@@ -43,7 +43,9 @@ function MC_PP(para; kamp=[para.kF,], kamp2=kamp, n=[[0, 1, -1],], l=0,
                     @warn("replacing existing data for $key")
                     delete!(f, key)
                 end
-                f[key] = (kamp, n, l, ver4)
+                data = (kamp, n, l, ver4)
+                println((data))
+                f[key] = data
             end
         end
     end
