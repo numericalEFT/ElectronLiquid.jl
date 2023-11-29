@@ -127,9 +127,8 @@ function GV(para::ParaMC, diagram;
     leafStat = FeynmanDiagram.leafstates(leaf_maps, labelProd)
 
     println("static compile has finished!")
-    GC.gc()
 
-    root = zeros(Float64, 24)
+    root = zeros(Float64, 2)
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kgrid[1]
@@ -180,7 +179,7 @@ function GV(para::ParaMC, diagram;
     end
 end
 
-function integrandGV_unpolarized(idx, vars, config)
+function integrandGV_Clib(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
     leafstates, leafval = config.userdata[6][idx], config.userdata[7][idx]
@@ -191,6 +190,7 @@ function integrandGV_unpolarized(idx, vars, config)
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
+
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
     for (i, lfstat) in enumerate(leafstates)
         lftype, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
@@ -252,7 +252,7 @@ function integrandGV_unpolarized(idx, vars, config)
     return weight * factor
 end
 
-function GV_unpolarized(para::ParaMC, diagram;
+function GV_Clib(para::ParaMC, diagram;
     kgrid=[para.kF,],
     ngrid=[0,],
     neval=1e6, #number of evaluations
@@ -292,7 +292,7 @@ function GV_unpolarized(para::ParaMC, diagram;
         push!(leafvalues, df[!,names(df)[1]])
     end
 
-    root = zeros(Float64, 24)
+    root = zeros(Float64, 2)
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= 0.0
     K.data[1, 1] = kgrid[1]
@@ -317,7 +317,7 @@ function GV_unpolarized(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrandGV_unpolarized; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrandGV_Clib; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
