@@ -119,7 +119,7 @@ function GV(para::ParaMC, diagram;
     momLoopPool = FrontEnds.LoopPool(:K, dim, labelProd.labels[end])
 
     funcGraphs! = Dict{Int,Function}()
-    leaf_maps = Vector{Dict{Int,FeynmanGraph}}()
+    leaf_maps = Vector{Dict{Int,FeynmanDiagram.FeynmanGraph}}()
     for (i, key) in enumerate(partition)
         funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
         push!(leaf_maps, leafmap)
