@@ -1,7 +1,6 @@
 module Sigma
 using Cuba
 using JLD2, CSV
-using Profile, PProf, Juno
 
 using Printf, LinearAlgebra, DataFrames
 using ..CompositeGrids
