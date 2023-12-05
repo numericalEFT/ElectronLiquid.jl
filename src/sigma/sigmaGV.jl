@@ -13,7 +13,7 @@ end
 function integrandGV(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
+    leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
     momLoopPool, root = config.userdata[7:8]
     graphfuncs! = config.userdata[9][idx]
     isLayered2D = config.userdata[end]
@@ -25,52 +25,56 @@ function integrandGV(idx, vars, config)
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
-        elseif isodd(lftype) #fermionic 
+            # elseif isodd(lftype) #fermionic 
+        elseif lftype == 1 #fermionic 
             τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             ϵ = dot(kq, kq) / (2me) - μ
-            order = (lftype - 1) / 2
+            order = leafOrders[idx][i][1]
             if order == 0
-                leaf[idx][i] = Propagator.green(τ, ϵ, β)
+                leafval[idx][i] = Propagator.green(τ, ϵ, β)
             elseif order == 1
-                leaf[idx][i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
+                leafval[idx][i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
             elseif order == 2
-                leaf[idx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+                leafval[idx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
             elseif order == 3
-                leaf[idx][i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+                leafval[idx][i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
             elseif order == 4
-                leaf[idx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
+                leafval[idx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
             elseif order == 5
-                leaf[idx][i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
+                leafval[idx][i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
             else
                 error("not implemented!")
             end
-        else
+        elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            order = lftype / 2 - 1
+            # order = lftype / 2 - 1
+            order = leafOrders[idx][i][2]
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
-                leaf[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
                 if isLayered2D == false
                     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leaf[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
                 else
                     if order == 0
                         q = sqrt(dot(kq, kq) + 1e-16)
                         invK = 1.0 / q
-                        leaf[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
                     else
-                        leaf[idx][i] = 0.0 # no high-order counterterms
+                        leafval[idx][i] = 0.0 # no high-order counterterms
                     end
                 end
             else
                 error("not implemented!")
             end
+        else
+            error("this leaftype $lftype not implemented!")
         end
     end
 
-    graphfuncs!(root, leaf[idx])  # allocations due to run-time variable `idx`
+    graphfuncs!(root, leafval[idx])  # allocations due to run-time variable `idx`
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -115,7 +119,8 @@ function GV(para::ParaMC, diagram;
 
     dim, β, kF = para.dim, para.β, para.kF
     partition, diagpara, FeynGraphs, labelProd, extT_labels = diagram
-    MaxLoopNum = maximum([key[1] for key in partition]) + 2
+    # MaxLoopNum = maximum([key[1] for key in partition]) + 2
+    MaxLoopNum = maximum([key[1] for key in partition]) + 1
     momLoopPool = FrontEnds.LoopPool(:K, dim, labelProd.labels[end])
 
     funcGraphs! = Dict{Int,Function}()
@@ -242,7 +247,7 @@ function integrandGV_Clib(idx, vars, config)
     end
 
     group = partition[idx]
-    evalfunc_map[group](root, leafval)
+    evalfuncGV_map[group](root, leafval)
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -289,7 +294,7 @@ function GV_Clib(para::ParaMC, diagram;
             push!(leafstates_par, LeafState(row[2:end]...))
         end
         push!(leafstates, leafstates_par)
-        push!(leafvalues, df[!,names(df)[1]])
+        push!(leafvalues, df[!, names(df)[1]])
     end
 
     root = zeros(Float64, 2)

@@ -18,6 +18,7 @@ host.txt
 *.pdf
 *.png
 *.jpg
+*native.so
 __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*

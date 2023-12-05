@@ -21,7 +21,7 @@ function diagPara(para::ParaMC, order::Int, filter)
         type=SigmaDiag,
         innerLoopNum=order,
         hasTau=true,
-        loopDim=para.dim,
+        # loopDim=para.dim,
         spin=para.spin,
         firstLoopIdx=2,
         interaction=inter,
@@ -79,15 +79,42 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     return result
 end
 
-function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+function diagramParquet(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
     diagpara = Vector{DiagParaF64}()
+    extT_labels = Vector{Vector{Int}}[]
+
+    jldopen(joinpath(@__DIR__, "source_codeGV", "extT_ParquetAD.jld2"), "r") do f
+        for p in _partition
+            push!(diagpara, diagPara(paramc, p[1], filter))
+            key_str = join(string.(p))
+            push!(extT_labels, f[key_str])
+        end
+    end
+    return (_partition, diagpara, extT_labels)
+end
+
+function diagramParquet(paramc::ParaMC, _partition::Vector{T}, spinPolarPara::Float64;
+    filter=[FeynmanDiagram.NoHartree]) where {T}
+    diagpara = Vector{DiagParaF64}()
+    FeynGraphs = FeynmanDiagram.diagdict_parquet(:sigma, _partition, spinPolarPara=spinPolarPara, filter=filter, isDynamic=paramc.isDynamic)
     extT_labels = Vector{Vector{Int}}[]
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
+        push!(extT_labels, FeynGraphs[p][2])
+    end
+    return (_partition, diagpara, FeynGraphs, extT_labels)
+end
+
+function diagramGV(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+    diagpara = Vector{DiagParaF64}()
+    extT_labels = Vector{Vector{Int}}[]
+
+    for p in _partition
+        push!(diagpara, diagPara(paramc, p[1], filter))
         if p[1] == 1
-            push!(extT_labels, [[1,1]])
+            push!(extT_labels, [[1, 1]])
         else
-            push!(extT_labels, [[1,1], [1,2]])
+            push!(extT_labels, [[1, 1], [1, 2]])
         end
     end
 
@@ -101,13 +128,13 @@ function diagramGV(paramc::ParaMC, _partition::Vector{T}, spinPolarPara::Float64
     for p in _partition
         push!(diagpara, diagPara(paramc, p[1], filter))
         if p[1] == 1
-            push!(extT_labels, [[1,1]])
+            push!(extT_labels, [[1, 1]])
         else
-            push!(extT_labels, [[1,1], [1,2]])
+            push!(extT_labels, [[1, 1], [1, 2]])
         end
     end
     FeynGraphs, labelProd = FeynmanDiagram.diagdictGV(:sigma, _partition, spinPolarPara=spinPolarPara)
-    
+
     return (_partition, diagpara, FeynGraphs, labelProd, extT_labels)
 end
 
@@ -121,6 +148,7 @@ include("sigmaKW.jl")
 include("sigmaCuba.jl")
 include("sigmaVegas.jl")
 include("sigmaGV.jl")
+include("sigmaGV_AD.jl")
 include("sigmaGV_compile.jl")
 
 
@@ -128,7 +156,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
     spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order), diagtype=:Parquet,
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
-    isClib = true # whether to use compiled C library to calculate the Feynman diagram weight or not (only for spin-unpolarized case now)
+    isClib=true # whether to use compiled C library to calculate the Feynman diagram weight or not (only for spin-unpolarized case now)
 )
     kF = para.kF
     neighbor = UEG.neighbor(partition)
@@ -164,10 +192,23 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
                 kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
         end
     elseif diagtype == :Parquet
-        diagram = Sigma.diagram(para, partition)
-        sigma, result = Sigma.KW(para, diagram;
-            neighbor=neighbor, reweight_goal=reweight_goal,
-            kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        if spinPolarPara == 0.0 && isClib
+            diagram = Sigma.diagramParquet(para, partition)
+            sigma, result = Sigma.ParquetAD_Clib(para, diagram;
+                isLayered2D=isLayered2D,
+                neighbor=neighbor, reweight_goal=reweight_goal,
+                kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        else
+            # diagram = Sigma.diagram(para, partition)
+            # sigma, result = Sigma.KW(para, diagram;
+            #     neighbor=neighbor, reweight_goal=reweight_goal,
+            #     kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+            diagram = Sigma.diagramParquet(para, partition, spinPolarPara)
+            sigma, result = Sigma.ParquetAD(para, diagram;
+                isLayered2D=isLayered2D,
+                neighbor=neighbor, reweight_goal=reweight_goal,
+                kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        end
     else
         error("unknown diagrams' generated type")
     end
@@ -199,63 +240,121 @@ function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=n
 end
 
 include("source_codeGV/Cwrapper_sigmaGV.jl")
-
-const evalfunc_map = Dict(
-    (1, 0, 0) => eval_graph100!,
-    (1, 0, 1) => eval_graph101!,
-    (1, 0, 2) => eval_graph102!,
-    (1, 0, 3) => eval_graph103!,
-    (1, 0, 4) => eval_graph104!,
-    (1, 0, 5) => eval_graph105!,
-    (1, 1, 0) => eval_graph110!,
-    (1, 1, 1) => eval_graph111!,
-    (1, 1, 2) => eval_graph112!,
-    (1, 1, 3) => eval_graph113!,
-    (1, 1, 4) => eval_graph114!,
-    (1, 2, 0) => eval_graph120!,
-    (1, 2, 1) => eval_graph121!,
-    (1, 2, 2) => eval_graph122!,
-    (1, 2, 3) => eval_graph123!,
-    (1, 3, 0) => eval_graph130!,
-    (1, 3, 1) => eval_graph131!,
-    (1, 3, 2) => eval_graph132!,
-    (1, 4, 0) => eval_graph140!,
-    (1, 4, 1) => eval_graph141!,
-    (1, 5, 0) => eval_graph150!,
-    (2, 0, 0) => eval_graph200!,
-    (2, 0, 1) => eval_graph201!,
-    (2, 0, 2) => eval_graph202!,
-    (2, 0, 3) => eval_graph203!,
-    (2, 0, 4) => eval_graph204!,
-    (2, 1, 0) => eval_graph210!,
-    (2, 1, 1) => eval_graph211!,
-    (2, 1, 2) => eval_graph212!,
-    (2, 1, 3) => eval_graph213!,
-    (2, 2, 0) => eval_graph220!,
-    (2, 2, 1) => eval_graph221!,
-    (2, 2, 2) => eval_graph222!,
-    (2, 3, 0) => eval_graph230!,
-    (2, 3, 1) => eval_graph231!,
-    (2, 4, 0) => eval_graph240!,
-    (3, 0, 0) => eval_graph300!,
-    (3, 0, 1) => eval_graph301!,
-    (3, 0, 2) => eval_graph302!,
-    (3, 0, 3) => eval_graph303!,
-    (3, 1, 0) => eval_graph310!,
-    (3, 1, 1) => eval_graph311!,
-    (3, 1, 2) => eval_graph312!,
-    (3, 2, 0) => eval_graph320!,
-    (3, 2, 1) => eval_graph321!,
-    (3, 3, 0) => eval_graph330!,
-    (4, 0, 0) => eval_graph400!,
-    (4, 0, 1) => eval_graph401!,
-    (4, 0, 2) => eval_graph402!,
-    (4, 1, 0) => eval_graph410!,
-    (4, 1, 1) => eval_graph411!,
-    (4, 2, 0) => eval_graph420!,
-    (5, 0, 0) => eval_graph500!,
-    (5, 0, 1) => eval_graph501!,
-    (5, 1, 0) => eval_graph510!,
-    (6, 0, 0) => eval_graph600!
-    )
+include("source_codeGV/Cwrapper_sigmaParquetAD.jl")
+const evalfuncGV_map = Dict(
+    (1, 0, 0) => eval_sigmaGV100!,
+    (1, 0, 1) => eval_sigmaGV101!,
+    (1, 0, 2) => eval_sigmaGV102!,
+    (1, 0, 3) => eval_sigmaGV103!,
+    (1, 0, 4) => eval_sigmaGV104!,
+    (1, 0, 5) => eval_sigmaGV105!,
+    (1, 1, 0) => eval_sigmaGV110!,
+    (1, 1, 1) => eval_sigmaGV111!,
+    (1, 1, 2) => eval_sigmaGV112!,
+    (1, 1, 3) => eval_sigmaGV113!,
+    (1, 1, 4) => eval_sigmaGV114!,
+    (1, 2, 0) => eval_sigmaGV120!,
+    (1, 2, 1) => eval_sigmaGV121!,
+    (1, 2, 2) => eval_sigmaGV122!,
+    (1, 2, 3) => eval_sigmaGV123!,
+    (1, 3, 0) => eval_sigmaGV130!,
+    (1, 3, 1) => eval_sigmaGV131!,
+    (1, 3, 2) => eval_sigmaGV132!,
+    (1, 4, 0) => eval_sigmaGV140!,
+    (1, 4, 1) => eval_sigmaGV141!,
+    (1, 5, 0) => eval_sigmaGV150!,
+    (2, 0, 0) => eval_sigmaGV200!,
+    (2, 0, 1) => eval_sigmaGV201!,
+    (2, 0, 2) => eval_sigmaGV202!,
+    (2, 0, 3) => eval_sigmaGV203!,
+    (2, 0, 4) => eval_sigmaGV204!,
+    (2, 1, 0) => eval_sigmaGV210!,
+    (2, 1, 1) => eval_sigmaGV211!,
+    (2, 1, 2) => eval_sigmaGV212!,
+    (2, 1, 3) => eval_sigmaGV213!,
+    (2, 2, 0) => eval_sigmaGV220!,
+    (2, 2, 1) => eval_sigmaGV221!,
+    (2, 2, 2) => eval_sigmaGV222!,
+    (2, 3, 0) => eval_sigmaGV230!,
+    (2, 3, 1) => eval_sigmaGV231!,
+    (2, 4, 0) => eval_sigmaGV240!,
+    (3, 0, 0) => eval_sigmaGV300!,
+    (3, 0, 1) => eval_sigmaGV301!,
+    (3, 0, 2) => eval_sigmaGV302!,
+    (3, 0, 3) => eval_sigmaGV303!,
+    (3, 1, 0) => eval_sigmaGV310!,
+    (3, 1, 1) => eval_sigmaGV311!,
+    (3, 1, 2) => eval_sigmaGV312!,
+    (3, 2, 0) => eval_sigmaGV320!,
+    (3, 2, 1) => eval_sigmaGV321!,
+    (3, 3, 0) => eval_sigmaGV330!,
+    (4, 0, 0) => eval_sigmaGV400!,
+    (4, 0, 1) => eval_sigmaGV401!,
+    (4, 0, 2) => eval_sigmaGV402!,
+    (4, 1, 0) => eval_sigmaGV410!,
+    (4, 1, 1) => eval_sigmaGV411!,
+    (4, 2, 0) => eval_sigmaGV420!,
+    (5, 0, 0) => eval_sigmaGV500!,
+    (5, 0, 1) => eval_sigmaGV501!,
+    (5, 1, 0) => eval_sigmaGV510!,
+    (6, 0, 0) => eval_sigmaGV600!
+)
+const evalfuncParquetAD_map = Dict(
+    (1, 0, 0) => eval_sigmaParquetAD100!,
+    (1, 0, 1) => eval_sigmaParquetAD101!,
+    (1, 0, 2) => eval_sigmaParquetAD102!,
+    (1, 0, 3) => eval_sigmaParquetAD103!,
+    (1, 0, 4) => eval_sigmaParquetAD104!,
+    (1, 0, 5) => eval_sigmaParquetAD105!,
+    (1, 1, 0) => eval_sigmaParquetAD110!,
+    (1, 1, 1) => eval_sigmaParquetAD111!,
+    (1, 1, 2) => eval_sigmaParquetAD112!,
+    (1, 1, 3) => eval_sigmaParquetAD113!,
+    (1, 1, 4) => eval_sigmaParquetAD114!,
+    (1, 2, 0) => eval_sigmaParquetAD120!,
+    (1, 2, 1) => eval_sigmaParquetAD121!,
+    (1, 2, 2) => eval_sigmaParquetAD122!,
+    (1, 2, 3) => eval_sigmaParquetAD123!,
+    (1, 3, 0) => eval_sigmaParquetAD130!,
+    (1, 3, 1) => eval_sigmaParquetAD131!,
+    (1, 3, 2) => eval_sigmaParquetAD132!,
+    (1, 4, 0) => eval_sigmaParquetAD140!,
+    (1, 4, 1) => eval_sigmaParquetAD141!,
+    (1, 5, 0) => eval_sigmaParquetAD150!,
+    (2, 0, 0) => eval_sigmaParquetAD200!,
+    (2, 0, 1) => eval_sigmaParquetAD201!,
+    (2, 0, 2) => eval_sigmaParquetAD202!,
+    (2, 0, 3) => eval_sigmaParquetAD203!,
+    (2, 0, 4) => eval_sigmaParquetAD204!,
+    (2, 1, 0) => eval_sigmaParquetAD210!,
+    (2, 1, 1) => eval_sigmaParquetAD211!,
+    (2, 1, 2) => eval_sigmaParquetAD212!,
+    (2, 1, 3) => eval_sigmaParquetAD213!,
+    (2, 2, 0) => eval_sigmaParquetAD220!,
+    (2, 2, 1) => eval_sigmaParquetAD221!,
+    (2, 2, 2) => eval_sigmaParquetAD222!,
+    (2, 3, 0) => eval_sigmaParquetAD230!,
+    (2, 3, 1) => eval_sigmaParquetAD231!,
+    (2, 4, 0) => eval_sigmaParquetAD240!,
+    (3, 0, 0) => eval_sigmaParquetAD300!,
+    (3, 0, 1) => eval_sigmaParquetAD301!,
+    (3, 0, 2) => eval_sigmaParquetAD302!,
+    (3, 0, 3) => eval_sigmaParquetAD303!,
+    (3, 1, 0) => eval_sigmaParquetAD310!,
+    (3, 1, 1) => eval_sigmaParquetAD311!,
+    (3, 1, 2) => eval_sigmaParquetAD312!,
+    (3, 2, 0) => eval_sigmaParquetAD320!,
+    (3, 2, 1) => eval_sigmaParquetAD321!,
+    (3, 3, 0) => eval_sigmaParquetAD330!,
+    (4, 0, 0) => eval_sigmaParquetAD400!,
+    (4, 0, 1) => eval_sigmaParquetAD401!,
+    (4, 0, 2) => eval_sigmaParquetAD402!,
+    (4, 1, 0) => eval_sigmaParquetAD410!,
+    (4, 1, 1) => eval_sigmaParquetAD411!,
+    (4, 2, 0) => eval_sigmaParquetAD420!,
+    (5, 0, 0) => eval_sigmaParquetAD500!,
+    (5, 0, 1) => eval_sigmaParquetAD501!,
+    (5, 1, 0) => eval_sigmaParquetAD510!,
+    (6, 0, 0) => eval_sigmaParquetAD600!
+)
 end
