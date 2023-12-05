@@ -19,7 +19,6 @@ function diagPara(para::ParaMC, order::Int, filter)
         type=GreenDiag,
         innerLoopNum=order,
         hasTau=true,
-        loopDim=para.dim,
         spin=para.spin,
         firstLoopIdx=2,
         interaction=inter,
@@ -38,6 +37,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     println("Build the sigma diagrams into an expression tree ...")
     println("Diagram set: ", _partition)
 
+    dim = paramc.dim
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
@@ -58,7 +58,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
             end
             push!(diagpara, para)
             push!(partition, p)
-            push!(diag, ExprTree.build(dpp))
+            push!(diag, ExprTree.build(dpp, dim))
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end

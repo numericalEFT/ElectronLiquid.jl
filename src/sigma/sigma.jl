@@ -41,6 +41,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     println("Build the sigma diagrams into an expression tree ...")
     println("Diagram set: ", _partition)
 
+    dim = paramc.dim
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
@@ -63,7 +64,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
             end
             push!(diagpara, para)
             push!(partition, p)
-            push!(diag, ExprTree.build(sdpp))
+            push!(diag, ExprTree.build(sdpp, dim))
             # append!(diagrams, sdpp)
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")

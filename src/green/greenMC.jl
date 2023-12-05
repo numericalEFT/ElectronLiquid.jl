@@ -11,6 +11,7 @@ using JLD2
 
 const steps = 1e7
 const Order = 4
+const dim = 3
 
 include("../common/interaction.jl")
 
@@ -32,7 +33,7 @@ partition = [p for p in sort(partition) if p[1] + p[2] + p[3] <= Order]
 
 println("Diagram set: ", partition)
 
-diagPara(order) = DiagPara(diagType=GreenDiag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=2,
+diagPara(order) = DiagPara(diagType=GreenDiag, innerLoopNum=order, hasTau=true, spin=spin, firstLoopIdx=2,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         # Dynamic
@@ -81,7 +82,7 @@ end
 
 gdiag = [gdiag[p] for p in partition]
 const diagpara = [diags.id.para for diags in gdiag]
-const diag = [ExprTree.build(diags) for diags in gdiag]
+const diag = [ExprTree.build(diags, dim) for diags in gdiag]
 const root = [d.root for d in diag] #select the diagram with upup
 #assign the external Tau to the corresponding diagrams
 # const extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]

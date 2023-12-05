@@ -16,7 +16,7 @@ using ..Propagator
 function diagPara(para::ParaMC, order::Int, filter)
     inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     if order == 0
-        return DiagParaF64(type=VacuumDiag, innerLoopNum=order + 1, hasTau=true, loopDim=para.dim, spin=para.spin, firstLoopIdx=1,
+        return DiagParaF64(type=VacuumDiag, innerLoopNum=order + 1, hasTau=true, spin=para.spin, firstLoopIdx=1,
             totalTauNum=1,
             interaction=inter, filter=filter
         )
@@ -25,7 +25,6 @@ function diagPara(para::ParaMC, order::Int, filter)
             type=VacuumDiag,
             innerLoopNum=order + 1,
             hasTau=true,
-            loopDim=para.dim,
             spin=para.spin,
             firstLoopIdx=1,
             interaction=inter,
