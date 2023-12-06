@@ -27,7 +27,7 @@ julia> Sigma.compileC_ParquetAD_toFiles(partition, FeynGraphs, 5, compiler = "cl
 ```
 """
 function compileC_ParquetAD_toFiles(partition, FeynGraphs, maxloopNum::Int; datatype::DataType=Float64,
-    root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaParquetAD.c"),
+    root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaParquetAD.c"), name="ParquetAD",
     lib_path=root_dir, lib_name="sigmaParquetAD", compiler::String="gcc", isnative::Bool=false)
 
     ### compile the Parquet + Taylor-AD generated Graphs to C language source code
@@ -38,14 +38,14 @@ function compileC_ParquetAD_toFiles(partition, FeynGraphs, maxloopNum::Int; data
         lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
 
     ### save the leafs information and the loopbasis to CSV files
-    leafinfo_toFile(partition, leaf_maps, maxloopNum, root_dir)
+    leafinfo_toFile(partition, leaf_maps, maxloopNum, name, root_dir=root_dir)
 
     ### save the external tau variables' indexes to a jld2 file
-    extT_toFile(partition, FeynGraphs, root_dir)
+    extT_toFile(partition, FeynGraphs, name, root_dir=root_dir)
 end
 
 function compileC_GV_toFiles(partition, FeynGraphs, labelProd::LabelProduct; datatype::DataType=Float64,
-    root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaGV.c"),
+    root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaGV.c"), name="GV",
     lib_path=root_dir, lib_name="sigmaGV", compiler::String="gcc", isnative::Bool=false)
 
     ### compile the GV FeynmanGraphs to C language source code
@@ -56,11 +56,11 @@ function compileC_GV_toFiles(partition, FeynGraphs, labelProd::LabelProduct; dat
         lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
 
     ### save the leafs information to CSV files 
-    leafinfo_toFile(partition, leaf_maps, labelProd, root_dir)
+    leafinfo_toFile(partition, leaf_maps, labelProd, name, root_dir=root_dir)
 
     ### save the loopbasis to a CSV file
     maxOrder = maximum(p[1] for p in partition)
-    loopbasis_toFile(maxOrder, labelProd, root_dir)
+    loopbasis_toFile(maxOrder, labelProd, name, root_dir=root_dir)
 end
 
 
@@ -82,8 +82,8 @@ function GVcompileC_toFile(partition, FeynGraphs,
     # leafinfo_toFile(partition, leaf_maps, labelProd, root_dir)
 end
 
-function extT_toFile(partition, FeynGraphs, root_dir=joinpath(@__DIR__, "source_codeGV"))
-    jldopen(joinpath(root_dir, "extT_ParquetAD.jld2"), "w") do f
+function extT_toFile(partition, FeynGraphs, name::String="ParquetAD"; root_dir=joinpath(@__DIR__, "source_codeGV"))
+    jldopen(joinpath(root_dir, "extT_$name.jld2"), "w") do f
         for key in partition
             key_str = join(string.(key))
             f[key_str] = FeynGraphs[key][2]
@@ -91,36 +91,38 @@ function extT_toFile(partition, FeynGraphs, root_dir=joinpath(@__DIR__, "source_
     end
 end
 
-function leafinfo_toFile(partition, leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct,
+function leafinfo_toFile(partition, leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct, name::String="GV";
     root_dir=joinpath(@__DIR__, "source_codeGV")) where {G<:Union{Graph,FeynmanGraph}}
     leafStates = FeynmanDiagram.leafstates(leaf_maps, labelProd)
     len = length(leafStates)
     for (ikey, key) in enumerate(partition)
         key_str = join(string.(key))
         df = DataFrame([leafStates[idx][ikey] for idx in 1:len], :auto)
-        CSV.write(joinpath(root_dir, "leafinfo_GV$key_str.csv"), df)
+        CSV.write(joinpath(root_dir, "leafinfo_$name$key_str.csv"), df)
     end
 end
 
-function leafinfo_toFile(partition, leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int, root_dir=joinpath(@__DIR__, "source_codeGV"))
+function leafinfo_toFile(partition, leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int,
+    name::String="ParquetAD"; root_dir=joinpath(@__DIR__, "source_codeGV"))
     leafStates, loopbasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, maxloopNum)
     len = length(leafStates)
     for (ikey, key) in enumerate(partition)
         key_str = join(string.(key))
         df = DataFrame([leafStates[idx][ikey] for idx in 1:len], :auto)
-        CSV.write(joinpath(root_dir, "leafinfo_Parquet$key_str.csv"), df)
+        CSV.write(joinpath(root_dir, "leafinfo_$name$key_str.csv"), df)
     end
 
     ### save the loop basis to a CSV file for the maximum order
     maxOrder = maximum(p[1] for p in partition)
     df = DataFrame(loopbasis, :auto)
-    CSV.write(joinpath(root_dir, "loopBasis_ParquetADmaxOrder$maxOrder.csv"), df)
+    CSV.write(joinpath(root_dir, "loopBasis_$(name)_maxOrder$maxOrder.csv"), df)
 end
 
-function loopbasis_toFile(maxOrder::Int, labelProd::LabelProduct, root_dir=joinpath(@__DIR__, "source_codeGV"))
+function loopbasis_toFile(maxOrder::Int, labelProd::LabelProduct, name::String="GV";
+    root_dir=joinpath(@__DIR__, "source_codeGV"))
     ### save the loop basis to a CSV file for the given maximum order
     df = DataFrame(labelProd.labels[end], :auto)
-    CSV.write(joinpath(root_dir, "loopBasis_GVmaxOrder$maxOrder.csv"), df)
+    CSV.write(joinpath(root_dir, "loopBasis_$(name)_maxOrder$maxOrder.csv"), df)
 end
 
 function GVcompileC_so(partition, datatype::DataType=Float64; c_source=joinpath(@__DIR__, "source_codeGV", "func_sigmaGV.c"),

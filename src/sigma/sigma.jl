@@ -45,7 +45,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
-    # diagrams = Vector{Diagram{Float64}}()
+    diagrams = Vector{Diagram{Float64}}()
     for p in _partition
         para = diagPara(paramc, p[1], filter)
         sd::Vector{Diagram{Float64}} = Parquet.sigma(para).diagram
@@ -65,7 +65,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
             push!(diagpara, para)
             push!(partition, p)
             push!(diag, ExprTree.build(sdpp, dim))
-            # append!(diagrams, sdpp)
+            append!(diagrams, sdpp)
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end
@@ -75,8 +75,8 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     root = [d.root for d in diag] #get the list of root nodes
     #assign the external Tau to the corresponding diagrams
     extT = [[diag[ri].node.object[idx].para.extT::Tuple{Int,Int} for idx in r] for (ri, r) in enumerate(root)]
-    result = (partition, diagpara, diag, root, extT)
-    # result = (partition, diagpara, diag, root, extT, diagrams)
+    # result = (partition, diagpara, diag, root, extT)
+    result = (partition, diagpara, diag, root, extT, diagrams)
     return result
 end
 
@@ -145,6 +145,7 @@ end
 end
 
 #include("sigma_generic.jl")
+include("sigma_dk.jl")
 include("sigmaKW.jl")
 include("sigmaCuba.jl")
 include("sigmaVegas.jl")

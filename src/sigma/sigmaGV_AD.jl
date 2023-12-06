@@ -20,6 +20,7 @@ function ParquetAD(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     isLayered2D::Bool=false,
+    integrand::Function=integrandGV,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.GV"
@@ -69,7 +70,8 @@ function ParquetAD(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrandGV; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
+    # result = integrate(integrandGV; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrand; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -162,7 +164,6 @@ function integrandParquetAD_Clib(idx, vars, config)
         end
     end
 
-
     group = partition[idx]
     evalfuncParquetAD_map[group](root, leafval)
 
@@ -182,7 +183,9 @@ function ParquetAD_Clib(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     isLayered2D::Bool=false,
+    integrand::Function=integrandParquetAD_Clib,
     root_dir=joinpath(@__DIR__, "source_codeGV/"),
+    jobname="ParquetAD",
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.ParquetAD_Clib"
@@ -196,7 +199,7 @@ function ParquetAD_Clib(para::ParaMC, diagram;
     partition, diagpara, extT_labels = diagram
     MaxLoopNum = maximum([key[1] for key in partition]) + 1
 
-    df = CSV.read(root_dir * "loopBasis_ParquetADmaxOrder$(para.order).csv", DataFrame)
+    df = CSV.read(root_dir * "loopBasis_$(jobname)_maxOrder$(para.order).csv", DataFrame)
     loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
 
@@ -204,7 +207,7 @@ function ParquetAD_Clib(para::ParaMC, diagram;
     leafvalues = Vector{Vector{Float64}}()
     for key in partition
         key_str = join(string.(key))
-        df = CSV.read(root_dir * "leafinfo_Parquet$key_str.csv", DataFrame)
+        df = CSV.read(root_dir * "leafinfo_$(jobname)$key_str.csv", DataFrame)
         leafstates_par = Vector{LeafStateAD}()
         for row in eachrow(df)
             push!(leafstates_par, LeafStateAD(row[2], _StringtoIntVector(row[3]), row[4:end]...))
@@ -238,7 +241,7 @@ function ParquetAD_Clib(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrandParquetAD_Clib; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrand; config=config, measure=measureGV, print=print, neval=neval, solver=solver, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
