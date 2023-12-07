@@ -27,9 +27,10 @@ julia> Sigma.compileC_ParquetAD_toFiles(partition, FeynGraphs, 5, compiler = "cl
 ```
 """
 function compileC_ParquetAD_toFiles(partition, FeynGraphs, maxloopNum::Int; datatype::DataType=Float64,
-    root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaParquetAD.c"), name="ParquetAD",
-    lib_path=root_dir, lib_name="sigmaParquetAD", compiler::String="gcc", isnative::Bool=false)
+    root_dir=joinpath(@__DIR__, "source_codeGV"), name::String="ParquetAD", c_name::String="func_sigma$name.c",
+    lib_path=root_dir, lib_name="sigma$name", compiler::String="gcc", isnative::Bool=false)
 
+    c_source = joinpath(root_dir, c_name)
     ### compile the Parquet + Taylor-AD generated Graphs to C language source code
     leaf_maps = GVcompileC_toFile(partition, FeynGraphs, root_dir, c_source=c_source)
 
@@ -46,7 +47,7 @@ end
 
 function compileC_GV_toFiles(partition, FeynGraphs, labelProd::LabelProduct; datatype::DataType=Float64,
     root_dir=joinpath(@__DIR__, "source_codeGV"), c_source=joinpath(root_dir, "func_sigmaGV.c"), name="GV",
-    lib_path=root_dir, lib_name="sigmaGV", compiler::String="gcc", isnative::Bool=false)
+    lib_path=root_dir, lib_name="sigma$name", compiler::String="gcc", isnative::Bool=false)
 
     ### compile the GV FeynmanGraphs to C language source code
     leaf_maps = GVcompileC_toFile(partition, FeynGraphs, root_dir, c_source=c_source)

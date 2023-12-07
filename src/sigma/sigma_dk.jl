@@ -135,7 +135,7 @@ function integrand_dk_Clib(idx, vars, config)
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
 
-            dmu_order, dk_order = leafOrders[1], leafOrders[3]
+            dmu_order, dk_order = lforders[1], lforders[3]
             order = dmu_order + dk_order
             if order == 0
                 leafval[i] = Propagator.green(τ, ϵ, β)
@@ -157,7 +157,7 @@ function integrand_dk_Clib(idx, vars, config)
             end
         elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-            order, dk_order = leafOrders[2], leafOrders[3]
+            order, dk_order = lforders[2], lforders[3]
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
                 leafval[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
@@ -193,8 +193,7 @@ function integrand_dk_Clib(idx, vars, config)
     end
 
     group = partition[idx]
-    # evalfuncParquetAD_dk_map[group](root, leafval)
-    evalfuncParquetAD_map[group](root, leafval)
+    evalfuncParquetAD_dk_map[group](root, leafval)
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
