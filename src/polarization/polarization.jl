@@ -20,7 +20,6 @@ function diagPara(para::ParaMC, order::Int, filter, response::Response)
         type=PolarDiag,
         hasTau=true,
         innerLoopNum=order,
-        loopDim=para.dim,
         spin=para.spin,
         firstLoopIdx=2,
         interaction=inter,
@@ -41,6 +40,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
         error("$response response not yet implemented!")
     end
 
+    dim = paramc.dim
     diag = Vector{ExprTreeF64}()
     diagpara = Vector{DiagParaF64}()
     partition = Vector{T}()
@@ -76,7 +76,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
             end
             push!(diagpara, para)
             push!(partition, p)
-            push!(diag, ExprTree.build(dpp))
+            push!(diag, ExprTree.build(dpp, dim))
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")
         end

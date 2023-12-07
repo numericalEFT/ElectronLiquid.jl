@@ -13,11 +13,12 @@
 *.err
 *.out
 host.txt
-*.jld2
+example/**/*.jld2
 .history
 *.pdf
 *.png
 *.jpg
+*native.so
 __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*

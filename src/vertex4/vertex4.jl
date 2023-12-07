@@ -51,7 +51,6 @@ function diagPara(para::ParaMC, order, filter, transferLoop)
         type=Ver4Diag,
         innerLoopNum=order - 1,
         hasTau=true,
-        loopDim=para.dim,
         spin=para.spin,
         firstLoopIdx=4,
         interaction=inter,
@@ -74,6 +73,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
     # _partition = UEG.partition(order)
     # println("Diagram set: ", _partition)
 
+    dim = paramc.dim
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     legK = [KinL, KoutL, KinR]
@@ -101,7 +101,7 @@ function diagram(paramc::ParaMC, _partition::Vector{T};
                 DiagTree.removeHartreeFock!(d)
             end
             push!(diagpara, para)
-            push!(diag, ExprTree.build(d))
+            push!(diag, ExprTree.build(d, dim))
             push!(partition, p)
         else
             @warn("partition $p doesn't have any diagram. It will be ignored.")

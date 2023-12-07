@@ -31,7 +31,7 @@ function test_diagram(; partitions=[(3, 2, 0)])
         for d in dpp
             d.factor *= 1 / factorial(n_mu) / factorial(n_lambda)
         end
-        exprtree = ExprTree.build(dpp)
+        exprtree = ExprTree.build(dpp, diagparam.dim)
         push!(valid_partitions, p)
         push!(diagpara, diagparam)
         push!(diag, exprtree)
