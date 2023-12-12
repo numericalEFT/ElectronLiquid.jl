@@ -29,7 +29,7 @@ end
 
 @testset "PP" begin
     seed = 1234
-    p = (2, 0, 0)
+    p = (1, 0, 0)
     rs = 5.0
     beta = 25
     mass2 = 1e-2
@@ -37,14 +37,14 @@ end
     para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
     UEG.MCinitialize!(para)
     println(para)
-    # diagram = Ver4.diagram(para, [p,]; channel=[], filter=[])
-    diagram = Ver4.diagramParquet(para, [p,])
+    diagram = Ver4.diagram(para, [p,]; channel=[], filter=[])
+    # diagram = Ver4.diagramParquet(para, [p,]; channel=[], filter=[])
 
     ############################ generic PH one-angle average ###########################
     nlist = [0, 1, 2]
     paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, nlist[1], -1], [0, nlist[2], -1], [0, nlist[3], -1]], :PP, 0),]
-    # data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
-    data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+    data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
+    # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
     obs = data[p]
     # println("obs 1:", obs[:, 1, 1])
     # println("obs 2:", obs[:, 2, 1])

@@ -11,12 +11,13 @@ function diagramParquet(paramc::ParaMC, _partition::Vector{T};
         filter=filter, isDynamic=paramc.isDynamic)
     extT_labels = Vector{Vector{Int}}[]
     spin_conventions = Vector{FeynmanDiagram.Response}[]
-    for p in _partition
+    partition = [k for k in keys(FeynGraphs)]
+    for p in partition
         push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
         push!(extT_labels, FeynGraphs[p][2])
         push!(spin_conventions, FeynGraphs[p][3])
     end
-    return (_partition, diagpara, FeynGraphs, extT_labels, spin_conventions)
+    return (partition, diagpara, FeynGraphs, extT_labels, spin_conventions)
 end
 
 function green_derive(τ, ϵ, β, order)
