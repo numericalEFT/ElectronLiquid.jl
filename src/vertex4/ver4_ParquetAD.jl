@@ -3,13 +3,16 @@ function diagramParquet(paramc::ParaMC, _partition::Vector{T};
     channel=[PHr, PHEr, PPr],
     filter=[FeynmanDiagram.NoHartree]) where {T}
     diagpara = Vector{DiagParaF64}()
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+
     FeynGraphs = FeynmanDiagram.GV.diagdict_parquet_ver4(:vertex4,
         _partition, channel=channel,
         filter=filter, isDynamic=paramc.isDynamic)
     extT_labels = Vector{Vector{Int}}[]
     spin_conventions = Vector{FeynmanDiagram.Response}[]
     for p in _partition
-        push!(diagpara, diagPara(paramc, p[1], filter))
+        push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
         push!(extT_labels, FeynGraphs[p][2])
         push!(spin_conventions, FeynGraphs[p][3])
     end
@@ -42,16 +45,18 @@ function integrand_ParquetAD(idx, var, config)
 end
 
 function diagram_weight_ParquetAD(idx, var, config)
-    paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, graphfuncs! = config.userdata
+    paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs! = config.userdata
     leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT, varX, varN = var[1], var[2], var[3], var[4]
 
     x = varX[1]
     n = varN[1]
+    loopNum = config.dof[idx][1]
 
     para = paras[n]
     l = para.l
-    dim = para.para.dim
+    param = para.para
+    dim, β, me, λ, μ, e0, ϵ0 = param.dim, param.β, param.me, param.mass2, param.μ, param.e0, param.ϵ0
 
     k1, k2 = para.kamp
     if para.channel == :PH
@@ -104,6 +109,7 @@ function diagram_weight_ParquetAD(idx, var, config)
         end
     end
 
+    graphfuncs! = funcGraphs![idx]
     graphfuncs!(root, leafval[idx])
 
     factor = para.para.NF / (2π)^(dim * loopNum)
@@ -111,11 +117,11 @@ function diagram_weight_ParquetAD(idx, var, config)
 
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
-    for (ri, root) in enumerate(root)
-        if spin_conventions[ri] == FeynmanDiagram.UpUp
-            wuu += root
-        elseif spin_conventions[ri] == FeynmanDiagram.UpDown
-            wud += root
+    for (ri, rval) in enumerate(root[idx])
+        if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+            wuu += rval
+        elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+            wud += rval
         end
     end
     wuu, wud = factor * wuu, factor * wud
@@ -132,13 +138,14 @@ function measure_ParquetAD(idx, var, obs, relative_weight, config)
     para = paras[n]
     ωn = para.ωn #get the frequency grid to measure
     β = para.para.β
-
     for i in eachindex(ωn)
-        for (ri, root) in enumerate(root)
-            if spin_conventions[ri] == FeynmanDiagram.UpUp
-                wuu += root * phase(varT, extT_labels[ri], ωn[i], β)
-            elseif spin_conventions[ri] == FeynmanDiagram.UpDown
-                wud += root * phase(varT, extT_labels[ri], ωn[i], β)
+        wuu = zero(ComplexF64)
+        wud = zero(ComplexF64)
+        for (ri, rval) in enumerate(root[idx])
+            if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+                wuu += rval * phase(varT, extT_labels[idx][ri], ωn[i], β)
+            elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+                wud += rval * phase(varT, extT_labels[idx][ri], ωn[i], β)
             end
         end
         obs[idx][1, i, n] += wuu * factor * inverse_probability
@@ -173,11 +180,9 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
         @assert p.para.kF ≈ kF "All parameters must have the same Fermi momentum"
     end
 
-    @assert length(diagpara) == length(diag) == length(root[1]) == length(extT[1])
-    @assert length(root[1]) == length(root[2])
-    @assert length(extT[1]) == length(extT[2])
+    @assert length(diagpara) == length(FeynGraphs) == length(extT_labels) == length(spin_conventions)
 
-    MaxLoopNum = maximum([key[1] for key in partition]) + 1
+    MaxLoopNum = maximum([key[1] for key in partition]) + 2
     funcGraphs! = Dict{Int,Function}()
     leaf_maps = Vector{Dict{Int,Graph}}()
 
@@ -220,11 +225,11 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
             obs=obs,
             type=Weight,
             measurefreq=measurefreq,
-            userdata=(paras, MaxLoopNum, extT_labels, spin_convention, leafStat, momLoopPool, root, funcGraphs!),
+            userdata=(paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs!),
             kwargs...
         )
     end
-    result = integrate(integrand_ParquetAD; measure=_measureGeneric, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    result = integrate(integrand_ParquetAD; measure=measure_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
