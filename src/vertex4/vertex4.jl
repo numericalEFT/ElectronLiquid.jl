@@ -173,4 +173,7 @@ include("ver4_generic.jl")
 include("exchange_interaction.jl")
 include("ver4_PP_l.jl")
 
+include("ver4_ParquetAD.jl")
+include("ver4_ParquetAD_compile.jl")
+
 end
