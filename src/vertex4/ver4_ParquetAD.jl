@@ -34,8 +34,8 @@ function green_derive(τ, ϵ, β, order)
     elseif order == 5
         result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
     else
-        # error("not implemented!")
-        result = Propagator.green(τ, ϵ, β) * 0.0
+        error("not implemented!")
+        # result = Propagator.green(τ, ϵ, β) * 0.0
     end
     return result
 end
@@ -112,19 +112,21 @@ function diagram_weight_ParquetAD(idx, var, config)
 
     graphfuncs! = funcGraphs![idx]
     graphfuncs!(root, leafval[idx])
+    # println(root)
 
     factor = para.para.NF / (2π)^(dim * loopNum)
     factor *= legendfactor(x, l, dim)
 
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
-    for (ri, rval) in enumerate(root[idx])
+    for (ri, rval) in enumerate(root)
         if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
             wuu += rval
         elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
             wud += rval
         end
     end
+    # println(wuu, wud)
     wuu, wud = factor * wuu, factor * wud
     return Weight{ComplexF64}(wuu, wud), factor
 end
@@ -142,7 +144,7 @@ function measure_ParquetAD(idx, var, obs, relative_weight, config)
     for i in eachindex(ωn)
         wuu = zero(ComplexF64)
         wud = zero(ComplexF64)
-        for (ri, rval) in enumerate(root[idx])
+        for (ri, rval) in enumerate(root)
             if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
                 wuu += rval * phase(varT, extT_labels[idx][ri], ωn[i], β)
             elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
