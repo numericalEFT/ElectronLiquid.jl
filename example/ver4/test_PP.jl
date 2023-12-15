@@ -27,29 +27,39 @@ function PP_interaction_dynamic(n, para::ParaMC, kamp=para.kF, kamp2=para.kF; ka
     return Interp.integrate1D(Wp, xgrid)
 end
 
+function yukawa_pp(para)
+    factor = para.e0^2 / para.ϵ0 * para.NF / 2
+    kF2 = para.kF^2
+    return factor / 2 / kF2 * log((para.mass2 + 4 * kF2) / para.mass2)
+end
+
 @testset "PP" begin
     seed = 1234
     # p = (1, 0, 0)
-    p = (1, 0, 0)
-    rs = 2.0
+    p = (3, 0, 0)
+    rs = 1.0
     beta = 25
-    mass2 = 2.0
-    neval = 1e7
+    mass2 =
+        neval = 1e7
     para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=3, mass2=mass2, isDynamic=false)
     UEG.MCinitialize!(para)
     println(para)
-    diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,], dR=true)
+    diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
     # diagram = Ver4.diagram(para, [p, (2, 0, 0)]; channel=[PPr,], filter=[NoFock, NoBubble])
     # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoFock,])
 
     ############################ generic PH one-angle average ###########################
-    nlist = [0, 1, 2]
-    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, nlist[1], -1], [0, nlist[2], -1], [0, nlist[3], -1]], :PP, 0),]
+    # nlist = [0, 1, 2]
+    # paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, nlist[1], -1], [0, nlist[2], -1], [0, nlist[3], -1]], :PP, 0),]
+    paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, -1],], :PP, 0),]
+
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+
     data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
     obs2 = data[p]
-    # obs2 = data[(3, 0, 0)]
     println(obs2)
+
+    # println(yukawa_pp(para))
     # println("obs 1:", obs[:, 1, 1])
     # println("obs 2:", obs[:, 2, 1])
     # println("obs 3:", obs[:, 3, 1])

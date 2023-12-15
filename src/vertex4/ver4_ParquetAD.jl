@@ -8,7 +8,7 @@ function diagramParquet(paramc::ParaMC, _partition::Vector{T};
 
     FeynGraphs = FeynmanDiagram.GV.diagdict_parquet_ver4(:vertex4,
         _partition, channel=channel,
-        filter=filter, isDynamic=paramc.isDynamic)
+        filter=filter, isDynamic=paramc.isDynamic, koffset=3)
     extT_labels = Vector{Vector{Int}}[]
     spin_conventions = Vector{FeynmanDiagram.Response}[]
     partition = [k for k in keys(FeynGraphs)]
@@ -72,6 +72,8 @@ function diagram_weight_ParquetAD(idx, var, config)
         error("not implemented")
     end
 
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    # println(momLoopPool)
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -84,6 +86,8 @@ function diagram_weight_ParquetAD(idx, var, config)
             leafval[idx][i] = green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            # println(kq, (k1, k2, x))
+            # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
             # order = lftype / 2 - 1
             order = leafOrders[idx][i][2]
             if dim == 3
@@ -228,7 +232,9 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
             obs=obs,
             type=Weight,
             measurefreq=measurefreq,
-            userdata=(paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs!),
+            userdata=(paras, MaxLoopNum, extT_labels,
+                spin_conventions, leafStat, momLoopPool,
+                root, funcGraphs!),
             kwargs...
         )
     end
