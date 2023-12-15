@@ -123,11 +123,11 @@ function diagram_weight_ParquetAD(idx, var, config)
 
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
-    for (ri, rval) in enumerate(root)
+    for ri in 1:length(extT_labels[idx])
         if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
-            wuu += rval
+            wuu += root[ri]
         elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
-            wud += rval
+            wud += root[ri]
         end
     end
     # println(wuu, wud)
@@ -148,11 +148,11 @@ function measure_ParquetAD(idx, var, obs, relative_weight, config)
     for i in eachindex(ωn)
         wuu = zero(ComplexF64)
         wud = zero(ComplexF64)
-        for (ri, rval) in enumerate(root)
+        for ri in 1:length(extT_labels[idx])
             if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
-                wuu += rval * phase(varT, extT_labels[idx][ri], ωn[i], β)
+                wuu += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
             elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
-                wud += rval * phase(varT, extT_labels[idx][ri], ωn[i], β)
+                wud += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
             end
         end
         obs[idx][1, i, n] += wuu * factor * inverse_probability
