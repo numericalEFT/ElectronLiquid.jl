@@ -1,7 +1,7 @@
 module Ver4
 
-using JLD2
-using Printf, LinearAlgebra
+using JLD2, CSV
+using Printf, LinearAlgebra, DataFrames
 using ..StaticArrays
 using ..Parameters
 using ..CompositeGrids
@@ -15,6 +15,7 @@ using ..Measurements
 # push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
+using ..Sigma
 import ..ExprTreeF64
 
 import ..Weight
@@ -175,5 +176,6 @@ include("ver4_PP_l.jl")
 
 include("ver4_ParquetAD.jl")
 include("ver4_ParquetAD_compile.jl")
+include("ver4_ParquetAD_Clib.jl")
 
 end

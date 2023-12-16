@@ -36,25 +36,27 @@ end
 @testset "PP" begin
     seed = 1234
     # p = (1, 0, 0)
-    p = (3, 0, 0)
+    order = 3
+    p = (order, 0, 0)
     rs = 1.0
     beta = 25
-    mass2 =
-        neval = 1e7
-    para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=3, mass2=mass2, isDynamic=false)
+    mass2 = 1.0
+    neval = 1e6
+    para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=order, mass2=mass2, isDynamic=false)
     UEG.MCinitialize!(para)
     println(para)
-    diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
-    # diagram = Ver4.diagram(para, [p, (2, 0, 0)]; channel=[PPr,], filter=[NoFock, NoBubble])
-    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoFock,])
+
 
     ############################ generic PH one-angle average ###########################
     # nlist = [0, 1, 2]
     # paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, nlist[1], -1], [0, nlist[2], -1], [0, nlist[3], -1]], :PP, 0),]
     paras = [Ver4.OneAngleAveraged(para, [para.kF, para.kF], [[0, 0, -1],], :PP, 0),]
 
+    # diagram = Ver4.diagram(para, [p, (2, 0, 0)]; channel=[PPr,], filter=[NoFock, NoBubble])
+    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoFock,])
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
+    diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
     data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
     obs2 = data[p]
     println(obs2)
@@ -71,8 +73,13 @@ end
     #     println(real(obs[:, i, 1][2]), ", ", -PP_interaction_dynamic(nlist[i], para) / 2)
     #     # compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(nlist[i], para) / 2)
     # end
-    diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
-    data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+
+    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
+    # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+
+    diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree,])
+    data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
+
     obs2 = data[p]
     println(obs2)
 end

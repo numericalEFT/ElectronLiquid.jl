@@ -1,4 +1,27 @@
 
+function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
+    diagpara = Vector{DiagParaF64}()
+    extT_labels = Vector{Vector{Int}}[]
+    spin_conventions = Vector{FeynmanDiagram.Response}[]
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+    partition = Tuple{Int64,Int64,Int64}[]
+    # partition = []
+    jldopen(joinpath(@__DIR__, "source_codeParquetAD", "extT_spin_O$(paramc.order)_ParquetAD.jld2"), "r") do f
+        for p in _partition
+            key_str = join(string.(p))
+            if key_str in keys(f)
+                extT, spin = f[key_str]
+                push!(partition, p)
+                push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
+                push!(extT_labels, extT)
+                push!(spin_conventions, spin)
+            end
+        end
+    end
+    return (partition, diagpara, extT_labels, spin_conventions)
+end
+
 function diagramParquet(paramc::ParaMC, _partition::Vector{T};
     channel=[PHr, PHEr, PPr],
     filter=[FeynmanDiagram.NoHartree]) where {T}
@@ -160,6 +183,7 @@ function measure_ParquetAD(idx, var, obs, relative_weight, config)
     end
 end
 
+
 function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
     neval=1e6, #number of evaluations
     print=0,
@@ -264,4 +288,6 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
         return nothing, nothing
     end
 
+
 end
+
