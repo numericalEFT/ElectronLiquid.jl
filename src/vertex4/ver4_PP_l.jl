@@ -55,6 +55,7 @@ function MC_PP_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, n=[[0, 1, -1],], l=0
     filter=[NoHartree, NoBubble],
     channel=[PHr, PHEr, PPr],
     partition=UEG.partition(para.order),
+    isClib=true,
     print=0
 )
 
@@ -63,8 +64,11 @@ function MC_PP_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, n=[[0, 1, -1],], l=0
 
     # partition = UEG.partition(_order)
 
-
-    diagram = Ver4.diagramParquet(para, partition; channel=channel, filter=filter)
+    if isClib
+        diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
+    else
+        diagram = Ver4.diagramParquet(para, partition; channel=channel, filter=filter)
+    end
 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
@@ -80,12 +84,19 @@ function MC_PP_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, n=[[0, 1, -1],], l=0
     end
 
     paras = [Ver4.OneAngleAveraged(para, [kamp[1], kamp2[1]], n, :PP, l),]
-    ver4, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram;
-        neval=neval, print=print,
-        neighbor=neighbor,
-        reweight_goal=reweight_goal
-    )
-
+    if isClib
+        ver4, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram;
+            neval=neval, print=print,
+            neighbor=neighbor,
+            reweight_goal=reweight_goal
+        )
+    else
+        ver4, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram;
+            neval=neval, print=print,
+            neighbor=neighbor,
+            reweight_goal=reweight_goal
+        )
+    end
     if isnothing(ver4) == false
         if isnothing(filename) == false
             jldopen(filename, "a+") do f
