@@ -9,6 +9,26 @@ using ..ElectronGas
 
 const TAU_CUTOFF = 1e-10
 
+function green_derive(τ, ϵ, β, order)
+    if order == 0
+        result = green(τ, ϵ, β)
+    elseif order == 1
+        result = -Spectral.kernelFermiT_dω(τ, ϵ, β)
+    elseif order == 2
+        result = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+    elseif order == 3
+        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+    elseif order == 4
+        result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
+    elseif order == 5
+        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
+    else
+        error("not implemented!")
+        # result = Propagator.green(τ, ϵ, β) * 0.0
+    end
+    return result
+end
+
 function green(τ::T, ω::T, β::T) where {T}
     #generate green function of fermion
     if τ ≈ T(0.0)

@@ -36,7 +36,7 @@ end
 @testset "PP" begin
     seed = 1234
     # p = (1, 0, 0)
-    order = 3
+    order = 6
     p = (order, 0, 0)
     rs = 1.0
     beta = 25
@@ -56,10 +56,10 @@ end
     # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoFock,])
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
-    diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
-    data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
-    obs2 = data[p]
-    println(obs2)
+    # diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
+    # data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
+    # obs2 = data[p]
+    # println(obs2)
 
     # println(yukawa_pp(para))
     # println("obs 1:", obs[:, 1, 1])

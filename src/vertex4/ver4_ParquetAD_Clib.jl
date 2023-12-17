@@ -41,7 +41,7 @@ function diagram_weight_ParquetAD_Clib(idx, var, config)
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
             order = lforders[1]
-            leafval[idx][i] = green_derive(τ, ϵ, β, order)
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             # println(kq, (k1, k2, x))
@@ -246,7 +246,7 @@ include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
 
 # provide dict of (order, partition...) => func
 include("source_codeParquetAD/func_dict_ParquetAD.jl")

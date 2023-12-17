@@ -7,11 +7,12 @@ function compileC_ParquetAD_toFiles(order, partition, FeynGraphs, maxloopNum::In
     leaf_maps = ParquetADcompileC_toFile(order, partition, FeynGraphs, root_dir, c_source=c_source)
     println("compiled")
 
-    ### compile the C language 
-    println("compiling c code to .so lib")
-    ParquetADcompileC_so(order, partition, datatype; c_source=c_source,
-        lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
-    println("compiled")
+    # ### compile the C language 
+    # println("compiling c code to .so lib")
+    # ParquetADcompileC_so(order, partition, datatype; c_source=c_source,
+    #     lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
+    # println("compiled")
+    ParquetAD_Cwrapper(order, partition, datatype, lib_path=lib_path, lib_name=lib_name)
 
     println("saving other info")
     ### save the leafs information and the loopbasis to CSV files

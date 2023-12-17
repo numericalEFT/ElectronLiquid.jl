@@ -1,4 +1,5 @@
 
+
 function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
     diagpara = Vector{DiagParaF64}()
     extT_labels = Vector{Vector{Int}}[]
@@ -41,26 +42,6 @@ function diagramParquet(paramc::ParaMC, _partition::Vector{T};
         push!(spin_conventions, FeynGraphs[p][3])
     end
     return (partition, diagpara, FeynGraphs, extT_labels, spin_conventions)
-end
-
-function green_derive(τ, ϵ, β, order)
-    if order == 0
-        result = Propagator.green(τ, ϵ, β)
-    elseif order == 1
-        result = -Spectral.kernelFermiT_dω(τ, ϵ, β)
-    elseif order == 2
-        result = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
-    elseif order == 3
-        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
-    elseif order == 4
-        result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
-    elseif order == 5
-        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
-    else
-        error("not implemented!")
-        # result = Propagator.green(τ, ϵ, β) * 0.0
-    end
-    return result
 end
 
 function integrand_ParquetAD(idx, var, config)
@@ -106,7 +87,7 @@ function diagram_weight_ParquetAD(idx, var, config)
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             ϵ = dot(kq, kq) / (2me) - μ
             order = leafOrders[idx][i][1]
-            leafval[idx][i] = green_derive(τ, ϵ, β, order)
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             # println(kq, (k1, k2, x))
