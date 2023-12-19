@@ -50,7 +50,7 @@ function integrand_ParquetAD(idx, var, config)
 end
 
 function diagram_weight_ParquetAD(idx, var, config)
-    paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs! = config.userdata
+    paras, MaxLoopNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs!, leaf_maps = config.userdata
     leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT, varX, varN = var[1], var[2], var[3], var[4]
 
@@ -85,34 +85,40 @@ function diagram_weight_ParquetAD(idx, var, config)
         elseif lftype == 1 #fermionic 
             τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            ϵ = dot(kq, kq) / (2me) - μ
+            # ϵ = dot(kq, kq) / (2me) - μ
+            ϵ = Propagator.dispersion(norm(kq), param)
             order = leafOrders[idx][i][1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
+            diagid = leaf_maps[idx][i].properties
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
             # println(kq, (k1, k2, x))
             # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
             # order = lftype / 2 - 1
-            order = leafOrders[idx][i][2]
-            if dim == 3
-                invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
-            elseif dim == 2
-                if isLayered2D == false
-                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
-                else
-                    if order == 0
-                        q = sqrt(dot(kq, kq) + 1e-16)
-                        invK = 1.0 / q
-                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
-                    else
-                        leafval[idx][i] = 0.0 # no high-order counterterms
-                    end
-                end
-            else
-                error("not implemented!")
-            end
+            # idorder = leafOrders[idx][i]
+            idorder = diagid.order
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.para))
+
+            # if dim == 3
+            #     invK = 1.0 / (dot(kq, kq) + λ)
+            #     leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+            # elseif dim == 2
+            #     if isLayered2D == false
+            #         invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+            #         leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+            #     else
+            #         if order == 0
+            #             q = sqrt(dot(kq, kq) + 1e-16)
+            #             invK = 1.0 / q
+            #             leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+            #         else
+            #             leafval[idx][i] = 0.0 # no high-order counterterms
+            #         end
+            #     end
+            # else
+            #     error("not implemented!")
+            # end
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -239,7 +245,7 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
             measurefreq=measurefreq,
             userdata=(paras, MaxLoopNum, extT_labels,
                 spin_conventions, leafStat, momLoopPool,
-                root, funcGraphs!),
+                root, funcGraphs!, leaf_maps),
             kwargs...
         )
     end

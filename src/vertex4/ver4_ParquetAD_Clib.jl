@@ -131,7 +131,9 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
     isLayered2D=false,
     kwargs...
 )
-
+    if paras[1].para.isDynamic
+        error("Clib for dynamic interaction not implemented!")
+    end
     dim, β, kF, order = paras[1].para.dim, paras[1].para.β, paras[1].para.kF, paras[1].para.order
     Nw = length(paras[1].ωn)
     partition, diagpara, extT_labels, spin_conventions = diagram

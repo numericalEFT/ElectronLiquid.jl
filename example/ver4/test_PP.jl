@@ -36,13 +36,13 @@ end
 @testset "PP" begin
     seed = 1234
     # p = (1, 0, 0)
-    order = 6
+    order = 2
     p = (order, 0, 0)
     rs = 1.0
     beta = 25
     mass2 = 1.0
     neval = 1e6
-    para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=order, mass2=mass2, isDynamic=false)
+    para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=order, mass2=mass2, isDynamic=true)
     UEG.MCinitialize!(para)
     println(para)
 
@@ -74,11 +74,11 @@ end
     #     # compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(nlist[i], para) / 2)
     # end
 
-    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
-    # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+    diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
+    data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
-    diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree,])
-    data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
+    # diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree,])
+    # data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
 
     obs2 = data[p]
     println(obs2)
