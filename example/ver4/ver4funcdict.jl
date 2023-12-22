@@ -1,12 +1,18 @@
 using FeynmanDiagram, ElectronLiquid
 
+const isDynamic = true
+
 function func_dict_str(o)
     str = ""
     str *= "const evalfuncParquetAD_map = Dict(\n"
     for order in 1:o
-        para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
+        para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=isDynamic)
         partition = UEG.partition(para.order)
-        diagram = Ver4.diagramParquet_load(para, partition)
+        if isDynamic
+            diagram = Ver4.diagramParquetDynamic_load(para, partition)
+        else
+            diagram = Ver4.diagramParquet_load(para, partition)
+        end
         _partition = diagram[1]
         println(partition)
         println(_partition)
@@ -18,8 +24,9 @@ function func_dict_str(o)
     return str
 end
 
-fname = "./src/vertex4/source_codeParquetAD/func_dict_ParquetAD.jl"
+# fname = "./src/vertex4/source_codeParquetAD/func_dict_ParquetAD.jl"
+fname = "./src/vertex4/source_codeParquetAD/dynamic/func_dict_ParquetADDynamic.jl"
 
 open(fname, "w") do f
-    write(f, func_dict_str(6))
+    write(f, func_dict_str(3))
 end

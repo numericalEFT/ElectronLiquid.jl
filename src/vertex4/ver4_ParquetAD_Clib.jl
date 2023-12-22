@@ -32,7 +32,7 @@ function diagram_weight_ParquetAD_Clib(idx, var, config)
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
     # println(momLoopPool)
     for (i, lfstat) in enumerate(leafstates[idx])
-        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
         if lftype == 0
             continue
             # elseif isodd(lftype) #fermionic 
@@ -47,33 +47,47 @@ function diagram_weight_ParquetAD_Clib(idx, var, config)
             # println(kq, (k1, k2, x))
             # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
             # order = lftype / 2 - 1
-            order = lforders[2]
-            if dim == 3
-                invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
-            elseif dim == 2
-                if isLayered2D == false
-                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
-                else
-                    if order == 0
-                        q = sqrt(dot(kq, kq) + 1e-16)
-                        invK = 1.0 / q
-                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
-                    else
-                        leafval[idx][i] = 0.0 # no high-order counterterms
-                    end
-                end
-            else
-                error("not implemented!")
-            end
+            # order = lforders[2]
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, lforders; idtype=Instant, tau_num=tau_num)
+            # if dim == 3
+            #     invK = 1.0 / (dot(kq, kq) + λ)
+            #     leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+            # elseif dim == 2
+            #     if isLayered2D == false
+            #         invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+            #         leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+            #     else
+            #         if order == 0
+            #             q = sqrt(dot(kq, kq) + 1e-16)
+            #             invK = 1.0 / q
+            #             leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+            #         else
+            #             leafval[idx][i] = 0.0 # no high-order counterterms
+            #         end
+            #     end
+            # else
+            #     error("not implemented!")
+            # end
+        elseif lftype == 4 # dynamic bosonic
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            # println(kq, (k1, k2, x))
+            # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
+            # order = lftype / 2 - 1
+            # order = lforders[2]
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, lforders; idtype=Dynamic, tau_num=tau_num)
         else
             error("this leaftype $lftype not implemented!")
         end
     end
 
     group = (para.para.order, partition[idx]...)
-    evalfuncParquetAD_map[group](root, leafval[idx])
+    if param.isDynamic
+        evalfuncParquetADDynamic_map[group](root, leafval[idx])
+    else
+        evalfuncParquetAD_map[group](root, leafval[idx])
+    end
     # get_eval_func(para.para.order, partition[idx])(root, leafval[idx])
     # graphfuncs! = funcGraphs![idx]
     # graphfuncs!(root, leafval[idx])
@@ -131,9 +145,6 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
     isLayered2D=false,
     kwargs...
 )
-    if paras[1].para.isDynamic
-        error("Clib for dynamic interaction not implemented!")
-    end
     dim, β, kF, order = paras[1].para.dim, paras[1].para.β, paras[1].para.kF, paras[1].para.order
     Nw = length(paras[1].ωn)
     partition, diagpara, extT_labels, spin_conventions = diagram
@@ -145,6 +156,7 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
             else
                 UEG.MCinitialize!(p.para, true)
             end
+            root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
         end
         @assert length(p.ωn) == Nw "All parameters must have the same frequency list"
         @assert p.para.dim == dim "All parameters must have the same dimension"
@@ -160,20 +172,27 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
     loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
 
-    leafstates = Vector{Vector{Sigma.LeafStateAD}}()
-    leafvalues = Vector{Vector{Float64}}()
-    for key in partition
-        key_str = join(string.(key))
-        df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
-        leafstates_par = Vector{Sigma.LeafStateAD}()
-        for row in eachrow(df)
-            push!(leafstates_par, Sigma.LeafStateAD(row[2], Sigma._StringtoIntVector(row[3]), row[4:end]...))
+    if paras[1].para.isDynamic
+        f = jldopen(root_dir * "leafinfo_O$(order).jld2", "r")
+        leafstates = f["leafstates"]
+        leafvalues = f["values"]
+    else
+        leafstates = Vector{Vector{Ver4.LeafStateADVer4Dynamic}}()
+        leafvalues = Vector{Vector{Float64}}()
+        for key in partition
+            key_str = join(string.(key))
+            df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
+            leafstates_par = Vector{Ver4.LeafStateADVer4Dynamic}()
+            for row in eachrow(df)
+                push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], Sigma._StringtoIntVector(row[3]), row[4:end]..., 1))
+            end
+            push!(leafstates, leafstates_par)
+            push!(leafvalues, df[!, names(df)[1]])
         end
-        push!(leafstates, leafstates_par)
-        push!(leafvalues, df[!, names(df)[1]])
     end
 
     root = zeros(Float64, maximum(length.(extT_labels)))
+    # println(root)
 
     # all momentum will be sampled around the dimensionless Fermi momentum 1.0
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3) # the first three momenta are external
@@ -236,12 +255,12 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
     end
 end
 
-function get_eval_func(order, partition)
-    # slow
-    key_str = join(string.(partition))
-    func_name = "eval_ver4O$(order)ParquetAD$(key_str)!"
-    return getfield(Ver4, Symbol(func_name))
-end
+# function get_eval_func(order, partition)
+#     # slow
+#     key_str = join(string.(partition))
+#     func_name = "eval_ver4O$(order)ParquetAD$(key_str)!"
+#     return getfield(Ver4, Symbol(func_name))
+# end
 
 include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
@@ -250,5 +269,10 @@ include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
 
+include("source_codeParquetAD/dynamic/Cwrapper_ver4O1ParquetADDynamic.jl")
+include("source_codeParquetAD/dynamic/Cwrapper_ver4O2ParquetADDynamic.jl")
+include("source_codeParquetAD/dynamic/Cwrapper_ver4O3ParquetADDynamic.jl")
+
 # provide dict of (order, partition...) => func
 include("source_codeParquetAD/func_dict_ParquetAD.jl")
+include("source_codeParquetAD/dynamic/func_dict_ParquetADDynamic.jl")

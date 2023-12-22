@@ -56,7 +56,7 @@ end
     # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoFock,])
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
-    # diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
+    # diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
     # data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
     # obs2 = data[p]
     # println(obs2)
@@ -74,11 +74,11 @@ end
     #     # compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(nlist[i], para) / 2)
     # end
 
-    diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
-    data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
+    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
-    # diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree,])
-    # data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
+    diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree, NoBubble])
+    data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
 
     obs2 = data[p]
     println(obs2)

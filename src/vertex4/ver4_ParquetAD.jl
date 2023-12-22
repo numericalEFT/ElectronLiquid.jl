@@ -1,4 +1,16 @@
 
+struct LeafStateADVer4Dynamic
+    type::Int
+    orders::Vector{Int}
+    inTau_idx::Int
+    outTau_idx::Int
+    loop_idx::Int
+    tau_num::Int
+
+    function LeafStateADVer4Dynamic(type::Int, orders::Vector{Int}, inTau_idx::Int, outTau_idx::Int, loop_idx::Int, tau_num::Int)
+        return new(type, orders, inTau_idx, outTau_idx, loop_idx, tau_num)
+    end
+end
 
 function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
     diagpara = Vector{DiagParaF64}()
@@ -8,7 +20,35 @@ function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[Feyn
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     partition = Tuple{Int64,Int64,Int64}[]
     # partition = []
-    jldopen(joinpath(@__DIR__, "source_codeParquetAD", "extT_spin_O$(paramc.order)_ParquetAD.jld2"), "r") do f
+    if paramc.isDynamic
+        fname = joinpath(@__DIR__, "source_codeParquetAD/dynamic", "extT_spin_O$(paramc.order)_ParquetAD.jld2")
+    else
+        fname = joinpath(@__DIR__, "source_codeParquetAD", "extT_spin_O$(paramc.order)_ParquetAD.jld2")
+    end
+    jldopen(fname, "r") do f
+        for p in _partition
+            key_str = join(string.(p))
+            if key_str in keys(f)
+                extT, spin = f[key_str]
+                push!(partition, p)
+                push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
+                push!(extT_labels, extT)
+                push!(spin_conventions, spin)
+            end
+        end
+    end
+    return (partition, diagpara, extT_labels, spin_conventions)
+end
+
+function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree, FeynmanDiagram.NoBubble]) where {T}
+    diagpara = Vector{DiagParaF64}()
+    extT_labels = Vector{Vector{Int}}[]
+    spin_conventions = Vector{FeynmanDiagram.Response}[]
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+    partition = Tuple{Int64,Int64,Int64}[]
+    # partition = []
+    jldopen(joinpath(@__DIR__, "source_codeParquetAD/dynamic", "extT_spin_O$(paramc.order)_ParquetAD.jld2"), "r") do f
         for p in _partition
             key_str = join(string.(p))
             if key_str in keys(f)
@@ -209,6 +249,7 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
         push!(leaf_maps, leafmap)
     end
     leafStat, loopbasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, MaxLoopNum)
+    # println(leafStat[1])
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopbasis)
 
     println("static compile has finished!")

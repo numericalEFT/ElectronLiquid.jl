@@ -176,6 +176,7 @@ include("ver4_PP_l.jl")
 
 include("ver4_ParquetAD.jl")
 include("ver4_ParquetAD_compile.jl")
+include("ver4_ParquetAD_compile_dynamic.jl")
 include("ver4_ParquetAD_Clib.jl")
 
 end
