@@ -37,15 +37,18 @@ end
     seed = 1234
     # p = (1, 0, 0)
     order = 2
-    p = (order, 0, 0)
+    # p = (order, 0, 0)
+    # p = (1, 0, 0)
     rs = 1.0
     beta = 25
     mass2 = 1.0
     neval = 1e6
     para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=order, mass2=mass2, isDynamic=true)
+    partition = UEG.partition(para.order)
+    println(partition)
+    # partition = [(2, 0, 0), (1, 0, 1), (1, 0, 0)]
     UEG.MCinitialize!(para)
     println(para)
-
 
     ############################ generic PH one-angle average ###########################
     # nlist = [0, 1, 2]
@@ -57,7 +60,9 @@ end
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
     # diagram = Ver4.diagram(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    # diagram = Ver4.diagram(para, partition; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
     # data, result = Ver4.one_angle_averaged(paras, diagram; neval=neval, print=-1, seed=seed)
+    # println(data[(1, 0, 0)], data[(2, 0, 0)])
     # obs2 = data[p]
     # println(obs2)
 
@@ -74,12 +79,12 @@ end
     #     # compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(nlist[i], para) / 2)
     # end
 
-    # diagram = Ver4.diagramParquet(para, [p,]; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    # diagram = Ver4.diagramParquet(para, partition; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
     # data, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram; neval=neval, print=-1, seed=seed)
 
-    diagram = Ver4.diagramParquet_load(para, [p,]; filter=[NoHartree, NoBubble])
+    diagram = Ver4.diagramParquet_load(para, partition; filter=[NoHartree, NoBubble])
     data, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram; neval=neval, print=-1, seed=seed)
-
-    obs2 = data[p]
-    println(obs2)
+    println(data[(1, 0, 0)], data[(2, 0, 0)])
+    # obs2 = data[p]
+    # println(obs2)
 end

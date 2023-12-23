@@ -22,6 +22,10 @@ function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[Feyn
     # partition = []
     if paramc.isDynamic
         fname = joinpath(@__DIR__, "source_codeParquetAD/dynamic", "extT_spin_O$(paramc.order)_ParquetAD.jld2")
+        if _partition ≠ dynamic_partition_map[paramc.order]
+            @warn "partition is fixed for Clib to $(dynamic_partition_map[paramc.order])"
+            _partition = dynamic_partition_map[paramc.order]
+        end
     else
         fname = joinpath(@__DIR__, "source_codeParquetAD", "extT_spin_O$(paramc.order)_ParquetAD.jld2")
     end

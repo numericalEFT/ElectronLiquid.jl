@@ -39,6 +39,7 @@ function leafinfo_toFile_dynamic(order, partition, leaf_maps::Vector{Dict{Int,Gr
         df = DataFrame([leafStates[idx][ikey] for idx in 1:len], :auto)
         leafstates_par = Vector{Ver4.LeafStateADVer4Dynamic}()
         # for row in eachrow(df)
+        println(size(df), key)
         for idx in 1:size(df)[1]
             row = df[idx, :]
             # row = df[:, idx]
