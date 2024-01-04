@@ -170,6 +170,7 @@ end
 include("ver4KW.jl")
 include("ver4_PH_l.jl")
 include("ver4_PH_l_df.jl")
+include("ver4_PH_l_AD.jl")
 include("ver4_generic.jl")
 include("exchange_interaction.jl")
 include("ver4_PP_l.jl")
