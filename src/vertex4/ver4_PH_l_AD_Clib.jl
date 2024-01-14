@@ -2,11 +2,10 @@
 Calculate vertex4 averged on the Fermi surface
 """
 
-function integrandPH_AD(idx, var, config)
+function integrandPH_ParquetAD(idx, var, config)
     para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
-    MaxLoopNum, extT_labels, spin_conventions, leafStat, leaf_maps, momLoopPool, root, funcGraphs!, = config.userdata[7:end]
+    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
-    leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT = var[1], var[2]
     x = config.var[3][1]
     # error("$(varK.data[:, 1])")
@@ -14,7 +13,7 @@ function integrandPH_AD(idx, var, config)
     loopNum = config.dof[idx][1]
     extKidx = var[5][1]
     kamp = kampgrid[extKidx]
-    kamp2 = kamp2grid[extKidx]   
+    kamp2 = kamp2grid[extKidx]
     qamp = qgrid[extKidx]
     varK.data[1, 1] = kamp
     varK.data[1, 2] = kamp
@@ -30,23 +29,21 @@ function integrandPH_AD(idx, var, config)
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
 
-    for (i, lftype) in enumerate(leafType[idx])
+    for (i, lfstat) in enumerate(leafstates[idx])
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
         if lftype == 0
             continue
+            # elseif isodd(lftype) #fermionic 
         elseif lftype == 1 #fermionic 
-            τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
-            order = leafOrders[idx][i][1]
+            order = lforders[1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
-            diagid = leaf_maps[idx][i].properties
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
-            # idorder = diagid.order
-            idorder = leafOrders[idx][i]
-            # @assert idorder == leafOrders[idx][i]
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=interactionTauNum(diagid.para))
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -54,10 +51,8 @@ function integrandPH_AD(idx, var, config)
 
     factor = legendfactor(x, l, dim)
     factor *= para.NF / (2π)^(dim * loopNum)
-
-    graphfuncs! = funcGraphs![idx]
-    graphfuncs!(root, leafval[idx])
-
+    group = (para.order, partition[idx]...)
+    evalfuncParquetAD_map[group](root, leafval[idx])
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
 
@@ -73,7 +68,7 @@ function integrandPH_AD(idx, var, config)
     return Weight(wuu * factor, wud * factor)
 end
 
-function measurePH_AD(idx, var, obs, weight, config)
+function measurePH_ParquetAD(idx, var, obs, weight, config)
     Lidx = var[4][1]
     Kidx = var[5][1]
 
@@ -81,7 +76,7 @@ function measurePH_AD(idx, var, obs, weight, config)
     obs[idx][2, Lidx, Kidx] += weight.e
 end
 
-function PH_AD(para::ParaMC, diagram;
+function PH_ParquetAD(para::ParaMC, diagram;
     kamp=[para.kF,], #amplitude of k of the left legs
     kamp2=kamp, #amplitude of k of the right leg
     q=[0.0 for k in kamp],
@@ -90,11 +85,11 @@ function PH_AD(para::ParaMC, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
-    root_dir=joinpath(@__DIR__, "source_codeAD/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     config=nothing,
     kwargs...
 )
-    partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
+    partition, diagpara, extT_labels, spin_conventions = diagram
 
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
@@ -111,25 +106,27 @@ function PH_AD(para::ParaMC, diagram;
     Nl = length(l)
     Nk = length(kamp)
 
-    # println(spin_conventions)
-
-    @assert length(diagpara) == length(FeynGraphs) == length(extT_labels) == length(spin_conventions)
+    @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
 
     MaxLoopNum = maximum([key[1] for key in partition]) + 2
-    funcGraphs! = Dict{Int,Function}()
-    leaf_maps = Vector{Dict{Int,Graph}}()
 
-    for (i, key) in enumerate(partition)
-        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
-        push!(leaf_maps, leafmap)
-    end
-    leafStat, loopBasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, MaxLoopNum)
-    # println(leafStat[3][1],partition[1])
-
-
+    df = CSV.read(root_dir * "loopBasis_ParquetADmaxOrder$(order).csv", DataFrame)
+    loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
+    leafstates = Vector{Vector{Ver4.LeafStateADVer4Dynamic}}()
+    leafvalues = Vector{Vector{Float64}}()
+    for key in partition
+        key_str = join(string.(key))
+        df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
+        leafstates_par = Vector{Ver4.LeafStateADVer4Dynamic}()
+        for row in eachrow(df)
+            push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], Sigma._StringtoIntVector(row[3]), row[4:end]..., 1))
+        end
+        push!(leafstates, leafstates_par)
+        push!(leafvalues, df[!, names(df)[1]])
+    end
     root = zeros(Float64, maximum(length.(extT_labels)))
-    println("static compile has finished!")
+    println([leafstates[1][i].orders for i in 1:2],partition[1])
 
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
     K.data[:, 1] .= UEG.getK(kF, dim, 1)
@@ -155,12 +152,12 @@ function PH_AD(para::ParaMC, diagram;
             obs=obs,
             type=Weight,
             userdata=(para, kamp, kamp2, q, l, n, MaxLoopNum, extT_labels,
-                spin_conventions, leafStat, leaf_maps, momLoopPool,
-                root, funcGraphs!),
+                spin_conventions, leafstates, leafvalues, momLoopPool,
+                root, partition),
             kwargs...
         )
     end
-    result = integrate(integrandPH_AD; measure=measurePH_AD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    result = integrate(integrandPH_ParquetAD; measure=measurePH_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -188,7 +185,7 @@ function PH_AD(para::ParaMC, diagram;
 
 end
 
-function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
+function MC_PH_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree, NoBubble, Proper],
     channel=[PHr, PHEr, PPr],
@@ -202,7 +199,7 @@ function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-
     # partition = UEG.partition(_order)
 
 
-    diagram = Ver4.diagramParquet(para, partition; channel=channel, filter=filter)
+    diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
@@ -217,7 +214,7 @@ function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-
         println(length(reweight_goal))
     end
 
-    ver4, result = Ver4.PH_AD(para, diagram;
+    ver4, result = Ver4.PH_ParquetAD(para, diagram;
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
@@ -253,3 +250,14 @@ function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-
     end
     return ver4, result
 end
+
+include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
+
+# provide dict of (order, partition...) => func
+include("source_codeParquetAD/func_dict_ParquetAD.jl")
+

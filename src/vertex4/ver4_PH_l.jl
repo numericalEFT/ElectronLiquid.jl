@@ -19,9 +19,11 @@ function integrandPH(idx, var, config)
     varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
     if dim == 3
-        varK.data[1:2, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2)]
+        varK.data[1, 3] = kamp2 * x
+        varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
     else
-        varK.data[1:2, 3] = [kamp2 * cos(x), kamp2 * sin(x)]
+        varK.data[1, 3] = kamp2 * cos(x)
+        varK.data[2, 3] = kamp2 * sin(x)
     end
 
     diagram = diag[idx]
