@@ -269,6 +269,7 @@ function GV_Clib(para::ParaMC, diagram;
     root_dir=joinpath(@__DIR__, "source_codeGV/"),
     kwargs...
 )
+    println("using GV_Clib")
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.GV"
     para.isDynamic && UEG.MCinitialize!(para)
 

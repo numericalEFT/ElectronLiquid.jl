@@ -8,7 +8,7 @@ if !isDynamic
     partition = UEG.partition(para.order)
 
     println("generating diagrams")
-    diagram = Ver4.diagramParquet(para, partition; channel=channel = [PHr, PHEr, PPr,], filter=[NoHartree,])
+    diagram = Ver4.diagramParquet(para, partition; channel=[PHr, PHEr, PPr,], filter=[NoHartree,])
     println("diagram generated")
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
 
@@ -19,7 +19,8 @@ else
     partition = UEG.partition(para.order)
 
     println("generating diagrams")
-    diagram = Ver4.diagramParquet(para, partition; channel=channel = [PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    diagram = Ver4.diagramParquet(para, partition; channel=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    # diagram = Ver4.diagramParquet(para, partition; channel=channel = [PHr, PHEr, PPr,], filter=[NoHartree,])
     println("diagram generated")
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
 

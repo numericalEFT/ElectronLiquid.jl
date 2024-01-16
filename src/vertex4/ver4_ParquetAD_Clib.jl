@@ -80,6 +80,7 @@ function diagram_weight_ParquetAD_Clib(idx, var, config)
         else
             error("this leaftype $lftype not implemented!")
         end
+        @assert !(isnan(leafval[idx][i])) "nan at $idx, $i"
     end
 
     group = (para.para.order, partition[idx]...)
@@ -87,6 +88,9 @@ function diagram_weight_ParquetAD_Clib(idx, var, config)
         evalfuncParquetADDynamic_map[group](root, leafval[idx])
     else
         evalfuncParquetAD_map[group](root, leafval[idx])
+    end
+    for i in length(root)
+        @assert !(isnan(root[i])) "nan appear in root at $i"
     end
     # get_eval_func(para.para.order, partition[idx])(root, leafval[idx])
     # graphfuncs! = funcGraphs![idx]
@@ -126,10 +130,15 @@ function measure_ParquetAD_Clib(idx, var, obs, relative_weight, config)
         for ri in 1:length(extT_labels[idx])
             if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
                 wuu += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
+                p = phase(varT, extT_labels[idx][ri], ωn[i], β)
+                @assert !(isnan(p)) "nan appear in p, T=$varT, ωn=$(ωn[i]), extT_label=$(extT_labels[idx][ri])"
             elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
                 wud += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
             end
         end
+        @assert !(isnan(wuu)) "nan appear in wuu"
+        @assert !(isnan(wud)) "nan appear in wud"
+        @assert !(isnan(inverse_probability)) "nan appear in inverse_probability"
         obs[idx][1, i, n] += wuu * factor * inverse_probability
         obs[idx][2, i, n] += wud * factor * inverse_probability
     end
@@ -176,6 +185,9 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
         f = jldopen(root_dir * "leafinfo_O$(order).jld2", "r")
         leafstates = f["leafstates"]
         leafvalues = f["values"]
+        for l in leafvalues
+            l = l .* 0.0
+        end
     else
         leafstates = Vector{Vector{Ver4.LeafStateADVer4Dynamic}}()
         leafvalues = Vector{Vector{Float64}}()
