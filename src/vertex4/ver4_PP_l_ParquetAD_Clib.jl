@@ -189,9 +189,9 @@ function MC_PP_ParquetAD_Clib(para;
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
-        for (order, sOrder, vOrder) in partition
+        for o in 1:order
             # push!(reweight_goal, 8.0^(order + vOrder - 1))
-            push!(reweight_goal, 8.0^(order - 1))
+            push!(reweight_goal, 1.0^(o - 1))
         end
         push!(reweight_goal, 1.0)
         println(length(reweight_goal))
@@ -259,7 +259,7 @@ function MC_PP_ParquetAD_Clib(para;
             kwargs...
         )
     end
-    result = integrate(integrand_PP_Clib; measure=measure_PP_Clib, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    result = integrate(integrand_PP_Clib; measure=measure_PP_Clib, config=config, solver=:mcmc, neval=neval, print=print, reweight_goal=reweight_goal, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
