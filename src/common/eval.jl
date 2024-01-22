@@ -9,24 +9,28 @@ using ..ElectronGas
 
 const TAU_CUTOFF = 1e-10
 
-function green_derive(τ, ϵ, β, order)
+function green_derive_diagtree(τ, ϵ, β, order)
     if order == 0
         result = green(τ, ϵ, β)
     elseif order == 1
         result = -Spectral.kernelFermiT_dω(τ, ϵ, β)
     elseif order == 2
-        result = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+        result = Spectral.kernelFermiT_dω2(τ, ϵ, β)
     elseif order == 3
-        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β)
     elseif order == 4
-        result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
+        result = Spectral.kernelFermiT_dω4(τ, ϵ, β)
     elseif order == 5
-        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
+        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β)
     else
         error("not implemented!")
         # result = Propagator.green(τ, ϵ, β) * 0.0
     end
     return result
+end
+
+function green_derive(τ, ϵ, β, order)
+    return green_derive_diagtree(τ, ϵ, β, order) / factorial(order)
 end
 
 function interaction_derive(τ1, τ2, K, p::ParaMC, idorder; idtype=Instant, tau_num=1, isLayered=false)
@@ -192,7 +196,7 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     # ∂^n_μ g(ϵₖ - μ, τ) = (-1)^n ∂^n_ω g(ω, τ)
     τ = τout - τin
     order = id.order[1]
-    return green_derive(τ, ϵ, β, order) * factorial(order)
+    return green_derive_diagtree(τ, ϵ, β, order)
 end
 
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
