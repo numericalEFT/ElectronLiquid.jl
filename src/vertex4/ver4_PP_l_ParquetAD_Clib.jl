@@ -153,7 +153,6 @@ function measure_PP_Clib(pidx, var, obs, relative_weight, config)
         # @assert !(isnan(inverse_probability)) "nan appear in inverse_probability"
         obs[pidx][1, i] += wuu * factor * inverse_probability
         obs[pidx][2, i] += wud * factor * inverse_probability
-
     end
 end
 
