@@ -192,7 +192,7 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
     # ∂^n_μ g(ϵₖ - μ, τ) = (-1)^n ∂^n_ω g(ω, τ)
     τ = τout - τin
     order = id.order[1]
-    return green_derive(τ, ϵ, β, order)
+    return green_derive(τ, ϵ, β, order) * factorial(order)
 end
 
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
