@@ -4,7 +4,8 @@ Calculate vertex4 averged on the Fermi surface
 
 function integrandPH_AD(idx, var, config)
     para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
-    MaxLoopNum, extT_labels, spin_conventions, leafStat, leaf_maps, momLoopPool, root, funcGraphs!, = config.userdata[7:end]
+    MaxLoopNum, extT_labels, spin_conventions, leafStat, leaf_maps, momLoopPool, root, funcGraphs! = config.userdata[7:end]
+    # MaxLoopNum, extT_labels, leafStat, leaf_maps, momLoopPool, root, funcGraphs! = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT = var[1], var[2]
@@ -14,7 +15,7 @@ function integrandPH_AD(idx, var, config)
     loopNum = config.dof[idx][1]
     extKidx = var[5][1]
     kamp = kampgrid[extKidx]
-    kamp2 = kamp2grid[extKidx]   
+    kamp2 = kamp2grid[extKidx]
     qamp = qgrid[extKidx]
     varK.data[1, 1] = kamp
     varK.data[1, 2] = kamp
@@ -46,7 +47,8 @@ function integrandPH_AD(idx, var, config)
             # idorder = diagid.order
             idorder = leafOrders[idx][i]
             # @assert idorder == leafOrders[idx][i]
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=interactionTauNum(diagid.para))
+            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=interactionTauNum(diagid.para))
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=1)
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -61,22 +63,26 @@ function integrandPH_AD(idx, var, config)
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
 
-
     for ri in 1:length(extT_labels[idx])
-        if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+        if spin_conventions[idx][ri] == UpUp
             wuu += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
-        elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+        elseif spin_conventions[idx][ri] == UpDown
             wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
         end
     end
 
     return Weight(wuu * factor, wud * factor)
+
+    # for ri in 1:length(extT_labels[idx])
+    #     wuu += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
+    # end
+    # return wuu * factor
 end
 
 function measurePH_AD(idx, var, obs, weight, config)
     Lidx = var[4][1]
     Kidx = var[5][1]
-
+    # obs[idx][Lidx, Kidx] += weight
     obs[idx][1, Lidx, Kidx] += weight.d
     obs[idx][2, Lidx, Kidx] += weight.e
 end
@@ -95,6 +101,7 @@ function PH_AD(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
+    # partition, diagpara, FeynGraphs, extT_labels = diagram
 
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
@@ -114,8 +121,9 @@ function PH_AD(para::ParaMC, diagram;
     # println(spin_conventions)
 
     @assert length(diagpara) == length(FeynGraphs) == length(extT_labels) == length(spin_conventions)
+    # @assert length(diagpara) == length(FeynGraphs) == length(extT_labels)
 
-    MaxLoopNum = maximum([key[1] for key in partition]) + 2
+    MaxLoopNum = maximum([key[1] for key in partition]) + 3
     funcGraphs! = Dict{Int,Function}()
     leaf_maps = Vector{Dict{Int,Graph}}()
 
@@ -123,7 +131,7 @@ function PH_AD(para::ParaMC, diagram;
         funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
         push!(leaf_maps, leafmap)
     end
-    leafStat, loopBasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, MaxLoopNum)
+    leafStat, loopBasis = FeynmanDiagram.leafstates(leaf_maps, MaxLoopNum)
     # println(leafStat[3][1],partition[1])
 
 
@@ -154,8 +162,10 @@ function PH_AD(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
+            # type=ComplexF64, # type of the integrand
             userdata=(para, kamp, kamp2, q, l, n, MaxLoopNum, extT_labels,
                 spin_conventions, leafStat, leaf_maps, momLoopPool,
+                # leafStat, leaf_maps, momLoopPool,
                 root, funcGraphs!),
             kwargs...
         )
@@ -190,9 +200,9 @@ end
 
 function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
-    filter=[NoHartree, NoBubble, Proper],
-    channel=[PHr, PHEr, PPr],
-    partition=UEG.partition(para.order),
+    filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
+    channels=[PHr, PHEr, PPr, Alli],
+    partition=UEG.partition(para.order), generate_type=:Parquet,
     verbose=0
 )
 
@@ -202,10 +212,18 @@ function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-
     # partition = UEG.partition(_order)
 
 
-    diagram = Ver4.diagramParquet(para, partition; channel=channel, filter=filter)
+    if generate_type == :GV
+        diagram = Ver4.diagramGV(para, partition; channels=channels, filter=filter)
+    elseif generate_type == :Parquet
+        diagram = Ver4.diagramParquet(para, partition; channels=channels, filter=filter)
+    else
+        error("generate_type $generate_type not implemented!")
+    end
 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
+
+    println(partition)
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
@@ -225,8 +243,10 @@ function MC_PH_AD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-
     )
 
     if isnothing(ver4) == false
-        for (p, data) in ver4
-            printstyled("permutation: $p\n", color=:yellow)
+        # for (p, data) in ver4
+        for p in partition
+            data = ver4[p]
+            printstyled("partition: $p\n", color=:yellow)
             for (li, _l) in enumerate(l)
                 printstyled("l = $_l\n", color=:green)
                 @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")

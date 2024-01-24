@@ -12,10 +12,10 @@ struct LeafStateADVer4Dynamic
     end
 end
 
-function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree]) where {T}
-    diagpara = Vector{DiagParaF64}()
+function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree]) where {T}
+    diagpara = Vector{DiagPara}()
     extT_labels = Vector{Vector{Int}}[]
-    spin_conventions = Vector{FeynmanDiagram.Response}[]
+    spin_conventions = Vector{Response}[]
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     partition = Tuple{Int64,Int64,Int64}[]
@@ -44,10 +44,10 @@ function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[Feyn
     return (partition, diagpara, extT_labels, spin_conventions)
 end
 
-function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filter=[FeynmanDiagram.NoHartree, FeynmanDiagram.NoBubble]) where {T}
-    diagpara = Vector{DiagParaF64}()
+function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree, NoBubble]) where {T}
+    diagpara = Vector{DiagPara}()
     extT_labels = Vector{Vector{Int}}[]
-    spin_conventions = Vector{FeynmanDiagram.Response}[]
+    spin_conventions = Vector{Response}[]
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     partition = Tuple{Int64,Int64,Int64}[]
@@ -68,18 +68,38 @@ function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filte
 end
 
 function diagramParquet(paramc::ParaMC, _partition::Vector{T};
-    channel=[PHr, PHEr, PPr],
-    filter=[FeynmanDiagram.NoHartree]) where {T}
-    diagpara = Vector{DiagParaF64}()
+    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree]) where {T}
+    diagpara = Vector{DiagPara}()
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
 
-    FeynGraphs = FeynmanDiagram.GV.diagdict_parquet_ver4(:vertex4,
-        _partition, channel=channel,
-        filter=filter, isDynamic=paramc.isDynamic, koffset=3)
+    FeynGraphs = diagdict_parquet(:vertex4, _partition, filter=filter, isDynamic=paramc.isDynamic,
+        channels=channels)
+    # channels=channels, optimize_level=1)
     extT_labels = Vector{Vector{Int}}[]
-    spin_conventions = Vector{FeynmanDiagram.Response}[]
-    partition = [k for k in keys(FeynGraphs)]
+    spin_conventions = Vector{Response}[]
+    partition = sort(collect(keys(FeynGraphs)))
+
+    for p in partition
+        push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
+        push!(extT_labels, FeynGraphs[p][2])
+        push!(spin_conventions, FeynGraphs[p][3])
+    end
+    return (partition, diagpara, FeynGraphs, extT_labels, spin_conventions)
+end
+
+function diagramGV(paramc::ParaMC, _partition::Vector{T};
+    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree]) where {T}
+    diagpara = Vector{DiagPara}()
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+
+    FeynGraphs = diagdictGV_ver4(_partition, filter=filter, channels=channels)
+    # channels=channels, optimize_level=1)
+    extT_labels = Vector{Vector{Int}}[]
+    spin_conventions = Vector{Response}[]
+    partition = sort(collect(keys(FeynGraphs)))
+
     for p in partition
         push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
         push!(extT_labels, FeynGraphs[p][2])
@@ -178,9 +198,9 @@ function diagram_weight_ParquetAD(idx, var, config)
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
     for ri in 1:length(extT_labels[idx])
-        if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+        if spin_conventions[idx][ri] == UpUp
             wuu += root[ri]
-        elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+        elseif spin_conventions[idx][ri] == UpDown
             wud += root[ri]
         end
     end
@@ -203,9 +223,9 @@ function measure_ParquetAD(idx, var, obs, relative_weight, config)
         wuu = zero(ComplexF64)
         wud = zero(ComplexF64)
         for ri in 1:length(extT_labels[idx])
-            if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+            if spin_conventions[idx][ri] == UpUp
                 wuu += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
-            elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+            elseif spin_conventions[idx][ri] == UpDown
                 wud += root[ri] * phase(varT, extT_labels[idx][ri], ωn[i], β)
             end
         end
@@ -252,7 +272,7 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
         funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
         push!(leaf_maps, leafmap)
     end
-    leafStat, loopbasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, MaxLoopNum)
+    leafStat, loopbasis = leafstates_diagtree(leaf_maps, MaxLoopNum)
     # println(leafStat[1])
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopbasis)
 
