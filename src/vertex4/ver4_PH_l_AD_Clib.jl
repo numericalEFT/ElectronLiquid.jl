@@ -310,7 +310,9 @@ function MC_PH_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
     )
 
     if isnothing(ver4) == false
-        for (p, data) in ver4
+        # for (p, data) in ver4
+        for p in partition
+            data = ver4[p]
             printstyled("permutation: $p\n", color=:yellow)
             for (li, _l) in enumerate(l)
                 printstyled("l = $_l\n", color=:green)

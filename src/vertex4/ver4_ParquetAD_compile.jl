@@ -49,7 +49,7 @@ function extT_and_spin_toFile(order, partition, FeynGraphs, root_dir=joinpath(@_
     end
 end
 
-function ParquetADcompileC_so(order, partition, datatype::DataType=Float64; c_source=joinpath(@__DIR__, "source_codeGV", "func_O$(order)_ver4ParquetAD.c"),
+function ParquetADcompileC_so(order, partition, datatype::DataType=Float64; c_source=joinpath(@__DIR__, "source_codeParquetAD", "func_O$(order)_ver4ParquetAD.c"),
     lib_path=joinpath(@__DIR__, "source_codeParquetAD"), lib_name="ver4O$(order)ParquetAD", compiler::String="gcc", isnative::Bool=false)
 
     lib = isnative ? joinpath(lib_path, "$(lib_name)_native.so") : joinpath(lib_path, "$lib_name.so")

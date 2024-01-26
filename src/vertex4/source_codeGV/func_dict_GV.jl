@@ -1,4 +1,9 @@
 const evalfuncGV_map = Dict(
+(4, 0, 0, 0) => eval_ver4O4GV000!, 
+(4, 0, 0, 1) => eval_ver4O4GV001!, 
+(4, 0, 0, 2) => eval_ver4O4GV002!, 
+(4, 0, 0, 3) => eval_ver4O4GV003!, 
+(4, 0, 0, 4) => eval_ver4O4GV004!, 
 (4, 1, 0, 0) => eval_ver4O4GV100!, 
 (4, 1, 0, 1) => eval_ver4O4GV101!, 
 (4, 1, 0, 2) => eval_ver4O4GV102!, 

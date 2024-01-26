@@ -1,4 +1,19 @@
 
+function eval_ver4O4GV000!(root::Vector{Float64}, leafVal::Vector{Float64})
+    @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph000(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
+end
+function eval_ver4O4GV001!(root::Vector{Float64}, leafVal::Vector{Float64})
+    @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph001(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
+end
+function eval_ver4O4GV002!(root::Vector{Float64}, leafVal::Vector{Float64})
+    @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph002(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
+end
+function eval_ver4O4GV003!(root::Vector{Float64}, leafVal::Vector{Float64})
+    @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph003(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
+end
+function eval_ver4O4GV004!(root::Vector{Float64}, leafVal::Vector{Float64})
+    @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph004(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
+end
 function eval_ver4O4GV100!(root::Vector{Float64}, leafVal::Vector{Float64})
     @ccall joinpath(@__DIR__, "ver4O4GV.so").eval_graph100(root::Ptr{Cdouble}, leafVal::Ptr{Cdouble})::Cvoid
 end
