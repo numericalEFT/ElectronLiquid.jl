@@ -58,9 +58,75 @@ function integrandPH_ParquetAD(idx, var, config)
 
 
     for ri in 1:length(extT_labels[idx])
-        if spin_conventions[idx][ri] == FeynmanDiagram.UpUp
+        if spin_conventions[idx][ri] == UpUp
             wuu += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
-        elseif spin_conventions[idx][ri] == FeynmanDiagram.UpDown
+        elseif spin_conventions[idx][ri] == UpDown
+            wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
+        end
+    end
+
+    return Weight(wuu * factor, wud * factor)
+end
+
+function integrandPH_GV(idx, var, config)
+    para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
+    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition = config.userdata[7:end]
+    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
+    varK, varT = var[1], var[2]
+    x = config.var[3][1]
+    # error("$(varK.data[:, 1])")
+    l = lgrid[var[4][1]]
+    loopNum = config.dof[idx][1]
+    extKidx = var[5][1]
+    kamp = kampgrid[extKidx]
+    kamp2 = kamp2grid[extKidx]
+    qamp = qgrid[extKidx]
+    varK.data[1, 1] = kamp
+    varK.data[1, 2] = kamp
+    varK.data[2, 2] = qamp
+    #varK.data[1, 1], varK.data[1, 2] = kF, kF
+    if dim == 3
+        varK.data[1, 3] = kamp2 * x
+        varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
+    else
+        varK.data[1, 3] = kamp2 * cos(x)
+        varK.data[2, 3] = kamp2 * sin(x)
+    end
+
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+
+    for (i, lfstat) in enumerate(leafstates[idx])
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
+        if lftype == 0
+            continue
+            # elseif isodd(lftype) #fermionic 
+        elseif lftype == 1 #fermionic 
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            ϵ = dot(kq, kq) / (2me) - μ
+            order = lforders[1]
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
+        elseif lftype == 2 #bosonic 
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
+        else
+            error("this leaftype $lftype not implemented!")
+        end
+    end
+
+    factor = legendfactor(x, l, dim)
+    factor *= para.NF / (2π)^(dim * loopNum)
+    group = (para.order, partition[idx]...)
+    evalfuncGV_map[group](root, leafval[idx])
+    wuu = zero(ComplexF64)
+    wud = zero(ComplexF64)
+
+
+    for ri in 1:length(extT_labels[idx])
+        if spin_conventions[idx][ri] == UpUp
+            wuu += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
+        elseif spin_conventions[idx][ri] == UpDown
             wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
         end
     end
@@ -85,11 +151,17 @@ function PH_ParquetAD(para::ParaMC, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
-    config=nothing,
+    config=nothing, generate_type=:Parquet,
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
+
+    if generate_type == :GV
+        root_dir = joinpath(@__DIR__, "source_codeGV/")
+    elseif generate_type == :Parquet
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD/")
+    end
+
 
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
@@ -108,9 +180,13 @@ function PH_ParquetAD(para::ParaMC, diagram;
 
     @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
 
-    MaxLoopNum = maximum([key[1] for key in partition]) + 2
+    MaxLoopNum = maximum([key[1] for key in partition]) + 3
 
-    df = CSV.read(root_dir * "loopBasis_ParquetADmaxOrder$(order).csv", DataFrame)
+    if generate_type == :GV
+        df = CSV.read(root_dir * "loopBasis_GVmaxOrder$(order).csv", DataFrame)
+    elseif generate_type == :Parquet
+        df = CSV.read(root_dir * "loopBasis_ParquetADmaxOrder$(order).csv", DataFrame)
+    end
     loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
     leafstates = Vector{Vector{Ver4.LeafStateADVer4Dynamic}}()
@@ -120,13 +196,13 @@ function PH_ParquetAD(para::ParaMC, diagram;
         df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
         leafstates_par = Vector{Ver4.LeafStateADVer4Dynamic}()
         for row in eachrow(df)
-            push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], Sigma._StringtoIntVector(row[3]), row[4:end]..., 1))
+            push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], _StringtoIntVector(row[3]), row[4:end]..., 1))
         end
         push!(leafstates, leafstates_par)
         push!(leafvalues, df[!, names(df)[1]])
     end
     root = zeros(Float64, maximum(length.(extT_labels)))
-    println([leafstates[1][i].orders for i in 1:2],partition[1])
+    println([leafstates[1][i].orders for i in 1:2], partition[1])
 
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
     K.data[:, 1] .= UEG.getK(kF, dim, 1)
@@ -157,7 +233,12 @@ function PH_ParquetAD(para::ParaMC, diagram;
             kwargs...
         )
     end
-    result = integrate(integrandPH_ParquetAD; measure=measurePH_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    
+    if generate_type == :GV
+        result = integrate(integrandPH_GV; measure=measurePH_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    elseif generate_type == :Parquet
+        result = integrate(integrandPH_ParquetAD; measure=measurePH_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    end
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -185,11 +266,11 @@ function PH_ParquetAD(para::ParaMC, diagram;
 
 end
 
-function MC_PH_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
+function MC_PH_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree, NoBubble, Proper],
     channel=[PHr, PHEr, PPr],
-    partition=UEG.partition(para.order),
+    partition=UEG.partition(para.order), generate_type=:Parquet,
     verbose=0
 )
 
@@ -199,7 +280,13 @@ function MC_PH_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
     # partition = UEG.partition(_order)
 
 
-    diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
+    if generate_type == :GV
+        diagram = Ver4.diagramGV_load(para, partition; filter=filter)
+    elseif generate_type == :Parquet
+        diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
+    else
+        error("generate_type $generate_type not implemented!")
+    end
 
     partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     neighbor = UEG.neighbor(partition)
@@ -218,7 +305,8 @@ function MC_PH_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        reweight_goal=reweight_goal
+        reweight_goal=reweight_goal,
+        generate_type=generate_type,
     )
 
     if isnothing(ver4) == false
@@ -251,13 +339,15 @@ function MC_PH_ParquetAD(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
     return ver4, result
 end
 
-include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
+include("source_codeGV/Cwrapper_ver4O4GV.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
 
 # provide dict of (order, partition...) => func
 include("source_codeParquetAD/func_dict_ParquetAD.jl")
+include("source_codeGV/func_dict_GV.jl")
 

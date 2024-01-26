@@ -44,6 +44,38 @@ function diagramParquet_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHa
     return (partition, diagpara, extT_labels, spin_conventions)
 end
 
+function diagramGV_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree]) where {T}
+    diagpara = Vector{DiagPara}()
+    extT_labels = Vector{Vector{Int}}[]
+    spin_conventions = Vector{Response}[]
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+    partition = Tuple{Int64,Int64,Int64}[]
+    # partition = []
+    if paramc.isDynamic
+        fname = joinpath(@__DIR__, "source_codeGV/dynamic", "extT_spin_O$(paramc.order)_GV.jld2")
+        if _partition ≠ dynamic_partition_map[paramc.order]
+            @warn "partition is fixed for Clib to $(dynamic_partition_map[paramc.order])"
+            _partition = dynamic_partition_map[paramc.order]
+        end
+    else
+        fname = joinpath(@__DIR__, "source_codeGV", "extT_spin_O$(paramc.order)_GV.jld2")
+    end
+    jldopen(fname, "r") do f
+        for p in _partition
+            key_str = join(string.(p))
+            if key_str in keys(f)
+                extT, spin = f[key_str]
+                push!(partition, p)
+                push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
+                push!(extT_labels, extT)
+                push!(spin_conventions, spin)
+            end
+        end
+    end
+    return (partition, diagpara, extT_labels, spin_conventions)
+end
+
 function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree, NoBubble]) where {T}
     diagpara = Vector{DiagPara}()
     extT_labels = Vector{Vector{Int}}[]
@@ -341,5 +373,10 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
     end
 
 
+end
+
+@inline function _StringtoIntVector(str::AbstractString)
+    pattern = r"[-+]?\d+"
+    return [parse(Int, m.match) for m in eachmatch(pattern, str)]
 end
 

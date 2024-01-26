@@ -28,7 +28,7 @@ function compileC_ParquetAD_toFiles_dynamic(order, partition, FeynGraphs, maxloo
 end
 
 function leafinfo_toFile_dynamic(order, partition, leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int, root_dir=joinpath(@__DIR__, "source_codeParquetAD/dynamic/"))
-    leafStates, loopbasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, maxloopNum)
+    leafStates, loopbasis = FeynmanDiagram.leafstates(leaf_maps, maxloopNum)
     len = length(leafStates)
 
     leafstates = Vector{Vector{Ver4.LeafStateADVer4Dynamic}}()

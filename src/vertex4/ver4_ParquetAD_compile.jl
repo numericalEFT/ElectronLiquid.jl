@@ -8,10 +8,10 @@ function compileC_ParquetAD_toFiles(order, partition, FeynGraphs, maxloopNum::In
     println("compiled")
 
     # ### compile the C language 
-    # println("compiling c code to .so lib")
-    # ParquetADcompileC_so(order, partition, datatype; c_source=c_source,
-    #     lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
-    # println("compiled")
+    println("compiling c code to .so lib")
+    ParquetADcompileC_so(order, partition, datatype; c_source=c_source,
+        lib_path=lib_path, lib_name=lib_name, compiler=compiler, isnative=isnative)
+    println("compiled")
     ParquetAD_Cwrapper(order, partition, datatype, lib_path=lib_path, lib_name=lib_name)
 
     println("saving other info")
@@ -82,7 +82,7 @@ function ParquetAD_Cwrapper(order, partition, datatype::DataType=Float64; lib_pa
 end
 
 function leafinfo_toFile(order, partition, leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int, root_dir=joinpath(@__DIR__, "source_codeParquetAD/"))
-    leafStates, loopbasis = FeynmanDiagram.leafstates_diagtree(leaf_maps, maxloopNum)
+    leafStates, loopbasis = FeynmanDiagram.leafstates(leaf_maps, maxloopNum)
     len = length(leafStates)
 
     for (ikey, key) in enumerate(partition)

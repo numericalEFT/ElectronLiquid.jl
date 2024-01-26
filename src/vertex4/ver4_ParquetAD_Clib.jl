@@ -184,7 +184,7 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
             df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
             leafstates_par = Vector{Ver4.LeafStateADVer4Dynamic}()
             for row in eachrow(df)
-                push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], Sigma._StringtoIntVector(row[3]), row[4:end]..., 1))
+                push!(leafstates_par, Ver4.LeafStateADVer4Dynamic(row[2], _StringtoIntVector(row[3]), row[4:end]..., 1))
             end
             push!(leafstates, leafstates_par)
             push!(leafvalues, df[!, names(df)[1]])
