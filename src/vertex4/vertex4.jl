@@ -137,6 +137,14 @@ end
             factor = (35x^4 - 30x^2 + 3) / 16.0
         elseif l == 5
             factor = (63x^5 - 70x^3 + 15x) / 16.0
+        elseif l == 6
+            factor = (231x^6 - 315x^4 + 105x^2 - 5) / 32.0
+        elseif l == 7
+            factor = (429x^7 - 693x^5 + 315x^3 - 35x) / 32.0
+        elseif l == 8
+            factor = (6435x^8 - 12012x^6 + 6930^4 - 1260x^2 + 35) / 256.0
+        elseif l == 9
+            factor = (12155x^9 - 25740x^7 + 18018x^5 - 4620x^3 + 315x) / 256.0
         else
             error("not implemented for $l channel in $dim-D")
         end
@@ -179,5 +187,6 @@ include("ver4_ParquetAD_compile.jl")
 include("ver4_ParquetAD_compile_dynamic.jl")
 include("ver4_ParquetAD_Clib.jl")
 include("ver4_PP_l_ParquetAD_Clib.jl")
+include("ver4_PP_l_vegas.jl")
 
 end
