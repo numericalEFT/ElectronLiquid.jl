@@ -147,10 +147,7 @@ function PH_AD(para::ParaMC, diagram;
     K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
-    if order > 0
-        K.data[:, 4:3+order] = rand(Float64, (dim, order)) * 2kF
-        T.data[2:order+1] .= rand(order) * β
-    end
+
     if dim == 3
         X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
     elseif dim == 2
