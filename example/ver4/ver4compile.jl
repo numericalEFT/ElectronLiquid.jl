@@ -18,21 +18,21 @@ if !isDynamic
     end
 
     println("generating diagrams")
-    diagram = Ver4.diagramParquet(para, partition; channels=[PHr, PHEr, PPr,], filter=[NoHartree,])
+    diagram = Ver4.diagramParquet(para, partition; filter=[NoHartree,])
     println("diagram generated")
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
 
     MaxLoopNum = maximum([key[1] for key in partition]) + 3
-    Ver4.compileC_ParquetAD_toFiles(para.order, partition, FeynGraphs, MaxLoopNum)
+    Ver4.compileC_ParquetAD_toFiles(para.order, partition, FeynGraphs, MaxLoopNum, compiler="icc")
 else
     para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=true)
     partition = UEG.partition(para.order)
 
     println("generating diagrams")
-    diagram = Ver4.diagramParquet(para, partition; channels=[PHr, PHEr, PPr,], filter=[NoHartree, NoBubble])
+    diagram = Ver4.diagramParquet(para, partition; filter=[NoHartree, NoBubble])
     println("diagram generated")
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
 
     MaxLoopNum = maximum([key[1] for key in partition]) + 3
-    Ver4.compileC_ParquetAD_toFiles_dynamic(para.order, partition, FeynGraphs, MaxLoopNum)
+    Ver4.compileC_ParquetAD_toFiles_dynamic(para.order, partition, FeynGraphs, MaxLoopNum, compiler="icc")
 end

@@ -233,7 +233,7 @@ function PH_ParquetAD(para::ParaMC, diagram;
             kwargs...
         )
     end
-    
+
     if generate_type == :GV
         result = integrate(integrandPH_GV; measure=measurePH_ParquetAD, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
     elseif generate_type == :Parquet
@@ -268,8 +268,8 @@ end
 
 function MC_PH_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
-    filter=[NoHartree, NoBubble, Proper],
-    channel=[PHr, PHEr, PPr],
+    filter=[NoHartree,],
+    channels=[PHr, PHEr, PPr, Alli],
     partition=UEG.partition(para.order), generate_type=:Parquet,
     verbose=0
 )
@@ -310,7 +310,8 @@ function MC_PH_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
     )
 
     if isnothing(ver4) == false
-        for (p, data) in ver4
+        for p in partition
+            data = ver4[p]
             printstyled("permutation: $p\n", color=:yellow)
             for (li, _l) in enumerate(l)
                 printstyled("l = $_l\n", color=:green)
@@ -342,12 +343,12 @@ end
 # include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
-include("source_codeGV/Cwrapper_ver4O4GV.jl")
+# include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
+# include("source_codeGV/Cwrapper_ver4O4GV.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
 
 # provide dict of (order, partition...) => func
-include("source_codeParquetAD/func_dict_ParquetAD.jl")
-include("source_codeGV/func_dict_GV.jl")
+# include("source_codeParquetAD/func_dict_ParquetAD.jl")
+# include("source_codeGV/func_dict_GV.jl")
 
