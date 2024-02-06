@@ -16,11 +16,13 @@ if !isDynamic
         o == 0 && sOrder > 0 && continue
         push!(partition, (o, sOrder, vOrder))
     end
+    println(partition)
 
     println("generating diagrams")
     diagram = Ver4.diagramGV(para, partition; filter=[NoHartree,])
     println("diagram generated")
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
+    println(partition)
 
     MaxLoopNum = maximum([key[1] for key in partition]) + 3
     # Ver4.compileC_ParquetAD_toFiles(para.order, partition, FeynGraphs, MaxLoopNum,
