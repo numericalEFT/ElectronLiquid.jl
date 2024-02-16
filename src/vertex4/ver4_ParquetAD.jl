@@ -99,14 +99,39 @@ function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filte
     return (partition, diagpara, extT_labels, spin_conventions)
 end
 
+function diagdict_parquetVer4(_partition::Vector{T};
+    filter=[NoHartree],isDynamic=false,channels=[PHr, PHEr, PPr, Alli]) where {T}
+    MaxOrder = maximum([p[1] for p in _partition])
+    MinOrder = minimum([p[1] for p in _partition])
+    dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph}}()
+    for order in MinOrder:MaxOrder
+        partition_ind = findall(p -> p[1] == order, _partition)
+        partition_order = [_partition[i] for i in indices]
+        Max_GD_o = maximum([p[2] for p in partition_order])
+        Max_ID_o = maximum([p[3] for p in partition_order])
+        para = Parquet.DiagPara(type = Parquet.Ver4Diag, innerLoopNum = order, hasTau = true, filter = [NoHartree])
+        ver4df = Parquet.build(para; channels=[PHr, PHEr, PPr, Alli])
+        optimize!(ver4df.diagram)
+        renormalization_orders = [Max_GD_o, Max_ID_o]
+        leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId]
+        ver4_dict = taylorAD(ver4df.diagram, renormalization_orders, leaf_dep_funcs)
+        for key in keys(ver4_dict)
+            p = (order,key[1],key[2])
+            if p in _partition
+                dict_graphs[p] = ver4_dict[key]
+            end
+        end
+    end
+    return dict_graphs
+end
+
 function diagramParquet(paramc::ParaMC, _partition::Vector{T};
     channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree]) where {T}
     diagpara = Vector{DiagPara}()
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
 
-    FeynGraphs = diagdict_parquet(:vertex4, _partition, filter=filter, isDynamic=paramc.isDynamic,
-        channels=channels)
+    FeynGraphs = diagdict_parquet(_partition; filter=filter, isDynamic=paramc.isDynamic, channels=channels)
     # channels=channels, optimize_level=1)
     extT_labels = Vector{Vector{Int}}[]
     spin_conventions = Vector{Response}[]
@@ -114,8 +139,8 @@ function diagramParquet(paramc::ParaMC, _partition::Vector{T};
 
     for p in partition
         push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
-        push!(extT_labels, FeynGraphs[p][2])
-        push!(spin_conventions, FeynGraphs[p][3])
+        push!(extT_labels, [collect(g.properties.extT) for g in FeynGraphs[p]])
+        push!(spin_conventions, [collect(g.properties.response) for g in FeynGraphs[p]])
     end
     return (partition, diagpara, FeynGraphs, extT_labels, spin_conventions)
 end

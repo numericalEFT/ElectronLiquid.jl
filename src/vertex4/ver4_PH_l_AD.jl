@@ -130,7 +130,7 @@ function PH_AD(para::ParaMC, diagram;
     leaf_maps = Vector{Dict{Int,Graph}}()
 
     for (i, key) in enumerate(partition)
-        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
+        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
         push!(leaf_maps, leafmap)
     end
     leafStat, loopBasis = FeynmanDiagram.leafstates(leaf_maps, MaxLoopNum)
