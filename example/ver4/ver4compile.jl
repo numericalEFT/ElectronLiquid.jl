@@ -23,7 +23,7 @@ if !isDynamic
     partition, diagpara, FeynGraphs, extT_labels, spin_conventions = diagram
 
     MaxLoopNum = maximum([key[1] for key in partition]) + 3
-    Ver4.compileC_ParquetAD_toFiles(para.order, partition, FeynGraphs, MaxLoopNum, compiler="icc")
+    Ver4.compileC_ParquetAD_toFiles(para.order, partition, FeynGraphs, MaxLoopNum, compiler="gcc")
 else
     para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=true)
     partition = UEG.partition(para.order)

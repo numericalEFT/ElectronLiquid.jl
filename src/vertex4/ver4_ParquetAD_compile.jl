@@ -44,7 +44,7 @@ function extT_and_spin_toFile(order, partition, FeynGraphs, root_dir=joinpath(@_
     jldopen(joinpath(root_dir, "extT_spin_O$(order)_ParquetAD.jld2"), "w") do f
         for key in partition
             key_str = join(string.(key))
-            f[key_str] = ([collect(g.properties.extT) for g in FeynGraphs[key]],[collect(g.properties.response) for g in FeynGraphs[key]])
+            f[key_str] = ([collect(g.properties.extT) for g in FeynGraphs[key]],[g.properties.response for g in FeynGraphs[key]])
         end
     end
 end
