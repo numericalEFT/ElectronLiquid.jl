@@ -343,12 +343,12 @@ end
 # include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 # include("source_codeGV/Cwrapper_ver4O4GV.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
 
 # provide dict of (order, partition...) => func
-# include("source_codeParquetAD/func_dict_ParquetAD.jl")
+include("source_codeParquetAD/func_dict_ParquetAD.jl")
 # include("source_codeGV/func_dict_GV.jl")
 
