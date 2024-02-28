@@ -19,9 +19,11 @@ function integrandPH(idx, var, config)
     varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
     if dim == 3
-        varK.data[1:2, 3] = [kamp2 * x, kamp2 * sqrt(1 - x^2)]
+        varK.data[1, 3] = kamp2 * x
+        varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
     else
-        varK.data[1:2, 3] = [kamp2 * cos(x), kamp2 * sin(x)]
+        varK.data[1, 3] = kamp2 * cos(x)
+        varK.data[2, 3] = kamp2 * sin(x)
     end
 
     diagram = diag[idx]
@@ -196,6 +198,68 @@ function MC_PH(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 
             end
         end
 
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (kamp, n, l, ver4)
+            end
+        end
+    end
+    return ver4, result
+end
+
+function MC_PH_OAA(para; kamp=[para.kF,], kamp2=kamp, n=[[-1, 0, 0, -1]], l=0,
+    neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
+    filter=[NoHartree, NoBubble],
+    channel=[PHr, PHEr, PPr],
+    partition=UEG.partition(para.order),
+    isClib=true,
+    print=0
+)
+
+    kF = para.kF
+    _order = para.order
+
+    # partition = UEG.partition(_order)
+
+    if isClib
+        diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
+    else
+        diagram = Ver4.diagramParquet(para, partition; channel=channel, filter=filter)
+    end
+
+    partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    neighbor = UEG.neighbor(partition)
+
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            # push!(reweight_goal, 8.0^(order + vOrder - 1))
+            push!(reweight_goal, 8.0^(order - 1))
+        end
+        push!(reweight_goal, 1.0)
+        println(length(reweight_goal))
+    end
+
+    paras = [Ver4.OneAngleAveraged(para, [kamp[1], kamp2[1]], n, :PH, l),]
+    if isClib
+        ver4, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diagram;
+            neval=neval, print=print,
+            neighbor=neighbor,
+            reweight_goal=reweight_goal
+        )
+    else
+        ver4, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram;
+            neval=neval, print=print,
+            neighbor=neighbor,
+            reweight_goal=reweight_goal
+        )
+    end
+    if isnothing(ver4) == false
         if isnothing(filename) == false
             jldopen(filename, "a+") do f
                 key = "$(UEG.short(para))"

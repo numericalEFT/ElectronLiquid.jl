@@ -287,13 +287,14 @@ function counterKO_W(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.orde
                 Rs = 0.0
             end
             # Rs will be zero for the proper counter-term
-            if order == 1
-                cRs1[qi, ni] = -(Rs + para.fs)^2 * Pi
-            elseif order == 2
-                cRs1[qi, ni] = (Rs + para.fs)^3 * Pi^2
-            else
-                error("not implemented!")
-            end
+            # if order == 1
+            #     cRs1[qi, ni] = -(Rs + para.fs)^2 * Pi
+            # elseif order == 2
+            #     cRs1[qi, ni] = (Rs + para.fs)^3 * Pi^2
+            # else
+            #     error("not implemented!")
+            # end
+            cRs1[qi, ni] = (-1)^order * (Rs + para.fs)^(order + 1) * Pi^order
 
             if bubble == false
                 cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
@@ -316,14 +317,14 @@ function counterKO_W_df(para::ParaMC; qgrid=para.qgrid, ngrid=[0,], order=para.o
                 Rs = 0.0
             end
             # Rs will be zero for the proper counter-term
-            if order == 1
-                cRs1[qi, ni] = -2 * (Rs + para.fs) * Pi * (Rs_df + 1.0)
-            elseif order == 2
-                cRs1[qi, ni] = 3 * (Rs + para.fs)^2 * Pi^2 * (Rs_df + 1.0)
-            else
-                error("not implemented!")
-            end
-
+            # if order == 1
+            #     cRs1[qi, ni] = -2 * (Rs + para.fs) * Pi * (Rs_df + 1.0)
+            # elseif order == 2
+            #     cRs1[qi, ni] = 3 * (Rs + para.fs)^2 * Pi^2 * (Rs_df + 1.0)
+            # else
+            #     error("not implemented!")
+            # end
+            cRs1[qi, ni] = -(order + 1) * (-Rs - para.fs)^order * Pi^order * (Rs_df + 1.0)
             if bubble == false
                 # cRs1[qi, ni] += (-Rs)^(order + 1) * Pi^order
                 cRs1[qi, ni] += (order + 1) * (-Rs)^order * Pi^order * (-Rs_df)
