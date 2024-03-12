@@ -1,7 +1,7 @@
 module Ver4
 
-using JLD2
-using Printf, LinearAlgebra
+using JLD2, CSV
+using Printf, LinearAlgebra, DataFrames
 using ..StaticArrays
 using ..Parameters
 using ..CompositeGrids
@@ -15,6 +15,7 @@ using ..Measurements
 # push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
+using ..Sigma
 import ..ExprTreeF64
 
 import ..Weight
@@ -136,6 +137,16 @@ end
             factor = (35x^4 - 30x^2 + 3) / 16.0
         elseif l == 5
             factor = (63x^5 - 70x^3 + 15x) / 16.0
+        elseif l == 6
+            factor = (231x^6 - 315x^4 + 105x^2 - 5) / 32.0
+        elseif l == 7
+            factor = (429x^7 - 693x^5 + 315x^3 - 35x) / 32.0
+        elseif l == 8
+            factor = (6435x^8 - 12012x^6 + 6930x^4 - 1260x^2 + 35) / 256.0
+        elseif l == 9
+            factor = (12155x^9 - 25740x^7 + 18018x^5 - 4620x^3 + 315x) / 256.0
+        elseif l == 10
+            factor = (46189x^10 - 109395x^8 + 90090x^6 - 30030x^4 + 3465x^2 - 63) / 512.0
         else
             error("not implemented for $l channel in $dim-D")
         end
@@ -172,5 +183,12 @@ include("ver4_PH_l_df.jl")
 include("ver4_generic.jl")
 include("exchange_interaction.jl")
 include("ver4_PP_l.jl")
+
+include("ver4_ParquetAD.jl")
+include("ver4_ParquetAD_compile.jl")
+include("ver4_ParquetAD_compile_dynamic.jl")
+include("ver4_ParquetAD_Clib.jl")
+include("ver4_PP_l_ParquetAD_Clib.jl")
+include("ver4_PP_l_vegas.jl")
 
 end
