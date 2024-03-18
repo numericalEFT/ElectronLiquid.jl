@@ -2,7 +2,7 @@
 Calculate vertex4 averged on the Fermi surface
 """
 Base.abs(w::Vector{Weight}) = sqrt(sum(abs(i)^2 for i in w))
-function integrandPH_vegas(var, _weights, config)
+function integrandPH_mcmc(pidx, var, config)
     para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
     MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
@@ -28,22 +28,8 @@ function integrandPH_vegas(var, _weights, config)
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
 
-    for pidx in 1:length(part_index)
-        w, factor = WeightPH_vegas(pidx, var, config)
-        _weights[pidx] = w
-    end
-
-end
-
-function WeightPH_vegas(pidx, var, config)
-    para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
-    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
-    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
-    varK, varT = var[1], var[2]
-    x = config.var[3][1]
-    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
-
     idx = part_index[pidx]
+    # println(pidx," ",idx)
     loopNum = config.dof[pidx][1]
     for (i, lfstat) in enumerate(leafstates[idx])
         lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
@@ -65,7 +51,7 @@ function WeightPH_vegas(pidx, var, config)
         end
     end
 
-    factor = para.NF / (2π)^(dim * loopNum)
+    # factor = para.NF / (2π)^(dim * loopNum)
     # factor = *legendfactor(x, l, dim)
     group = (para.order, partition[idx]...)
     evalfuncParquetAD_map[group](root, leafval[idx])
@@ -80,11 +66,13 @@ function WeightPH_vegas(pidx, var, config)
         end
     end
 
-    return Weight(wuu, wud), factor
+    return Weight(wuu, wud)
 
 end
 
-function measurePH_vegas(var, obs, relative_weight, config)
+
+
+function measurePH_mcmc(pidx, var, obs, relative_weight, config)
     para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
     MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
@@ -109,59 +97,59 @@ function measurePH_vegas(var, obs, relative_weight, config)
     end
 
 
-    for (pidx, idx) in enumerate(part_index)
-        loopNum = config.dof[pidx][1]
-        weight, factor = WeightPH_vegas(pidx, var, config)
-        inverse_probability = abs(relative_weight[pidx]) / abs(weight)
-        for (i, iidx) in enumerate(part_list[pidx])
-            if iidx == idx
-                for (Li, l) in enumerate(lgrid)
-                    obs[pidx][i, 1, Li, extKidx] = relative_weight[pidx].d * legendfactor(x, l, dim) * factor
-                    obs[pidx][i, 2, Li, extKidx] = relative_weight[pidx].e * legendfactor(x, l, dim) * factor
+    idx = part_index[pidx]
+    loopNum = config.dof[pidx][1]
+    weight = integrandPH_mcmc(pidx, var, config)
+    factor = para.NF / (2π)^(dim * loopNum)
+    inverse_probability = abs(relative_weight) / abs(weight)
+    for (i, iidx) in enumerate(part_list[pidx])
+        if iidx == idx
+            for (Li, l) in enumerate(lgrid)
+                obs[pidx][i, 1, Li, extKidx] = relative_weight.d * legendfactor(x, l, dim) * factor
+                obs[pidx][i, 2, Li, extKidx] = relative_weight.e * legendfactor(x, l, dim) * factor
+            end
+        else
+            FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+            for (i, lfstat) in enumerate(leafstates[iidx])
+                lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
+                if lftype == 0
+                    continue
+                    # elseif isodd(lftype) #fermionic 
+                elseif lftype == 1 #fermionic 
+                    τ = varT[leafτ_o] - varT[leafτ_i]
+                    kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+                    ϵ = dot(kq, kq) / (2me) - μ
+                    order = lforders[1]
+                    leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order)
+                elseif lftype == 2 #bosonic 
+                    kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+                    τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+                    leafval[iidx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
+                else
+                    error("this leaftype $lftype not implemented!")
                 end
-            else
-                FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
-                for (i, lfstat) in enumerate(leafstates[iidx])
-                    lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
-                    if lftype == 0
-                        continue
-                        # elseif isodd(lftype) #fermionic 
-                    elseif lftype == 1 #fermionic 
-                        τ = varT[leafτ_o] - varT[leafτ_i]
-                        kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-                        ϵ = dot(kq, kq) / (2me) - μ
-                        order = lforders[1]
-                        leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order)
-                    elseif lftype == 2 #bosonic 
-                        kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-                        τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
-                        leafval[iidx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
-                    else
-                        error("this leaftype $lftype not implemented!")
-                    end
+            end
+            # factor = para.NF / (2π)^(dim * loopNum)
+            group = (para.order, partition[iidx]...)
+            evalfuncParquetAD_map[group](root, leafval[iidx])
+            wuu = zero(ComplexF64)
+            wud = zero(ComplexF64)
+            for ri in 1:length(extT_labels[iidx])
+                if spin_conventions[iidx][ri] == UpUp
+                    wuu += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
+                elseif spin_conventions[iidx][ri] == UpDown
+                    wud += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
                 end
-                # factor = para.NF / (2π)^(dim * loopNum)
-                group = (para.order, partition[iidx]...)
-                evalfuncParquetAD_map[group](root, leafval[iidx])
-                wuu = zero(ComplexF64)
-                wud = zero(ComplexF64)
-                for ri in 1:length(extT_labels[iidx])
-                    if spin_conventions[iidx][ri] == UpUp
-                        wuu += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
-                    elseif spin_conventions[iidx][ri] == UpDown
-                        wud += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
-                    end
-                end
-                for (Li, l) in enumerate(lgrid)
-                    obs[pidx][i, 1, Li, extKidx] = wuu * factor * legendfactor(x, l, dim) * inverse_probability
-                    obs[pidx][i, 2, Li, extKidx] = wud * factor * legendfactor(x, l, dim) * inverse_probability
-                end
+            end
+            for (Li, l) in enumerate(lgrid)
+                obs[pidx][i, 1, Li, extKidx] = wuu * factor * legendfactor(x, l, dim) * inverse_probability
+                obs[pidx][i, 2, Li, extKidx] = wud * factor * legendfactor(x, l, dim) * inverse_probability
             end
         end
     end
 end
 
-function PH_vegas(para::ParaMC, diagram;
+function PH_mcmc(para::ParaMC, diagram;
     kamp=[para.kF,], #amplitude of k of the left legs
     kamp2=kamp, #amplitude of k of the right leg
     q=[0.0 for k in kamp],
@@ -258,7 +246,7 @@ function PH_vegas(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrandPH_vegas; measure=measurePH_vegas, config=config, solver=:vegasmc, neval=neval, print=print, inplace=true, kwargs...)
+    result = integrate(integrandPH_mcmc; measure=measurePH_mcmc, config=config, solver=:mcmc, neval=neval, print=print, inplace=true, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -290,7 +278,7 @@ function PH_vegas(para::ParaMC, diagram;
 
 end
 
-function MC_PH_vegas(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
+function MC_PH_mcmc(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree,],
     channels=[PHr, PHEr, PPr, Alli],
@@ -323,18 +311,11 @@ function MC_PH_vegas(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n
         println(length(reweight_goal))
     end
 
-    ver4, result = Ver4.PH_vegas(para, diagram;
+    ver4, result = Ver4.PH_mcmc(para, diagram;
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
         reweight_goal=reweight_goal,
-        generate_type=generate_type,
-    )
-
-    ver4, result = Ver4.PH_vegas(para, diagram;
-        kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
-        neval=neval, print=verbose,
-        neighbor=neighbor,
         generate_type=generate_type,
     )
 
