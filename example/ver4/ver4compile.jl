@@ -5,7 +5,7 @@ import ..FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, 
 import ..FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
 
 
-const order = 4
+const order = 0
 const isDynamic = false
 
 if !isDynamic
