@@ -7,7 +7,7 @@ function integrandPH_mcmc(pidx, var, config)
     MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     varK, varT = var[1], var[2]
-    x = config.var[3][1]
+    x = var[3][1]
     # error("$(varK.data[:, 1])")
     # l = lgrid[var[4][1]]
     extKidx = var[4][1]
@@ -51,9 +51,10 @@ function integrandPH_mcmc(pidx, var, config)
         end
     end
 
-    # factor = para.NF / (2π)^(dim * loopNum)
+    factor = para.NF / (2π)^(dim * loopNum)
     # factor = *legendfactor(x, l, dim)
     group = (para.order, partition[idx]...)
+    # println(group)
     evalfuncParquetAD_map[group](root, leafval[idx])
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
@@ -65,12 +66,10 @@ function integrandPH_mcmc(pidx, var, config)
             wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
         end
     end
+    # println(wuu,wud)
 
-    return Weight(wuu, wud)
-
+    return Weight(wuu * factor, wud * factor)
 end
-
-
 
 function measurePH_mcmc(pidx, var, obs, relative_weight, config)
     para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
@@ -102,11 +101,13 @@ function measurePH_mcmc(pidx, var, obs, relative_weight, config)
     weight = integrandPH_mcmc(pidx, var, config)
     factor = para.NF / (2π)^(dim * loopNum)
     inverse_probability = abs(relative_weight) / abs(weight)
+
     for (i, iidx) in enumerate(part_list[pidx])
         if iidx == idx
             for (Li, l) in enumerate(lgrid)
-                obs[pidx][i, 1, Li, extKidx] = relative_weight.d * legendfactor(x, l, dim) * factor
-                obs[pidx][i, 2, Li, extKidx] = relative_weight.e * legendfactor(x, l, dim) * factor
+                lf = legendfactor(x, l, dim)
+                obs[pidx][i, 1, Li, extKidx] += relative_weight.d * lf
+                obs[pidx][i, 2, Li, extKidx] += relative_weight.e * lf
             end
         else
             FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
@@ -142,8 +143,9 @@ function measurePH_mcmc(pidx, var, obs, relative_weight, config)
                 end
             end
             for (Li, l) in enumerate(lgrid)
-                obs[pidx][i, 1, Li, extKidx] = wuu * factor * legendfactor(x, l, dim) * inverse_probability
-                obs[pidx][i, 2, Li, extKidx] = wud * factor * legendfactor(x, l, dim) * inverse_probability
+                lf = legendfactor(x, l, dim) * factor
+                obs[pidx][i, 1, Li, extKidx] += wuu * lf * inverse_probability
+                obs[pidx][i, 2, Li, extKidx] += wud * lf * inverse_probability
             end
         end
     end
@@ -303,7 +305,7 @@ function MC_PH_mcmc(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
-        for o in order
+        for o in 0:_order
             # push!(reweight_goal, 8.0^(order + vOrder - 1))
             push!(reweight_goal, 8.0^(o))
         end
@@ -349,10 +351,10 @@ function MC_PH_mcmc(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
     end
     return ver4, result
 end
-
-# include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O0ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 # include("source_codeGV/Cwrapper_ver4O4GV.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")

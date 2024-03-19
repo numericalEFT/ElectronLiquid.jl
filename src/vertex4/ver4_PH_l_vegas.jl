@@ -80,7 +80,7 @@ function WeightPH_vegas(pidx, var, config)
         end
     end
 
-    return Weight(wuu, wud), factor
+    return Weight(wuu * factor, wud * factor), factor
 
 end
 
@@ -116,8 +116,8 @@ function measurePH_vegas(var, obs, relative_weight, config)
         for (i, iidx) in enumerate(part_list[pidx])
             if iidx == idx
                 for (Li, l) in enumerate(lgrid)
-                    obs[pidx][i, 1, Li, extKidx] = relative_weight[pidx].d * legendfactor(x, l, dim) * factor
-                    obs[pidx][i, 2, Li, extKidx] = relative_weight[pidx].e * legendfactor(x, l, dim) * factor
+                    obs[pidx][i, 1, Li, extKidx] += relative_weight[pidx].d * legendfactor(x, l, dim) * factor
+                    obs[pidx][i, 2, Li, extKidx] += relative_weight[pidx].e * legendfactor(x, l, dim) * factor
                 end
             else
                 FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
@@ -153,8 +153,8 @@ function measurePH_vegas(var, obs, relative_weight, config)
                     end
                 end
                 for (Li, l) in enumerate(lgrid)
-                    obs[pidx][i, 1, Li, extKidx] = wuu * factor * legendfactor(x, l, dim) * inverse_probability
-                    obs[pidx][i, 2, Li, extKidx] = wud * factor * legendfactor(x, l, dim) * inverse_probability
+                    obs[pidx][i, 1, Li, extKidx] += wuu * factor * legendfactor(x, l, dim) * inverse_probability
+                    obs[pidx][i, 2, Li, extKidx] += wud * factor * legendfactor(x, l, dim) * inverse_probability
                 end
             end
         end
@@ -369,9 +369,10 @@ function MC_PH_vegas(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n
     return ver4, result
 end
 
-# include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O0ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 # include("source_codeGV/Cwrapper_ver4O4GV.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
