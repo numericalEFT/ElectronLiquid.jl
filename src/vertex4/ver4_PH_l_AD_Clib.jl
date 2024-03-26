@@ -7,7 +7,7 @@ function integrandPH_ParquetAD(idx, var, config)
     MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition = config.userdata[7:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     varK, varT = var[1], var[2]
-    x = config.var[3][1]
+    x = var[3][1]
     # error("$(varK.data[:, 1])")
     l = lgrid[var[4][1]]
     loopNum = config.dof[idx][1]
@@ -64,6 +64,8 @@ function integrandPH_ParquetAD(idx, var, config)
             wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
         end
     end
+
+    # println(wuu,wud)
 
     return Weight(wuu * factor, wud * factor)
 end
@@ -339,10 +341,10 @@ function MC_PH_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
     end
     return ver4, result
 end
-
-# include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O0ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
+include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
 include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
 # include("source_codeGV/Cwrapper_ver4O4GV.jl")
 # include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")

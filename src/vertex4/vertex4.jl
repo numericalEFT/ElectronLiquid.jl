@@ -181,6 +181,9 @@ include("ver4_PH_l_AD_Clib.jl")
 # include("ver4_generic.jl")
 # include("exchange_interaction.jl")
 # include("ver4_PP_l.jl")
+# include("ver4_PH_l_vegas.jl")
+include("ver4_PH_l_mcmc.jl")
+
 
 include("ver4_ParquetAD.jl")
 include("ver4_ParquetAD_compile.jl")
