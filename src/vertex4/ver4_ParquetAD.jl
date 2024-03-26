@@ -76,47 +76,27 @@ function diagramGV_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree
     return (partition, diagpara, extT_labels, spin_conventions)
 end
 
-function diagramParquetDynamic_load(paramc::ParaMC, _partition::Vector{T}; filter=[NoHartree, NoBubble]) where {T}
-    diagpara = Vector{DiagPara}()
-    extT_labels = Vector{Vector{Int}}[]
-    spin_conventions = Vector{Response}[]
-    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
-    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-    partition = Tuple{Int64,Int64,Int64}[]
-    # partition = []
-    jldopen(joinpath(@__DIR__, "source_codeParquetAD/dynamic", "extT_spin_O$(paramc.order)_ParquetAD.jld2"), "r") do f
-        for p in _partition
-            key_str = join(string.(p))
-            if key_str in keys(f)
-                extT, spin = f[key_str]
-                push!(partition, p)
-                push!(diagpara, diagPara(paramc, p[1], filter, KinL - KoutL))
-                push!(extT_labels, extT)
-                push!(spin_conventions, spin)
-            end
-        end
-    end
-    return (partition, diagpara, extT_labels, spin_conventions)
-end
-
 function diagdict_parquetVer4(_partition::Vector{T};
-    filter=[NoHartree],isDynamic=false,channels=[PHr, PHEr, PPr, Alli]) where {T}
+    extra_deriv_orders::Vector{Int}=[], extra_dep_funcs::Vector{Function}=[],
+    filter=[NoHartree], isDynamic=false, channels=[PHr, PHEr, PPr, Alli]) where {T}
     MaxOrder = maximum([p[1] for p in _partition])
     MinOrder = minimum([p[1] for p in _partition])
     dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph}}()
+    leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId]
+    append!(leaf_dep_funcs, extra_dep_funcs)
+
     for order in MinOrder:MaxOrder
         partition_ind = findall(p -> p[1] == order, _partition)
         partition_order = [_partition[i] for i in partition_ind]
         Max_GD_o = maximum([p[2] for p in partition_order])
         Max_ID_o = maximum([p[3] for p in partition_order])
-        para = Parquet.DiagPara(type = Parquet.Ver4Diag, innerLoopNum = order, hasTau = true, filter = [NoHartree])
-        ver4df = Parquet.build(para; channels=[PHr, PHEr, PPr, Alli])
+        para = Parquet.DiagPara(type=Parquet.Ver4Diag, innerLoopNum=order, hasTau=true, filter=filter)
+        ver4df = Parquet.build(para; channels=channels)
         optimize!(ver4df.diagram)
-        renormalization_orders = [Max_GD_o, Max_ID_o]
-        leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId]
+        renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
         ver4_dict = taylorAD(ver4df.diagram, renormalization_orders, leaf_dep_funcs)
         for key in keys(ver4_dict)
-            p = (order,key[1],key[2])
+            p = (order, key[1], key[2])
             if p in _partition
                 dict_graphs[p] = ver4_dict[key]
             end
