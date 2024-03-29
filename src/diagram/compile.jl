@@ -1,6 +1,6 @@
-function compileC_ParquetAD_toFiles(order, partition, FeynGraphs, maxloopNum::Int; datatype::DataType=Float64,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD"), c_source=joinpath(root_dir, "func_O$(order)_ver4ParquetAD.c"),
-    lib_path=root_dir, lib_name="ver4O$(order)ParquetAD", compiler::String="gcc", isnative::Bool=false)
+function compileC_ParquetAD_toFiles(order, FeynGraphs, maxloopNum::Int, diagname::String; datatype::DataType=Float64,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD"), c_source=joinpath(root_dir, "func_$(diagname)_O$(order)ParquetAD.c"),
+    lib_path=root_dir, lib_name="$(diagname)_O$(order)ParquetAD", compiler::String="gcc", isnative::Bool=false)
 
     partition = keys(FeynGraphs)
 
@@ -33,7 +33,7 @@ function ParquetADcompileC_toFile(order, partition, FeynGraphs,
     leaf_maps = Vector{Dict{Int,Graph}}()
     for key in partition
         key_str = join(string.(key))
-        leafmap = Compilers.compile_C(FeynGraphs[key], c_source; func_name="eval_graph$(key_str)", datatype=datatype)
+        leafmap = Compilers.compile_C(FeynGraphs[key], s; func_name="eval_graph$(key_str)", datatype=datatype)
         push!(leaf_maps, leafmap)
     end
 
