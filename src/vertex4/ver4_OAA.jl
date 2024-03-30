@@ -3,6 +3,18 @@ function integrand_OAA(idx, var, config)
     return weight
 end
 
+# @inline function interactionTauNum(hasTau::Bool, type::AnalyticProperty)
+#     if !hasTau
+#         return 0
+#     end
+@inline function interactionTauNum(type::AnalyticProperty)
+    if type == Instant
+        return 1
+    else
+        return 2
+    end
+end
+
 function diagram_weight_OAA(idx, var, config)
     paras, maxMomNum, extT_labels, spin_conventions, leafStat, momLoopPool, root, funcGraphs!, leaf_maps = config.userdata
     leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
@@ -48,9 +60,8 @@ function diagram_weight_OAA(idx, var, config)
             τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
             # println(kq, (k1, k2, x))
             # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
-            idorder = diagid.order
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.para))
-
+            idorder = leafOrders[idx][i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.type))
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -101,12 +112,13 @@ function measure_OAA(idx, var, obs, relative_weight, config)
     end
 end
 
-function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
+function one_angle_averaged(paras::Vector{OneAngleAveraged}, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
     config=nothing,
     measurefreq=5,
+    integrand::Function=integrand_OAA,
     kwargs...
 )
 
@@ -130,16 +142,15 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
 
     @assert length(diagpara) == length(FeynGraphs) == length(extT_labels) == length(spin_conventions)
 
-    maxMomNum = maximum([key[1] for key in partition]) + 2
+    maxMomNum = maximum([key[1] for key in partition]) + 3
+
     funcGraphs! = Dict{Int,Function}()
     leaf_maps = Vector{Dict{Int,Graph}}()
-
     for (i, key) in enumerate(partition)
-        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key][1])
+        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
         push!(leaf_maps, leafmap)
     end
-    leafStat, loopbasis = leafstates_diagtree(leaf_maps, maxMomNum)
-    # println(leafStat[1])
+    leafStat, loopbasis = FeynmanDiagram.leafstates(leaf_maps, maxMomNum)
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopbasis)
 
     println("static compile has finished!")
@@ -162,7 +173,7 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
     N = MCIntegration.Discrete(1, length(paras), alpha=alpha) #index of paras
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    obs = [zeros(ComplexF64, 2, Nw, length(paras)) for p in diagpara]
+    obs = [zeros(ComplexF64, 2, Nw, length(paras)) for _ in diagpara]
 
     # if isnothing(neighbor)
     #     neighbor = UEG.neighbor(partition)
@@ -180,7 +191,7 @@ function one_angle_averaged_ParquetAD(paras::Vector{OneAngleAveraged}, diagram;
             kwargs...
         )
     end
-    result = integrate(integrand_OAA; measure=measure_OAA, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
+    result = integrate(integrand; measure=measure_OAA, config=config, solver=:mcmc, neval=neval, print=print, kwargs...)
 
     # function info(idx, di)
     #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
@@ -238,7 +249,7 @@ function MC_OAA(para, chan::Symbol;  # chan: :PH or :PP
     end
 
     paras = [Ver4.OneAngleAveraged(para, [kamp[1], kamp2[1]], n, chan, l),]
-    ver4, result = Ver4.one_angle_averaged_ParquetAD(paras, diagram;
+    ver4, result = Ver4.one_angle_averaged(paras, diagram;
         neval=neval, print=verbose,
         neighbor=neighbor,
         reweight_goal=reweight_goal

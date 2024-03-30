@@ -108,7 +108,7 @@ function measure_OAA_Clib(idx, var, obs, relative_weight, config)
     end
 end
 
-function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diagram;
+function one_angle_averaged_Clib(paras::Vector{OneAngleAveraged}, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
@@ -140,7 +140,7 @@ function one_angle_averaged_ParquetAD_Clib(paras::Vector{OneAngleAveraged}, diag
 
     @assert length(diagpara) == length(extT_labels) == length(spin_conventions)
 
-    maxMomNum = maximum([key[1] for key in partition]) + 2
+    maxMomNum = maximum([key[1] for key in partition]) + 3
 
     df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(order).csv", DataFrame)
     loopBasis = [df[!, col] for col in names(df)]
@@ -247,7 +247,7 @@ function MC_OAA_Clib(para, chan::Symbol;  # chan: :PH or :PP
     end
 
     paras = [Ver4.OneAngleAveraged(para, [kamp[1], kamp2[1]], n, chan, l),]
-    ver4, result = Ver4.one_angle_averaged_ParquetAD_Clib(paras, diaginfo;
+    ver4, result = Ver4.one_angle_averaged_Clib(paras, diaginfo;
         neval=neval, print=verbose,
         neighbor=neighbor,
         reweight_goal=reweight_goal

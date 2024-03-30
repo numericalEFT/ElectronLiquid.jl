@@ -10,7 +10,6 @@ function exchange_interaction(para::ParaMC, kamp=para.kF, kamp2=para.kF; ct=true
     # println(kamp, ", ", kamp2)
     # qs = [2 * kamp * sin(θ / 2) for θ in θgrid.grid]
     qs = [sqrt(kamp^2 + kamp2^2 - 2 * cos(θ) * kamp * kamp2) for θ in θgrid.grid]
-    # println(qs)
 
     Wp = zeros(Float64, length(qs))
     Wm = zeros(Float64, length(qs))

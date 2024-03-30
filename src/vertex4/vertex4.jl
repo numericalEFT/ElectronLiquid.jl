@@ -116,7 +116,7 @@ end
 @inline ud2sa(Wuu, Wud) = @. (Wuu + Wud) / 2, (Wuu - Wud) / 2
 @inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws - Wa
 
-
+include("exchange_interaction.jl")
 include("ver4_lavg.jl")
 # include("ver4_lavg_Clib.jl")
 include("ver4_OAA.jl")

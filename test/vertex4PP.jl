@@ -29,7 +29,7 @@ end
 
 @testset "PP" begin
     seed = 1234
-    p = (1, 0, 0)
+    p = (0, 0, 0)
     rs = 5.0
     beta = 25
     mass2 = 1e-2
@@ -37,8 +37,8 @@ end
     para = ElectronLiquid.ParaMC(rs=rs, beta=beta, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
     UEG.MCinitialize!(para)
     println(para)
-    diagram = Ver4.diagram(para, [p,]; channel=[], filter=[])
-    # diagram = Ver4.diagramParquet(para, [p,]; channel=[], filter=[])
+    # diagram = Ver4.diagram(para, [p,]; channel=[], filter=[])
+    diagram = Diagram.diagram_parquet_response(:vertex4, para, [p,]; channels=[], filter=[])
 
     ############################ generic PH one-angle average ###########################
     nlist = [0, 1, 2]
@@ -53,7 +53,7 @@ end
     # println(PP_interaction_dynamic(nlist[1], para) / 2)
     # println(PP_interaction_dynamic(nlist[2], para) / 2)
     # println(PP_interaction_dynamic(nlist[3], para) / 2)
-    for i in 1:length(nlist)
-        compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(nlist[i], para) / 2)
+    for (i, n) in enumerate(nlist)
+        compare(real(obs[:, i, 1][2]), -PP_interaction_dynamic(n, para) / 2)
     end
 end

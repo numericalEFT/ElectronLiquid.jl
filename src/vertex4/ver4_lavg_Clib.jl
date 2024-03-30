@@ -51,13 +51,11 @@ function integrand_lavg_Clib(idx, var, config)
             order = leafOrders[idx][i][1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
-            diagid = leaf_maps[idx][i].properties
+            # diagid = leaf_maps[idx][i].properties
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
-            # idorder = diagid.order
             idorder = leafOrders[idx][i]
-            # @assert idorder == leafOrders[idx][i]
-            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=interactionTauNum(diagid.para))
+            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.para))
             leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=1)
         else
             error("this leaftype $lftype not implemented!")
