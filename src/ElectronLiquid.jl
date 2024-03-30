@@ -6,7 +6,6 @@ using MCIntegration
 export report
 
 using FeynmanDiagram
-# export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, NoBubble, Proper
 import FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
@@ -31,8 +30,6 @@ const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
 export Weight
-
-# const ExprTreeF64 = FeynmanDiagram.ExpressionTree{FeynmanDiagram.ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
 
 include("./common/para_builder.jl")
 using .UEG
@@ -62,13 +59,13 @@ include("./sigma/sigma.jl")
 using .Sigma
 export Sigma
 
-# include("./polarization/polarization.jl")
-# using .Polarization
-# export Polarization
+include("./polarization/polarization.jl")
+using .Polarization
+export Polarization
 
-# include("./vertex4/vertex4.jl")
-# using .Ver4
-# export Ver4
+include("./vertex4/vertex4.jl")
+using .Ver4
+export Ver4
 
 # include("./vertex3/vertex3.jl")
 # using .Ver3

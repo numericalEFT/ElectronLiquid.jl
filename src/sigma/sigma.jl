@@ -15,6 +15,7 @@ using ..Measurements
 
 using ..UEG
 using ..Propagator
+import ..Propagator: LeafStateAD
 using ..Diagram
 
 @inline function phase(varT, extT, l, β)
@@ -28,7 +29,7 @@ include("sigma_dk.jl")
 # include("sigmaCuba.jl")
 # include("sigmaVegas.jl")
 
-function MC_Clib(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=nothing,
+function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
@@ -86,7 +87,7 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_g
     return sigma, result
 end
 
-function MC(para; kgrid=[para.kF,], ngrid=[-1, 0, 1], neval=1e6, reweight_goal=nothing,
+function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
@@ -145,7 +146,7 @@ end
 
 function diagram_loadinfo(paramc::ParaMC, _partition::Vector{T};
     filter=[NoHartree], transferLoop=nothing,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), filename="ext_tau_sigma.jld2"
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), filename="extvars_sigma.jld2"
 ) where {T}
     diagpara = Vector{DiagPara}()
     extT_labels = Vector{Vector{Int}}[]
@@ -155,7 +156,7 @@ function diagram_loadinfo(paramc::ParaMC, _partition::Vector{T};
         for p in _partition
             key_str = join(string.(p))
             if key_str in keys(f)
-                extT = f[key_str]
+                extT = f[key_str][1]
                 push!(diagpara, Diagram.diagPara(SigmaDiag, paramc.isDynamic, p[1], paramc.spin, filter, transferLoop))
                 push!(extT_labels, extT)
             else

@@ -29,9 +29,11 @@ function compileC_ParquetAD_toFiles(FeynGraphs, maxMomNum::Int, diagname::String
     leafinfo_toFile(partition, leaf_maps, maxMomNum, root_dir, diagname)
 
     ### save the external tau variables' indexes and spin channel to a jld2 file
-    extvar_toFile(partition, extT_labels, "tau", root_dir, diagname)
-    if !noresponse
-        extvar_toFile(partition, spin_conventions, "spin", root_dir, diagname)
+
+    if noresponse
+        extvar_toFile(partition, root_dir, diagname, extT_labels)
+    else
+        extvar_toFile(partition, root_dir, diagname, extT_labels, spin_conventions)
     end
     println("saved")
 end
@@ -52,11 +54,11 @@ function ParquetADcompileC_toFile(partition, FeynGraphs, c_source::String; datat
     # leafinfo_toFile(partition, leaf_maps, labelProd, root_dir)
 end
 
-function extvar_toFile(partition, vars, varname::String, root_dir::String, diagname::String)
-    jldopen(joinpath(root_dir, "ext_$(varname)_$(diagname).jld2"), "w") do f
+function extvar_toFile(partition, root_dir::String, diagname::String, vars...)
+    jldopen(joinpath(root_dir, "extvars_$(diagname).jld2"), "w") do f
         for (i, key) in enumerate(partition)
             key_str = join(string.(key))
-            f[key_str] = vars[i]
+            f[key_str] = Tuple([v[i] for v in vars])
         end
     end
 end

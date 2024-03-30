@@ -13,7 +13,6 @@ function integrandKW(idx, vars, config)
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
-            # elseif isodd(lftype) #fermionic 
         elseif lftype == 1 #fermionic 
             τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
@@ -22,7 +21,6 @@ function integrandKW(idx, vars, config)
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            # order = lftype / 2 - 1
             order = leafOrders[idx][i][2]
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
@@ -80,12 +78,10 @@ function integrandKW_Clib(idx, vars, config)
             τ = varT[leafτ_o] - varT[leafτ_i]
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
-            # order = (lftype - 1) / 2
             order = lforders[1]
             leafval[i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic
             kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-            # order = lftype / 2 - 1
             order = lforders[2]
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)

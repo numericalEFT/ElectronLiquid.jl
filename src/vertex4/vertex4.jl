@@ -20,8 +20,7 @@ using ..Measurements
 # push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
-# using ..Sigma
-# import ..ExprTreeF64
+import ..Propagator: LeafStateADDynamic
 
 import ..Weight
 
@@ -51,19 +50,29 @@ struct OneAngleAveraged
     end
 end
 
-function diagPara(para::ParaMC, order, filter, transferLoop)
-    inter = [Parquet.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    return DiagPara(
-        type=Parquet.Ver4Diag,
-        # innerLoopNum=order - 1,
-        innerLoopNum=order,
-        hasTau=true,
-        spin=para.spin,
-        firstLoopIdx=4,
-        interaction=inter,
-        filter=filter,
-        transferLoop=transferLoop
-    )
+function diagram_loadinfo(paramc::ParaMC, _partition::Vector{T};
+    filter=[NoHartree], transferLoop=nothing,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), filename="extvars_vertex4.jld2"
+) where {T}
+    diagpara = Vector{DiagPara}()
+    extT_labels = Vector{Vector{Int}}[]
+    spin_conventions = Vector{Response}[]
+
+    fname = joinpath(root_dir, filename)
+    jldopen(fname, "r") do f
+        for p in _partition
+            key_str = join(string.(p))
+            if key_str in keys(f)
+                extT, ext_spin = f[key_str]
+                push!(diagpara, Diagram.diagPara(Ver4Diag, paramc.isDynamic, p[1], paramc.spin, filter, transferLoop))
+                push!(extT_labels, extT)
+                push!(spin_conventions, ext_spin)
+            else
+                error("$(key_str) not found in $(fname)")
+            end
+        end
+    end
+    return (_partition, diagpara, extT_labels, spin_conventions)
 end
 
 @inline function legendfactor(x, l, dim)
@@ -107,23 +116,45 @@ end
 @inline ud2sa(Wuu, Wud) = @. (Wuu + Wud) / 2, (Wuu - Wud) / 2
 @inline sa2ud(Ws, Wa) = @. Ws + Wa, Ws - Wa
 
-# include("common.jl")
 
-# include("ver4_avg.jl")
-# include("ver4KW.jl")
-# include("ver4_PH_l.jl")
-# include("ver4_PH_l_df.jl")
-include("ver4_PH_l_AD.jl")
-include("ver4_PH_l_AD_Clib.jl")
-# include("ver4_generic.jl")
-# include("exchange_interaction.jl")
-# include("ver4_PP_l.jl")
+include("ver4_lavg.jl")
+# include("ver4_lavg_Clib.jl")
+include("ver4_OAA.jl")
+include("ver4_OAA_Clib.jl")
+
 # include("ver4_PH_l_vegas.jl")
-include("ver4_PH_l_mcmc.jl")
-
-
-include("ver4_ParquetAD.jl")
+# include("ver4_PH_l_mcmc.jl")
 # include("ver4_ParquetAD_compile_dynamic.jl")
-include("parquetAD_Clib.jl")
+# include("ver4KW.jl")
+
+include("source_codeParquetAD/Cwrapper_vertex4_ParquetAD.jl")
+
+const evalfunc_vertex4_map = Dict(
+    (0, 0, 0) => eval_vertex4_ParquetAD000!,
+    (0, 0, 1) => eval_vertex4_ParquetAD001!,
+    (0, 0, 2) => eval_vertex4_ParquetAD002!,
+    (0, 0, 3) => eval_vertex4_ParquetAD003!,
+    (0, 0, 4) => eval_vertex4_ParquetAD004!,
+    (1, 0, 0) => eval_vertex4_ParquetAD100!,
+    (1, 0, 1) => eval_vertex4_ParquetAD101!,
+    (1, 0, 2) => eval_vertex4_ParquetAD102!,
+    (1, 0, 3) => eval_vertex4_ParquetAD103!,
+    (1, 1, 0) => eval_vertex4_ParquetAD110!,
+    (1, 1, 1) => eval_vertex4_ParquetAD111!,
+    (1, 1, 2) => eval_vertex4_ParquetAD112!,
+    (1, 2, 0) => eval_vertex4_ParquetAD120!,
+    (1, 2, 1) => eval_vertex4_ParquetAD121!,
+    (1, 3, 0) => eval_vertex4_ParquetAD130!,
+    (2, 0, 0) => eval_vertex4_ParquetAD200!,
+    (2, 0, 1) => eval_vertex4_ParquetAD201!,
+    (2, 0, 2) => eval_vertex4_ParquetAD202!,
+    (2, 1, 0) => eval_vertex4_ParquetAD210!,
+    (2, 1, 1) => eval_vertex4_ParquetAD211!,
+    (2, 2, 0) => eval_vertex4_ParquetAD220!,
+    (3, 0, 0) => eval_vertex4_ParquetAD300!,
+    (3, 0, 1) => eval_vertex4_ParquetAD301!,
+    (3, 1, 0) => eval_vertex4_ParquetAD310!,
+    (4, 0, 0) => eval_vertex4_ParquetAD400!
+)
 
 end

@@ -207,7 +207,7 @@ function MC_dk_Clib(para; kgrid=[para.kF,], ngrid=[0,], neval=1e6, reweight_goal
         _partition[i] = (p..., 1)
     end
 
-    diaginfo = Sigma.diagram_loadinfo(para, _partition, root_dir=root_dir, filename="ext_tau_sigmadk.jld2")
+    diaginfo = Sigma.diagram_loadinfo(para, _partition, root_dir=root_dir, filename="extvars_sigmadk.jld2")
     sigma, result = Sigma.ParquetAD_Clib(para, diaginfo; isLayered2D=isLayered2D,
         integrand=integrand_dk_Clib,
         root_dir=root_dir, name="sigmadk",

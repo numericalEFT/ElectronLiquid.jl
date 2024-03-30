@@ -179,81 +179,29 @@ function dispersion(k, p::ParaMC)
     return ϵ
 end
 
-##################### propagator and interaction evaluation ##############
-# function DiagTree.eval(id::BareGreenId, K, extT, varT, p::ParaMC)
-#     β = p.β
-#     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
-#     k = norm(K)
-#     ϵ = dispersion(k, p)
-#     # if k < 0.4 * kF || k > kF * 1.3
-#     #     return 0.0
-#     # end
+struct LeafStateAD
+    type::Int
+    orders::Vector{Int}
+    inTau_idx::Int
+    outTau_idx::Int
+    loop_idx::Int
 
-#     # Evaluate μ counterterms; note that we have:
-#     # ∂^n_μ g(ϵₖ - μ, τ) = (-1)^n ∂^n_ω g(ω, τ)
-#     τ = τout - τin
-#     order = id.order[1]
-#     return green_derive(τ, ϵ, β, order)
-# end
+    function LeafStateAD(type::Int, orders::Vector{Int}, inTau_idx::Int, outTau_idx::Int, loop_idx::Int)
+        return new(type, orders, inTau_idx, outTau_idx, loop_idx)
+    end
+end
 
-# # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
-# function DiagTree.eval(id::BareInteractionId, K, extT, varT, p::ParaMC)
-#     dim, e0, ϵ0, mass2 = p.dim, p.e0, p.ϵ0, p.mass2
-#     qd = sqrt(dot(K, K))
-#     if id.order[2] == 0
-#         if id.type == Instant
-#             if interactionTauNum(id.para) == 1
-#                 # return e0^2 / ϵ0 / (dot(K, K) + mass2)
-#                 return Coulombinstant(qd, p)
-#             elseif interactionTauNum(id.para) == 2
-#                 # println(id.extT)
-#                 if id.order[3] == 0
-#                     return interactionStatic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
-#                 else # return dR/df for the RG purpose. The static part is zero
-#                     return 0.0
-#                 end
-#             else
-#                 error("not implemented!")
-#             end
-#         elseif id.type == Dynamic
-#             if id.order[3] == 0
-#                 return interactionDynamic(p, qd, varT[id.extT[1]], varT[id.extT[2]])
-#             else # return dR/df for the RG purpose.
-#                 return UEG.interactionDynamic_df(p, qd, varT[id.extT[1]], varT[id.extT[2]])
-#             end
-#         else
-#             error("not implemented!")
-#         end
-#     else # counterterm for the interaction
-#         order = id.order[2]
-#         if id.type == Instant
-#             if interactionTauNum(id.para) == 1
-#                 if dim == 3
-#                     invK = 1.0 / (qd^2 + mass2)
-#                     return factorial(order) * e0^2 / ϵ0 * invK * (mass2 * invK)^order
-#                 elseif dim == 2
-#                     invK = 1.0 / (qd + mass2)
-#                     return factorial(order) * e0^2 / 2ϵ0 * invK * (mass2 * invK)^order
-#                     # elseif dim == 2
-#                     #     invK = 1.0 / sqrt(qd^2 + mass2)
-#                     #     return factorial(order) * e0^2 / ϵ0 * invK * (mass2 * invK)^order
-#                 else
-#                     error("not implemented!")
-#                 end
-#             else
-#                 # return counterR(qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
-#                 return 0.0 #for dynamical interaction, the counter-interaction is always dynamic!
-#             end
-#         elseif id.type == Dynamic
-#             if id.order[3] == 0
-#                 return factorial(order) * counterR(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
-#             else
-#                 return factorial(order) * counterR_df(p, qd, varT[id.extT[1]], varT[id.extT[2]], id.order[2])
-#             end
-#         else
-#             error("not implemented!")
-#         end
-#     end
-# end
+struct LeafStateADDynamic
+    type::Int
+    orders::Vector{Int}
+    inTau_idx::Int
+    outTau_idx::Int
+    loop_idx::Int
+    tau_num::Int
+
+    function LeafStateADDynamic(type::Int, orders::Vector{Int}, inTau_idx::Int, outTau_idx::Int, loop_idx::Int, tau_num::Int)
+        return new(type, orders, inTau_idx, outTau_idx, loop_idx, tau_num)
+    end
+end
 
 end

@@ -1,16 +1,3 @@
-
-struct LeafStateAD
-    type::Int
-    orders::Vector{Int}
-    inTau_idx::Int
-    outTau_idx::Int
-    loop_idx::Int
-
-    function LeafStateAD(type::Int, orders::Vector{Int}, inTau_idx::Int, outTau_idx::Int, loop_idx::Int)
-        return new(type, orders, inTau_idx, outTau_idx, loop_idx)
-    end
-end
-
 function measureKW(idx, vars, obs, weight, config) # for the mcmc algorithm
     n = vars[3][1]  #matsubara frequency
     k = vars[4][1]  #K

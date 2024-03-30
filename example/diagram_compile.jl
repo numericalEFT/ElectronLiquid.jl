@@ -11,8 +11,8 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :chargePolar  # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 6
+diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 2
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 
 if diagtype == :chargePolar || diagtype == :sigma

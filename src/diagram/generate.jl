@@ -48,7 +48,7 @@ function diagram_parquet_noresponse(diagtype::Union{DiagramType,Symbol}, paramc:
     partition = sort(collect(keys(FeynGraphs)))
 
     for p in partition
-        push!(diagpara, diagPara(diagtype, paramc.isDynamic, p[1], paramc.spin, filter, transferLoop))
+        push!(diagpara, diagPara(diagtype, paramc.isDynamic, p[1], paramc.spin, filter))
         push!(extT_labels, [collect(g.properties.extT) for g in FeynGraphs[p]])
     end
     return (partition, diagpara, FeynGraphs, extT_labels)
