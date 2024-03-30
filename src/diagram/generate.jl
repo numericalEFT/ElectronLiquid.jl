@@ -1,4 +1,4 @@
-function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop=nothing)
+function diagPara(type, isDynamic::Bool, order, spin=2, filter=[NoHartree], transferLoop=nothing)
     inter = [Interaction(ChargeCharge, isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
     if type == VacuumDiag
         innerLoopNum = order + 1
@@ -33,30 +33,29 @@ function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop=nothi
 end
 
 function diagram_parquet_noresponse(diagtype::Union{DiagramType,Symbol}, paramc::ParaMC, _partition::Vector{T},
-    extra_deriv_orders::Vector{Int}=[], extra_dep_funcs::Vector{Function}=[];
-    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree],
-    transferLoop=nothing, extK=nothing, optimize_level=0
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
+    filter=[NoHartree], extK=nothing, optimize_level=0
 ) where {T}
     if diagtype isa Symbol
         diagtype = _diagtype(diagtype)
     end
     diagpara = Vector{DiagPara}()
 
-    FeynGraphs = diagdict_parquet(diagtype, _partition, extra_deriv_orders, extra_dep_funcs;
-        filter=filter, channels=channels, spin=paramc.spin, isDynamic=paramc.isDynamic,
-        transferLoop=transferLoop, extK=extK, optimize_level=optimize_level)
+    FeynGraphs = diagdict_parquet(diagtype, _partition, leaf_dep_funcs;
+        filter=filter, spin=paramc.spin, isDynamic=paramc.isDynamic,
+        extK=extK, optimize_level=optimize_level)
     extT_labels = Vector{Vector{Int}}[]
     partition = sort(collect(keys(FeynGraphs)))
 
     for p in partition
-        push!(diagpara, diagPara(type, paramc.isDynamic, paramc.spin, p[1], filter, transferLoop))
+        push!(diagpara, diagPara(diagtype, paramc.isDynamic, p[1], paramc.spin, filter, transferLoop))
         push!(extT_labels, [collect(g.properties.extT) for g in FeynGraphs[p]])
     end
     return (partition, diagpara, FeynGraphs, extT_labels)
 end
 
 function diagram_parquet_response(diagtype::Union{DiagramType,Symbol}, paramc::ParaMC, _partition::Vector{T},
-    extra_deriv_orders::Vector{Int}=[], extra_dep_funcs::Vector{Function}=[];
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
     channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree],
     transferLoop=nothing, extK=nothing, optimize_level=0
 ) where {T}
@@ -65,7 +64,7 @@ function diagram_parquet_response(diagtype::Union{DiagramType,Symbol}, paramc::P
     end
     diagpara = Vector{DiagPara}()
 
-    FeynGraphs = diagdict_parquet(diagtype, _partition, extra_deriv_orders, extra_dep_funcs;
+    FeynGraphs = diagdict_parquet(diagtype, _partition, leaf_dep_funcs;
         filter=filter, channels=channels, spin=paramc.spin, isDynamic=paramc.isDynamic,
         transferLoop=transferLoop, extK=extK, optimize_level=optimize_level)
     extT_labels = Vector{Vector{Int}}[]
@@ -73,7 +72,7 @@ function diagram_parquet_response(diagtype::Union{DiagramType,Symbol}, paramc::P
     partition = sort(collect(keys(FeynGraphs)))
 
     for p in partition
-        push!(diagpara, diagPara(type, paramc.isDynamic, paramc.spin, p[1], filter, transferLoop))
+        push!(diagpara, diagPara(diagtype, paramc.isDynamic, p[1], paramc.spin, filter, transferLoop))
         push!(extT_labels, [collect(g.properties.extT) for g in FeynGraphs[p]])
         push!(spin_conventions, [g.properties.response for g in FeynGraphs[p]])
     end
@@ -81,31 +80,42 @@ function diagram_parquet_response(diagtype::Union{DiagramType,Symbol}, paramc::P
 end
 
 function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vector{T},
-    extra_deriv_orders::Vector{Int}=[], extra_dep_funcs::Vector{Function}=[];
-    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree], spin=2.0,
-    isDynamic=false, transferLoop=nothing, extK=nothing, optimize_level=0
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
+    # extra_deriv_orders::Vector{Int} = Int[], extra_dep_funcs::Vector{Function}=Function[];
+    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree], spin=2.0, isDynamic=false,
+    transferLoop=nothing, extK=nothing, optimize_level=0
 ) where {T}
+    deriv_num = length(leaf_dep_funcs)
+    @assert length(_partition[1]) == deriv_num + 1 "partition should have $deriv_num+1 entries"
+
     if diagtype isa Symbol
         diagtype = _diagtype(diagtype)
     end
     MaxOrder = maximum([p[1] for p in _partition])
     MinOrder = minimum([p[1] for p in _partition])
-    dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph}}()
-    leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId]
-    append!(leaf_dep_funcs, extra_dep_funcs)
+    dict_graphs = Dict{NTuple{deriv_num + 1,Int},Vector{Graph}}()
+    # leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId]
+    # append!(leaf_dep_funcs, extra_dep_funcs)
 
     for order in MinOrder:MaxOrder
         partition_ind = findall(p -> p[1] == order, _partition)
         partition_order = [_partition[i] for i in partition_ind]
-        Max_GD_o = maximum([p[2] for p in partition_order])
-        Max_ID_o = maximum([p[3] for p in partition_order])
-        para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
+
+        # Max_GD_o = maximum([p[2] for p in partition_order])
+        # Max_ID_o = maximum([p[3] for p in partition_order])
+        para = diagPara(diagtype, isDynamic, order, spin, filter, transferLoop)
         ver4df = Parquet.build(para, extK; channels=channels)
         optimize!(ver4df.diagram, level=optimize_level)
-        renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
+        optimize!(ver4df.diagram, level=optimize_level)
+
+        renormalization_orders = Int[]
+        for i in 1:deriv_num
+            push!(renormalization_orders, maximum([p[i+1] for p in partition_order]))
+        end
+        # renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
         dict_graph_order = taylorAD(ver4df.diagram, renormalization_orders, leaf_dep_funcs)
-        for key in keys(ver4_dict)
-            p = (order, key[1], key[2])
+        for key in keys(dict_graph_order)
+            p = (order, key...)
             if p in _partition
                 dict_graphs[p] = dict_graph_order[key]
             end

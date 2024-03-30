@@ -50,21 +50,25 @@ export CounterTerm
 include("./common/eval.jl")
 using .Propagator
 
+include("./diagram/diagram.jl")
+using .Diagram
+export Diagram
+
 # include("./green/green.jl")
 # using .Green
 # export Green
 
-# include("./sigma/sigma.jl")
-# using .Sigma
-# export Sigma
+include("./sigma/sigma.jl")
+using .Sigma
+export Sigma
 
 # include("./polarization/polarization.jl")
 # using .Polarization
 # export Polarization
 
-include("./vertex4/vertex4.jl")
-using .Ver4
-export Ver4
+# include("./vertex4/vertex4.jl")
+# using .Ver4
+# export Ver4
 
 # include("./vertex3/vertex3.jl")
 # using .Ver3
