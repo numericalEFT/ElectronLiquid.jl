@@ -14,9 +14,9 @@ import ..FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import ..FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, NoBubble, Proper
 import ..FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
 import ..FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
-import ..FeynmanDiagram.Parquet: DiagPara
+import ..FeynmanDiagram.Parquet: DiagPara, Ver4Diag
 using ..Measurements
-
+using ..Diagram
 # push!(LOAD_PATH, "../common/")
 using ..UEG
 using ..Propagator
@@ -118,7 +118,7 @@ end
 
 include("exchange_interaction.jl")
 include("ver4_lavg.jl")
-# include("ver4_lavg_Clib.jl")
+include("ver4_lavg_Clib.jl")
 include("ver4_OAA.jl")
 include("ver4_OAA_Clib.jl")
 

@@ -103,6 +103,10 @@ function lavg_Clib(para::ParaMC, diagram;
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
 
+    if para.isDynamic
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
+    end
+
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
         UEG.MCinitialize!(para, false)
@@ -118,9 +122,9 @@ function lavg_Clib(para::ParaMC, diagram;
     Nl = length(l)
     Nk = length(kamp)
 
-    @assert length(diagpara) == length(FeynGraphs) == length(extT_labels) == length(spin_conventions)
+    @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
 
-    df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(order).csv", DataFrame)
+    df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(para.order).csv", DataFrame)
     loopBasis = [df[!, col] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
 
@@ -206,7 +210,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop)
 
-    partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
     neighbor = UEG.neighbor(partition)
 
