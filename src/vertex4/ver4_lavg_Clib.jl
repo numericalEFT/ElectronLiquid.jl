@@ -1,9 +1,8 @@
 function integrand_lavg_Clib(idx, var, config)
     para, chan, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:7]
-    maxMomNum, extT_labels, spin_conventions, leafStat, leaf_maps, momLoopPool, root, partition = config.userdata[8:end]
+    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[8:end]
 
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
-    leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT = var[1], var[2]
     x = config.var[3][1]
     l = lgrid[var[4][1]]
@@ -41,29 +40,28 @@ function integrand_lavg_Clib(idx, var, config)
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
 
-    for (i, lftype) in enumerate(leafType[idx])
+    for (i, lfstat) in enumerate(leafStat[idx])
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
         if lftype == 0
             continue
+            # elseif isodd(lftype) #fermionic 
         elseif lftype == 1 #fermionic 
-            τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
             ϵ = dot(kq, kq) / (2me) - μ
-            order = leafOrders[idx][i][1]
+            order = lforders[1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
-            # diagid = leaf_maps[idx][i].properties
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
-            idorder = leafOrders[idx][i]
-            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.para))
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=1)
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
         else
             error("this leaftype $lftype not implemented!")
         end
     end
 
     group = partition[idx]
-    if param.isDynamic
+    if para.isDynamic
         evalfuncParquetADDynamic_map[group](root, leafval[idx])
     else
         evalfunc_vertex4_map[group](root, leafval[idx])
@@ -102,10 +100,11 @@ function lavg_Clib(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
+    MaxOrder = 4
 
-    if para.isDynamic
-        root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
-    end
+    # if para.isDynamic
+    #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
+    # end
 
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
@@ -123,9 +122,12 @@ function lavg_Clib(para::ParaMC, diagram;
     Nk = length(kamp)
 
     @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
+    
+    maxMomNum = maximum([key[1] for key in partition]) + 3
 
-    df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(para.order).csv", DataFrame)
-    loopBasis = [df[!, col] for col in names(df)]
+
+    df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(MaxOrder).csv", DataFrame)
+    loopBasis = [df[!, col][1:maxMomNum] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
 
     leafstates = Vector{Vector{LeafStateADDynamic}}()
@@ -203,6 +205,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     # channels=[PHr, PHEr, PPr, Alli],
     partition=UEG.partition(para.order),
     transferLoop=nothing,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
     verbose=0
 )
     kF = para.kF
@@ -213,6 +216,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
     neighbor = UEG.neighbor(partition)
+    
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
@@ -227,7 +231,8 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        reweight_goal=reweight_goal
+        reweight_goal=reweight_goal,
+        root_dir = root_dir
     )
 
     if isnothing(ver4) == false
