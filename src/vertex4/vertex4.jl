@@ -119,6 +119,7 @@ end
 include("exchange_interaction.jl")
 include("ver4_lavg.jl")
 include("ver4_lavg_Clib.jl")
+include("ver4_lavg_beta.jl")
 include("ver4_OAA.jl")
 include("ver4_OAA_Clib.jl")
 

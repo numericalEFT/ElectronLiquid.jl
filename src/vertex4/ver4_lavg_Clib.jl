@@ -96,7 +96,7 @@ function lavg_Clib(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     integrand::Function=integrand_lavg_Clib,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
@@ -211,7 +211,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     kF = para.kF
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
-        filter=filter, transferLoop=transferLoop)
+        filter=filter, transferLoop=transferLoop, root_dir = root_dir)
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
@@ -231,8 +231,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        reweight_goal=reweight_goal,
-        root_dir = root_dir
+        root_dir = root_dir, reweight_goal=reweight_goal
     )
 
     if isnothing(ver4) == false
