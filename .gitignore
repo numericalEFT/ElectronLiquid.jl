@@ -13,7 +13,7 @@
 *.err
 *.out
 host.txt
-*.jld2
+example/**/*.jld2
 .history
 *.pdf
 *.png

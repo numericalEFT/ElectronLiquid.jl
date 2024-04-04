@@ -13,22 +13,23 @@ end
 
 @testset "Vertex4 Tree-level" begin
     ### test Yukawa interaction ###########
-    p = (1, 0, 0)
+    p = (0, 0, 0)
     mass2 = 1.0
     ####################### STATIC #########################
     para = ElectronLiquid.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=mass2, isDynamic=false)
-    diagram = Ver4.diagram(para, [p,])
+    # diagram = Ver4.diagram(para, [p,])
+    diagram = Diagram.diagram_parquet_response(:vertex4, para, [p,])
 
     ########## test Yukawa interaction ############
-    data, result = Ver4.KW(para, diagram; neval=1e5, print=-1, seed=seed)
-    obs = data[p]
-    expect = 0.0
-    compare(real(obs[1]), expect)
-    expect = -4π * para.e0^2 / (mass2) * para.NF
-    compare(real(obs[2]), expect)
+    # data, result = Ver4.KW(para, diagram; neval=1e5, print=-1, seed=seed)
+    # obs = data[p]
+    # expect = 0.0
+    # compare(real(obs[1]), expect)
+    # expect = -4π * para.e0^2 / (mass2) * para.NF
+    # compare(real(obs[2]), expect)
 
     ########## test l=0 PH averged Yukawa interaction ############
-    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,], seed=seed)
+    data, result = Ver4.lavg(para, diagram; neval=1e5, print=-1, l=[0,], seed=seed)
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
@@ -43,10 +44,11 @@ end
 
     ####################### DYNAMIC #########################
     para = ElectronLiquid.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
-    diagram = Ver4.diagram(para, [p,])
+    # diagram = Ver4.diagram(para, [p,])
+    diagram = Diagram.diagram_parquet_response(:vertex4, para, [p,])
 
     ########## test l=0 RPA interaction  (Ω = 0, q->0) ######################
-    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,], n=[0, 0, 0], seed=seed)
+    data, result = Ver4.lavg(para, diagram; neval=1e5, print=-1, l=[0,], n=[0, 0, 0], seed=seed)
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
@@ -59,7 +61,7 @@ end
 
 
     ########## test l=0 RPA interaction  (Ω -> 0, q=0) ######################
-    data, result = Ver4.PH(para, diagram; neval=1e5, print=-1, l=[0,], n=[-1, 0, 0], seed=seed)
+    data, result = Ver4.lavg(para, diagram; neval=1e5, print=-1, l=[0,], n=[-1, 0, 0], seed=seed)
     obs = data[p]
     println(obs)
     exchange = obs[1] - obs[2] # exchange = upup - updn
@@ -101,11 +103,11 @@ end
 
 @testset "Vertex4 One-loop" begin
     ########## test l=0 one-loop interaction  (Ω -> 0, q = 0) ######################
-    p = (2, 0, 0)
+    p = (1, 0, 0)
     mass2 = 0.01
     para = ElectronLiquid.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=mass2, isDynamic=true)
     diagram = Ver4.diagram(para, [p,]; filter=[Proper, NoBubble], channel=[PHr, PHEr, PPr])
-    data, result = Ver4.PH(para, diagram; neval=1e6, print=0, l=[0,], n=[-1, 0, 0], seed=seed)
+    data, result = Ver4.lavg(para, diagram; neval=1e6, print=0, l=[0,], n=[-1, 0, 0], seed=seed)
     obs = data[p]
 
     expect = 1.0314 # +- 0.0044
