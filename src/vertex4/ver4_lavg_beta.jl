@@ -1,11 +1,7 @@
-"""
-Calculate vertex4 averged on the Fermi surface
-"""
-Base.abs(w::Vector{Weight}) = sqrt(sum(abs(i)^2 for i in w))
-function integrandPH_mcmc(pidx, var, config)
-    para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
-    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
-    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
+function integrand_lavg_beta(pidx, var, config)
+    para, chan, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:7]
+    MaxLoopNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[8:end]
+    dim, β, me, μ = para.dim, para.β, para.me, para.μ
     varK, varT = var[1], var[2]
     x = var[3][1]
     # error("$(varK.data[:, 1])")
@@ -14,16 +10,32 @@ function integrandPH_mcmc(pidx, var, config)
     kamp = kampgrid[extKidx]
     kamp2 = kamp2grid[extKidx]
     qamp = qgrid[extKidx]
-    varK.data[1, 1] = kamp
-    varK.data[1, 2] = kamp
-    varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    if dim == 3
-        varK.data[1, 3] = kamp2 * x
-        varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
+
+    if chan == :PH
+        varK.data[1, 1] = kamp
+        varK.data[1, 2] = kamp
+        varK.data[2, 2] = qamp
+        if dim == 3
+            varK.data[1, 3] = kamp2 * x
+            varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
+        else
+            varK.data[1, 3] = kamp2 * cos(x)
+            varK.data[2, 3] = kamp2 * sin(x)
+        end
+    elseif chan == :PP
+        varK.data[1, 1] = kamp
+        varK.data[1, 3] = -kamp
+        varK.data[2, 3] = qamp
+        if dim == 3
+            varK.data[1, 2] = kamp2 * x
+            varK.data[2, 2] = kamp2 * sqrt(1 - x^2)
+        else
+            varK.data[1, 2] = kamp2 * cos(x)
+            varK.data[2, 2] = kamp2 * sin(x)
+        end
     else
-        varK.data[1, 3] = kamp2 * cos(x)
-        varK.data[2, 3] = kamp2 * sin(x)
+        error("not implemented")
     end
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
@@ -31,7 +43,7 @@ function integrandPH_mcmc(pidx, var, config)
     idx = part_index[pidx]
     # println(pidx," ",idx)
     loopNum = config.dof[pidx][1]
-    for (i, lfstat) in enumerate(leafstates[idx])
+    for (i, lfstat) in enumerate(leafStat[idx])
         lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
         if lftype == 0
             continue
@@ -53,9 +65,12 @@ function integrandPH_mcmc(pidx, var, config)
 
     factor = para.NF / (2π)^(dim * loopNum)
     # factor = *legendfactor(x, l, dim)
-    group = (para.order, partition[idx]...)
-    # println(group)
-    evalfunc_vertex4_map[group](root, leafval[idx])
+    group = partition[idx]
+    # if para.isDynamic
+    #     evalfuncParquetADDynamic_map[group](root, leafval[idx])
+    # else
+        evalfunc_vertex4_map[group](root, leafval[idx])
+    # end
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
 
@@ -71,9 +86,9 @@ function integrandPH_mcmc(pidx, var, config)
     return Weight(wuu * factor, wud * factor)
 end
 
-function measurePH_mcmc(pidx, var, obs, relative_weight, config)
-    para, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:6]
-    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[7:end]
+function measure_lavg_beta(pidx, var, obs, relative_weight, config)
+    para, chan, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:7]
+    MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[8:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     varK, varT = var[1], var[2]
     x = config.var[3][1]
@@ -87,18 +102,36 @@ function measurePH_mcmc(pidx, var, obs, relative_weight, config)
     varK.data[1, 2] = kamp
     varK.data[2, 2] = qamp
     #varK.data[1, 1], varK.data[1, 2] = kF, kF
-    if dim == 3
-        varK.data[1, 3] = kamp2 * x
-        varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
+    if chan == :PH
+        varK.data[1, 1] = kamp
+        varK.data[1, 2] = kamp
+        varK.data[2, 2] = qamp
+        if dim == 3
+            varK.data[1, 3] = kamp2 * x
+            varK.data[2, 3] = kamp2 * sqrt(1 - x^2)
+        else
+            varK.data[1, 3] = kamp2 * cos(x)
+            varK.data[2, 3] = kamp2 * sin(x)
+        end
+    elseif chan == :PP
+        varK.data[1, 1] = kamp
+        varK.data[1, 3] = -kamp
+        varK.data[2, 3] = qamp
+        if dim == 3
+            varK.data[1, 2] = kamp2 * x
+            varK.data[2, 2] = kamp2 * sqrt(1 - x^2)
+        else
+            varK.data[1, 2] = kamp2 * cos(x)
+            varK.data[2, 2] = kamp2 * sin(x)
+        end
     else
-        varK.data[1, 3] = kamp2 * cos(x)
-        varK.data[2, 3] = kamp2 * sin(x)
+        error("not implemented")
     end
 
 
     idx = part_index[pidx]
     loopNum = config.dof[pidx][1]
-    weight = integrandPH_mcmc(pidx, var, config)
+    weight = integrand_lavg_beta(pidx, var, config)
     factor = para.NF / (2π)^(dim * loopNum)
     inverse_probability = abs(relative_weight) / abs(weight)
 
@@ -131,8 +164,12 @@ function measurePH_mcmc(pidx, var, obs, relative_weight, config)
                 end
             end
             # factor = para.NF / (2π)^(dim * loopNum)
-            group = (para.order, partition[iidx]...)
+            group = partition[iidx]
+            # if para.isDynamic
+            #     evalfuncParquetADDynamic_map[group](root, leafval[idx])
+            # else
             evalfunc_vertex4_map[group](root, leafval[iidx])
+            # end
             wuu = zero(ComplexF64)
             wud = zero(ComplexF64)
             for ri in 1:length(extT_labels[iidx])
@@ -151,7 +188,8 @@ function measurePH_mcmc(pidx, var, obs, relative_weight, config)
     end
 end
 
-function PH_mcmc(para::ParaMC, diagram;
+function lavg_Clib_beta(para::ParaMC, diagram;
+    chan=:PH,  # or :PP
     kamp=[para.kF,], #amplitude of k of the left legs
     kamp2=kamp, #amplitude of k of the right leg
     q=[0.0 for k in kamp],
@@ -160,17 +198,18 @@ function PH_mcmc(para::ParaMC, diagram;
     neval=1e6, #number of evaluations
     print=0,
     alpha=3.0, #learning ratio
-    config=nothing, generate_type=:Parquet,
+    config=nothing,
+    solver=:mcmc,
+    integrand::Function=integrand_lavg_beta,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
+    MaxOrder = 4
 
-    if generate_type == :GV
-        root_dir = joinpath(@__DIR__, "source_codeGV/")
-    elseif generate_type == :Parquet
-        root_dir = joinpath(@__DIR__, "source_codeParquetAD/")
-    end
-
+    # if para.isDynamic
+    #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
+    # end
 
     # UEG.MCinitialize!(para)
     if NoBubble in diagpara[1].filter
@@ -183,26 +222,24 @@ function PH_mcmc(para::ParaMC, diagram;
         @assert diagpara[1].filter == p.filter "filter should be the same"
     end
 
-    dim, β, kF, order = para.dim, para.β, para.kF, para.order
+    dim, β, kF = para.dim, para.β, para.kF
     Nl = length(l)
     Nk = length(kamp)
 
     @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
+    
+    maxMomNum = maximum([key[1] for key in partition]) + 3
 
-    MaxLoopNum = maximum([key[1] for key in partition]) + 3
 
-    if generate_type == :GV
-        df = CSV.read(root_dir * "loopBasis_GVmaxOrder$(order).csv", DataFrame)
-    elseif generate_type == :Parquet
-        df = CSV.read(root_dir * "loopBasis_ParquetADmaxOrder$(order).csv", DataFrame)
-    end
-    loopBasis = [df[!, col] for col in names(df)]
+    df = CSV.read(root_dir * "loopBasis_vertex4_maxOrder$(MaxOrder).csv", DataFrame)
+    loopBasis = [df[!, col][1:maxMomNum] for col in names(df)]
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
+
     leafstates = Vector{Vector{LeafStateADDynamic}}()
     leafvalues = Vector{Vector{Float64}}()
     for key in partition
         key_str = join(string.(key))
-        df = CSV.read(root_dir * "leafinfo_O$(order)_Parquet$key_str.csv", DataFrame)
+        df = CSV.read(root_dir * "leafinfo_vertex4_$key_str.csv", DataFrame)
         leafstates_par = Vector{LeafStateADDynamic}()
         for row in eachrow(df)
             push!(leafstates_par, LeafStateADDynamic(row[2], _StringtoIntVector(row[3]), row[4:end]..., 1))
@@ -210,15 +247,15 @@ function PH_mcmc(para::ParaMC, diagram;
         push!(leafstates, leafstates_par)
         push!(leafvalues, df[!, names(df)[1]])
     end
-    root = zeros(Float64, maximum(length.(extT_labels)))
-    println([leafstates[1][i].orders for i in 1:2], partition[1])
 
+    root = zeros(Float64, maximum(length.(extT_labels)))
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
     K.data[:, 1] .= UEG.getK(kF, dim, 1)
     K.data[:, 2] .= UEG.getK(kF, dim, 1)
     K.data[:, 3] .= 0.0
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
+
     if dim == 3
         X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
     elseif dim == 2
@@ -227,8 +264,8 @@ function PH_mcmc(para::ParaMC, diagram;
     # L = MCIntegration.Discrete(1, Nl, alpha=alpha) # angular momentum
     AMP = MCIntegration.Discrete(1, Nk, alpha=alpha) # angular momentum
 
-    part_index = [findall(x -> x == (ni, 0, 0), partition)[1] for ni in 0:order]
-    part_list = [findall(x -> x[1] == ni, partition) for ni in 0:order]
+    part_index = [findall(x -> x == (ni, 0, 0), partition)[1] for ni in 0:para.order]
+    part_list = [findall(x -> x[1] == ni, partition) for ni in 0:para.order]
     max_part_num = maximum([length([p for p in partition if p[1] == partition[i][1]]) for i in part_index])
 
 
@@ -241,26 +278,21 @@ function PH_mcmc(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
-            userdata=(para, kamp, kamp2, q, l, n, MaxLoopNum, extT_labels,
+            # type=ComplexF64, # type of the integrand
+            userdata=(para, chan, kamp, kamp2, q, l, n, maxMomNum, extT_labels,
                 spin_conventions, leafstates, leafvalues, momLoopPool,
                 root, partition, part_index, part_list),
             kwargs...
         )
     end
-
-    result = integrate(integrandPH_mcmc; measure=measurePH_mcmc, config=config, solver=:mcmc, neval=neval, print=print, inplace=true, kwargs...)
-
-    # function info(idx, di)
-    #     return @sprintf("   %8.4f ±%8.4f", avg[idx, di], std[idx, di])
-    # end
+    result = integrate(integrand; measure=measure_lavg_beta, config=config, solver=solver, neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
-        # if print >= 0
-        #     report(result.config)
-        #     report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
-        #     report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
-        # end
-
+        if print >= 0
+            report(result.config)
+            # report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+            # report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+        end
         datadict = Dict{eltype(partition),Any}()
         for k in 1:length(dof)
             for (i, iidx) in enumerate(part_list[k])
@@ -280,51 +312,47 @@ function PH_mcmc(para::ParaMC, diagram;
 
 end
 
-function MC_PH_mcmc(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
+function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
-    filter=[NoHartree,],
-    channels=[PHr, PHEr, PPr, Alli],
-    partition=UEG.partition(para.order), generate_type=:Parquet,
+    filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
+    # channels=[PHr, PHEr, PPr, Alli],
+    partition=UEG.partition(para.order),
+    transferLoop=nothing,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
     verbose=0
 )
-
     kF = para.kF
     _order = para.order
 
-    # partition = UEG.partition(_order)
+    diaginfo = Ver4.diagram_loadinfo(para, partition,
+        filter=filter, transferLoop=transferLoop, root_dir = root_dir)
 
-
-    if generate_type == :Parquet
-        diagram = Ver4.diagramParquet_load(para, partition; filter=filter)
-    else
-        error("generate_type $generate_type not implemented!")
-    end
-
-    partition = diagram[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
+    println(partition)
     neighbor = UEG.neighbor(partition)
+    
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
         for o in 0:_order
-            # push!(reweight_goal, 8.0^(order + vOrder - 1))
-            push!(reweight_goal, 8.0^(o))
+            push!(reweight_goal, 8.0^(o)+1)
         end
         push!(reweight_goal, 1.0)
         println(length(reweight_goal))
     end
 
-    ver4, result = Ver4.PH_mcmc(para, diagram;
+    ver4, result = Ver4.lavg_Clib_beta(para, diaginfo;
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        reweight_goal=reweight_goal,
-        generate_type=generate_type,
+        root_dir = root_dir, reweight_goal=reweight_goal
     )
 
     if isnothing(ver4) == false
+        # for (p, data) in ver4
         for p in partition
             data = ver4[p]
-            printstyled("permutation: $p\n", color=:yellow)
+            printstyled("partition: $p\n", color=:yellow)
             for (li, _l) in enumerate(l)
                 printstyled("l = $_l\n", color=:green)
                 @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
@@ -351,16 +379,3 @@ function MC_PH_mcmc(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=
     end
     return ver4, result
 end
-include("source_codeParquetAD/Cwrapper_ver4O0ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O1ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O2ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O3ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_ver4O4ParquetAD.jl")
-# include("source_codeGV/Cwrapper_ver4O4GV.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O5ParquetAD.jl")
-# include("source_codeParquetAD/Cwrapper_ver4O6ParquetAD.jl")
-
-# provide dict of (order, partition...) => func
-include("source_codeParquetAD/func_dict_ParquetAD.jl")
-# include("source_codeGV/func_dict_GV.jl")
-
