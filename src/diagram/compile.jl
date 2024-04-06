@@ -4,7 +4,11 @@ function compileC_ParquetAD_toFiles(FeynGraphs, maxMomNum::Int, diagname::String
     lib_path=root_dir, lib_name="$(diagname)_ParquetAD", compiler::String="gcc", isnative::Bool=false
 )
     noresponse = true
-    if length(FeynGraphs) == 4
+    has_extT = true
+    if length(FeynGraphs) == 3
+        partition, diagpara, FeynGraphs = FeynGraphs
+        has_extT = false
+    elseif length(FeynGraphs) == 4
         partition, diagpara, FeynGraphs, extT_labels = FeynGraphs
     elseif length(FeynGraphs) == 5
         partition, diagpara, FeynGraphs, extT_labels, spin_conventions = FeynGraphs
@@ -30,10 +34,12 @@ function compileC_ParquetAD_toFiles(FeynGraphs, maxMomNum::Int, diagname::String
 
     ### save the external tau variables' indexes and spin channel to a jld2 file
 
-    if noresponse
-        extvar_toFile(partition, root_dir, diagname, extT_labels)
-    else
-        extvar_toFile(partition, root_dir, diagname, extT_labels, spin_conventions)
+    if has_extT
+        if noresponse
+            extvar_toFile(partition, root_dir, diagname, extT_labels)
+        else
+            extvar_toFile(partition, root_dir, diagname, extT_labels, spin_conventions)
+        end
     end
     println("saved")
 end

@@ -33,7 +33,7 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD/")
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), verbose=-1
 )
     @assert para.spin == 2 "Only spin-unpolarized case is supported for compiled C library"
     kF = para.kF
@@ -59,7 +59,7 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     sigma, result = Sigma.ParquetAD_Clib(para, diaginfo;
         root_dir=root_dir, isLayered2D=isLayered2D,
         neighbor=neighbor, reweight_goal=reweight_goal,
-        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread, print=verbose)
 
     if isnothing(sigma) == false
         if isnothing(filename) == false
@@ -91,7 +91,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
-    filter=[NoHartree], extK=nothing, optimize_level=1
+    filter=[NoHartree], extK=nothing, optimize_level=1, verbose=-1
 )
     kF = para.kF
     neighbor = UEG.neighbor(partition)
@@ -114,7 +114,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
 
     diagram = Diagram.diagram_parquet_noresponse(:sigma, para, partition, filter=filter, extK=extK, optimize_level=optimize_level)
     sigma, result = Sigma.ParquetAD(para, diagram;
-        isLayered2D=isLayered2D,
+        isLayered2D=isLayered2D, print=verbose,
         neighbor=neighbor, reweight_goal=reweight_goal,
         kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
 

@@ -11,8 +11,8 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 2
+diagtype = :freeEnergy # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 5
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 
 if diagtype == :chargePolar || diagtype == :sigma
@@ -34,7 +34,11 @@ elseif diagtype == :green || diagtype == :freeEnergy || diagtype == :chargePolar
         o == 0 && vOrder > 0 && continue
         push!(partition, (o, sOrder, vOrder))
     end
-    FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
+    if diagtype == :freeEnergy
+        FeynGraphs = Diagram.diagram_freeE(para, partition, optimize_level=1)
+    else
+        FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
+    end
 else
     partition = _partition
     FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)

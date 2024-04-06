@@ -104,16 +104,16 @@ function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vecto
         # Max_GD_o = maximum([p[2] for p in partition_order])
         # Max_ID_o = maximum([p[3] for p in partition_order])
         para = diagPara(diagtype, isDynamic, order, spin, filter, transferLoop)
-        ver4df = Parquet.build(para, extK; channels=channels)
-        optimize!(ver4df.diagram, level=optimize_level)
-        optimize!(ver4df.diagram, level=optimize_level)
+        graph_df = Parquet.build(para, extK; channels=channels)
+        optimize!(graph_df.diagram, level=optimize_level)
+        optimize!(graph_df.diagram, level=optimize_level)
 
         renormalization_orders = Int[]
         for i in 1:deriv_num
             push!(renormalization_orders, maximum([p[i+1] for p in partition_order]))
         end
         # renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
-        dict_graph_order = taylorAD(ver4df.diagram, renormalization_orders, leaf_dep_funcs)
+        dict_graph_order = taylorAD(graph_df.diagram, renormalization_orders, leaf_dep_funcs)
         for key in keys(dict_graph_order)
             p = (order, key...)
             if p in _partition
@@ -122,6 +122,48 @@ function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vecto
         end
     end
     return dict_graphs
+end
+
+function diagram_freeE(paramc::ParaMC, _partition::Vector{T},
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
+    filter=[NoHartree], optimize_level=0
+) where {T}
+    deriv_num = length(leaf_dep_funcs)
+    @assert length(_partition[1]) == deriv_num + 1 "partition should have $deriv_num+1 entries"
+
+    diagpara = Vector{DiagPara}()
+    MaxOrder = maximum([p[1] for p in _partition])
+    MinOrder = minimum([p[1] for p in _partition])
+    dict_graphs = Dict{NTuple{deriv_num + 1,Int},Vector{Graph}}()
+    spinPolarPara = 2.0 / paramc.spin - 1
+
+    for order in MinOrder:MaxOrder
+        partition_ind = findall(p -> p[1] == order, _partition)
+        partition_order = [_partition[i] for i in partition_ind]
+
+        diagrams = GV.diagsGV(:freeEnergy, order, spinPolarPara=spinPolarPara, filter=filter)
+        optimize!(diagrams, level=optimize_level)
+        optimize!(diagrams, level=optimize_level)
+
+        renormalization_orders = Int[]
+        for i in 1:deriv_num
+            push!(renormalization_orders, maximum([p[i+1] for p in partition_order]))
+        end
+        # renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
+        dict_graph_order = taylorAD(diagrams, renormalization_orders, leaf_dep_funcs)
+        for key in keys(dict_graph_order)
+            p = (order, key...)
+            if p in _partition
+                dict_graphs[p] = dict_graph_order[key]
+            end
+        end
+    end
+
+    partition = sort(collect(keys(dict_graphs)))
+    for p in partition
+        push!(diagpara, diagPara(VacuumDiag, paramc.isDynamic, p[1], paramc.spin, filter))
+    end
+    return (partition, diagpara, dict_graphs)
 end
 
 function _diagtype(type::Symbol)
