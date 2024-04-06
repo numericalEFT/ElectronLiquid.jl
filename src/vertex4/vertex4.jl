@@ -128,6 +128,7 @@ include("ver4_OAA_Clib.jl")
 # include("ver4KW.jl")
 
 include("source_codeParquetAD/Cwrapper_vertex4_ParquetAD.jl")
+include("source_codeParquetAD_Proper/Cwrapper_vertex4_ParquetAD.jl")
 
 const evalfunc_vertex4_map = Dict(
     (0, 0, 0) => eval_vertex4_ParquetAD000!,
@@ -155,6 +156,34 @@ const evalfunc_vertex4_map = Dict(
     (3, 0, 1) => eval_vertex4_ParquetAD301!,
     (3, 1, 0) => eval_vertex4_ParquetAD310!,
     (4, 0, 0) => eval_vertex4_ParquetAD400!
+)
+
+const evalfunc_vertex4Proper_map = Dict(
+    (0, 0, 0) => eval_vertex4Proper_ParquetAD000!,
+    (0, 0, 1) => eval_vertex4Proper_ParquetAD001!,
+    (0, 0, 2) => eval_vertex4Proper_ParquetAD002!,
+    (0, 0, 3) => eval_vertex4Proper_ParquetAD003!,
+    (0, 0, 4) => eval_vertex4Proper_ParquetAD004!,
+    (1, 0, 0) => eval_vertex4Proper_ParquetAD100!,
+    (1, 0, 1) => eval_vertex4Proper_ParquetAD101!,
+    (1, 0, 2) => eval_vertex4Proper_ParquetAD102!,
+    (1, 0, 3) => eval_vertex4Proper_ParquetAD103!,
+    (1, 1, 0) => eval_vertex4Proper_ParquetAD110!,
+    (1, 1, 1) => eval_vertex4Proper_ParquetAD111!,
+    (1, 1, 2) => eval_vertex4Proper_ParquetAD112!,
+    (1, 2, 0) => eval_vertex4Proper_ParquetAD120!,
+    (1, 2, 1) => eval_vertex4Proper_ParquetAD121!,
+    (1, 3, 0) => eval_vertex4Proper_ParquetAD130!,
+    (2, 0, 0) => eval_vertex4Proper_ParquetAD200!,
+    (2, 0, 1) => eval_vertex4Proper_ParquetAD201!,
+    (2, 0, 2) => eval_vertex4Proper_ParquetAD202!,
+    (2, 1, 0) => eval_vertex4Proper_ParquetAD210!,
+    (2, 1, 1) => eval_vertex4Proper_ParquetAD211!,
+    (2, 2, 0) => eval_vertex4Proper_ParquetAD220!,
+    (3, 0, 0) => eval_vertex4Proper_ParquetAD300!,
+    (3, 0, 1) => eval_vertex4Proper_ParquetAD301!,
+    (3, 1, 0) => eval_vertex4Proper_ParquetAD310!,
+    (4, 0, 0) => eval_vertex4Proper_ParquetAD400!
 )
 
 end

@@ -11,8 +11,12 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :freeEnergy # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 5
+diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 4
+filter = [Parquet.NoHartree, Parquet.Proper]
+KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 
 if diagtype == :chargePolar || diagtype == :sigma
@@ -27,7 +31,8 @@ if diagtype == :vertex4 || diagtype == :vertex3
         o == 0 && sOrder > 0 && continue
         push!(partition, (o, sOrder, vOrder))
     end
-    FeynGraphs = Diagram.diagram_parquet_response(diagtype, para, partition, optimize_level=1)
+
+    FeynGraphs = Diagram.diagram_parquet_response(diagtype, para, partition, optimize_level=1, filter=filter, transferLoop=KinL - KoutL)
 elseif diagtype == :green || diagtype == :freeEnergy || diagtype == :chargePolar
     partition = Vector{NTuple{3,Int}}()
     for (o, sOrder, vOrder) in _partition
@@ -45,4 +50,4 @@ else
 end
 
 # compile C library
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icc")
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="gcc")
