@@ -12,7 +12,7 @@ using FeynmanDiagram
 end
 
 diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 4
+order = 5
 filter = [Parquet.NoHartree, Parquet.Proper]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
@@ -50,4 +50,4 @@ else
 end
 
 # compile C library
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="gcc")
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icc")

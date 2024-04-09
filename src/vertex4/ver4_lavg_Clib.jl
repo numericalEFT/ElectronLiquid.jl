@@ -102,7 +102,7 @@ function lavg_Clib(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 4
+    MaxOrder = 5
     filter = diagpara[1].filter
 
     # if para.isDynamic

@@ -217,7 +217,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 4
+    MaxOrder = 5
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
