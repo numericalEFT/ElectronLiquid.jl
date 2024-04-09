@@ -1,6 +1,6 @@
 function integrand_lavg_Clib(idx, var, config)
-    para, chan, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:7]
-    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[8:end]
+    para, chan, filter, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:8]
+    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[9:end]
 
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
     varK, varT = var[1], var[2]
@@ -63,6 +63,8 @@ function integrand_lavg_Clib(idx, var, config)
     group = partition[idx]
     if para.isDynamic
         evalfuncParquetADDynamic_map[group](root, leafval[idx])
+    elseif Proper in filter
+        evalfunc_vertex4Proper_map[group](root, leafval[idx])
     else
         evalfunc_vertex4_map[group](root, leafval[idx])
     end
@@ -101,6 +103,7 @@ function lavg_Clib(para::ParaMC, diagram;
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
     MaxOrder = 4
+    filter = diagpara[1].filter
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -114,7 +117,7 @@ function lavg_Clib(para::ParaMC, diagram;
     end
 
     for p in diagpara
-        @assert diagpara[1].filter == p.filter "filter should be the same"
+        @assert filter== p.filter "filter should be the same"
     end
 
     dim, β, kF = para.dim, para.β, para.kF
@@ -169,7 +172,7 @@ function lavg_Clib(para::ParaMC, diagram;
             obs=obs,
             type=Weight,
             # type=ComplexF64, # type of the integrand
-            userdata=(para, chan, kamp, kamp2, q, l, n, maxMomNum, extT_labels,
+            userdata=(para, chan,filter, kamp, kamp2, q, l, n, maxMomNum, extT_labels,
                 spin_conventions, leafstates, leafvalues, momLoopPool,
                 root, partition),
             kwargs...

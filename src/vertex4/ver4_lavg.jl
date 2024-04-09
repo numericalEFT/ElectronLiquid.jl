@@ -142,7 +142,6 @@ function lavg(para::ParaMC, diagram;
     momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
     root = zeros(Float64, maximum(length.(extT_labels)))
     println("static compile has finished!")
-    println(momLoopPool)
 
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
     K.data[:, 1] .= UEG.getK(kF, dim, 1)
