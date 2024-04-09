@@ -71,9 +71,9 @@ export Ver4
 # using .Ver3
 # export Ver3
 
-# include("./freeEnergy/freeEnergy.jl")
-# using .FreeEnergy
-# export FreeEnergy
+include("./freeEnergy/freeEnergy.jl")
+using .FreeEnergy
+export FreeEnergy
 
 # using SnoopPrecompile
 # @precompile_all_calls begin

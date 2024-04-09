@@ -12,8 +12,9 @@ using FeynmanDiagram
 end
 
 diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 4
-KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16) 
+order = 5
+filter = [Parquet.NoHartree, Parquet.Proper]
+KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
 
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
@@ -31,18 +32,22 @@ if diagtype == :vertex4 || diagtype == :vertex3
         push!(partition, (o, sOrder, vOrder))
     end
 
-    FeynGraphs = Diagram.diagram_parquet_response(diagtype, para, partition, optimize_level=1, filter= [Parquet.NoHartree, Parquet.Proper], transferLoop =  KinL - KoutL)
+    FeynGraphs = Diagram.diagram_parquet_response(diagtype, para, partition, optimize_level=1, filter=filter, transferLoop=KinL - KoutL)
 elseif diagtype == :green || diagtype == :freeEnergy || diagtype == :chargePolar
     partition = Vector{NTuple{3,Int}}()
     for (o, sOrder, vOrder) in _partition
         o == 0 && vOrder > 0 && continue
         push!(partition, (o, sOrder, vOrder))
     end
-    FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
+    if diagtype == :freeEnergy
+        FeynGraphs = Diagram.diagram_freeE(para, partition, optimize_level=1)
+    else
+        FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
+    end
 else
     partition = _partition
     FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
 end
 
 # compile C library
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="gcc")
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icc")
