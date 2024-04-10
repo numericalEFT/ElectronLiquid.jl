@@ -6,7 +6,11 @@ using MCIntegration
 export report
 
 using FeynmanDiagram
-export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+import FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+import FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, NoBubble, Proper
+import FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
+import FeynmanDiagram.Parquet: DiagPara
 
 using CompositeGrids
 using Lehmann
@@ -27,8 +31,6 @@ const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
 export Weight
 
-const ExprTreeF64 = FeynmanDiagram.ExpressionTree{FeynmanDiagram.ExprTree.LoopPool{Float64},DiagramId,Float64,Float64}
-
 include("./common/para_builder.jl")
 using .UEG
 export UEG
@@ -45,9 +47,13 @@ export CounterTerm
 include("./common/eval.jl")
 using .Propagator
 
-include("./green/green.jl")
-using .Green
-export Green
+include("./diagram/diagram.jl")
+using .Diagram
+export Diagram
+
+# include("./green/green.jl")
+# using .Green
+# export Green
 
 include("./sigma/sigma.jl")
 using .Sigma
@@ -61,9 +67,9 @@ include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
 
-include("./vertex3/vertex3.jl")
-using .Ver3
-export Ver3
+# include("./vertex3/vertex3.jl")
+# using .Ver3
+# export Ver3
 
 include("./freeEnergy/freeEnergy.jl")
 using .FreeEnergy

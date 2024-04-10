@@ -1,125 +1,118 @@
-
 function integrandKW(idx, vars, config)
-    # function integrandKW(idx, varK, varT, config)
-    varK, varT, N, ExtKidx = vars
-    para, diag, extT, kgrid, ngrid = config.userdata
-    diagram = diag[idx]
-    weight = diagram.node.current
-    l = N[1]
-    k = ExtKidx[1]
-    varK.data[1, 1] = kgrid[k]
-    wn = ngrid[l]
+    varK, varT, varN, ExtKidx = vars
+    para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
+    leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
+    momLoopPool, root = config.userdata[7:8]
+    graphfuncs! = config.userdata[9][idx]
+    isLayered2D = config.userdata[end]
+    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
-    ExprTree.evalKT!(diagram, varK.data, varT.data, para)
-    w = sum(weight[r] * phase(varT, extT[idx][ri], wn, para.β) for (ri, r) in enumerate(diagram.root))
-    # w = 0.0 + 0.0im
-    # for (ri, r) in enumerate(diagram.root)
-    #     extT[idx][ri][1] == extT[idx][ri][2] && continue
-    #     w += weight[r] * phase(varT, extT[idx][ri], wn, para.β)
-    # end
+    extidx = ExtKidx[1]
+    varK.data[1, 1] = kgrid[extidx]
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    for (i, lftype) in enumerate(leafType[idx])
+        if lftype == 0
+            continue
+        elseif lftype == 1 #fermionic 
+            τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            ϵ = dot(kq, kq) / (2me) - μ
+            order = leafOrders[idx][i][1]
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
+        elseif lftype == 2 #bosonic 
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            order = leafOrders[idx][i][2]
+            if dim == 3
+                invK = 1.0 / (dot(kq, kq) + λ)
+                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+            elseif dim == 2
+                if isLayered2D == false
+                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                else
+                    if order == 0
+                        q = sqrt(dot(kq, kq) + 1e-16)
+                        invK = 1.0 / q
+                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                    else
+                        leafval[idx][i] = 0.0 # no high-order counterterms
+                    end
+                end
+            else
+                error("not implemented!")
+            end
+        else
+            error("this leaftype $lftype not implemented!")
+        end
+    end
+
+    graphfuncs!(root, leafval[idx])  # allocations due to run-time variable `idx`
+
+    n = ngrid[varN[1]]
+    weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
 
     loopNum = config.dof[idx][1]
-    factor = 1.0 / (2π)^(para.dim * loopNum)
-    return w * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
-    # return real(w) * factor #the current implementation of sigma has an additional minus sign compared to the standard defintion
+    factor = 1.0 / (2π)^(dim * loopNum)
+    return weight * factor
 end
 
-#for vegas algorithm
-# function integrandKW(varK, varT, N, ExtKidx, config)
-#     return integrandKW(1, varK, varT, N, ExtKidx, config)
-# end
+function integrandKW_Clib(idx, vars, config)
+    varK, varT, varN, ExtKidx = vars
+    para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
+    leafstates, leafval = config.userdata[6][idx], config.userdata[7][idx]
+    momLoopPool, root = config.userdata[8:9]
+    isLayered2D = config.userdata[10]
+    partition = config.userdata[11]
 
-function measureKW(idx, vars, obs, weight, config)
-    l = vars[3][1]  #matsubara frequency
-    k = vars[4][1]  #K
-    obs[idx][l, k] += weight
-end
+    dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
+    extidx = ExtKidx[1]
+    varK.data[1, 1] = kgrid[extidx]
 
-#for vegas algorithm
-# function measureKW(obs, weights, config)
-#     l = config.var[3][1]  #matsubara frequency
-#     k = config.var[4][1]  #K
-#     for o in 1:config.N
-#         obs[o][l, k] += weights[o]
-#     end
-# end
-
-function KW(para::ParaMC, diagram;
-    kgrid=[para.kF,],
-    ngrid=[0,],
-    neval=1e6, #number of evaluations
-    print=0,
-    alpha=3.0, #learning ratio
-    config=nothing,
-    solver=:mcmc,
-    kwargs...
-)
-    # if haskey(kwargs, :solver)
-    # @assert kwargs[:solver] == :mcmc "Only :mcmc is supported for Sigma.KW"
-    # end
-    @assert solver == :mcmc "Only :mcmc is supported for Sigma.KW"
-    para.isDynamic && UEG.MCinitialize!(para)
-
-    dim, β, kF = para.dim, para.β, para.kF
-    partition, diagpara, diag, root, extT = diagram
-
-    K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
-    K.data[:, 1] .= 0.0
-    K.data[1, 1] = kF
-    # T = MCIntegration.Tau(β, β / 2.0, offset=1)
-    T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
-    T.data[1] = 0.0
-    X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
-
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
-    # observable of sigma diagram of different permutations
-    obs = [zeros(ComplexF64, length(ngrid), length(kgrid)) for o in 1:length(dof)]
-
-    # if isnothing(neighbor)
-    #     neighbor = UEG.neighbor(partition)
-    # end
-    if isnothing(config)
-        config = Configuration(;
-            var=(K, T, X, ExtKidx),
-            dof=dof,
-            type=ComplexF64, # type of the integrand
-            obs=obs,
-            userdata=(para, diag, extT, kgrid, ngrid),
-            kwargs...
-            # neighbor=neighbor,
-            # reweight_goal=reweight_goal, kwargs...
-        )
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    for (i, lfstat) in enumerate(leafstates)
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
+        if lftype == 0
+            continue
+            # elseif isodd(lftype) #fermionic 
+        elseif lftype == 1 #fermionic 
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            ϵ = dot(kq, kq) / (2me) - μ
+            order = lforders[1]
+            leafval[i] = Propagator.green_derive(τ, ϵ, β, order)
+        elseif lftype == 2 #bosonic
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            order = lforders[2]
+            if dim == 3
+                invK = 1.0 / (dot(kq, kq) + λ)
+                leafval[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+            elseif dim == 2
+                if isLayered2D == false
+                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+                    leafval[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                else
+                    if order == 0
+                        q = sqrt(dot(kq, kq) + 1e-16)
+                        invK = 1.0 / q
+                        leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                    else
+                        leafval[i] = 0.0 # no high-order counterterms
+                    end
+                end
+            else
+                error("not implemented!")
+            end
+        else
+            error("this leaftype $lftype not implemented!")
+        end
     end
 
-    result = integrate(integrandKW; config=config, measure=measureKW, print=print, neval=neval, solver=solver, kwargs...)
-    # result = integrate(integrandKW; config=config, print=print, neval=neval, kwargs...)
-    # niter=niter, print=print, block=block, kwargs...)
+    group = partition[idx]
+    evalfuncParquetAD_sigma_map[group](root, leafval)
 
-    if isnothing(result) == false
-
-        if print >= 0
-            report(result.config)
-            println(report(result, pick=o -> first(o)))
-            println(result)
-        end
-
-        if print >= -2
-            println(result)
-        end
-
-        # datadict = Dict{eltype(partition),Complex{Measurement{Float64}}}()
-        datadict = Dict{eltype(partition),Any}()
-
-        for o in 1:length(dof)
-            avg, std = result.mean[o], result.stdev[o]
-            r = measurement.(real(avg), real(std))
-            i = measurement.(imag(avg), imag(std))
-            data = Complex.(r, i)
-            datadict[partition[o]] = data
-        end
-        return datadict, result
-    else
-        return nothing, nothing
-    end
+    n = ngrid[varN[1]]
+    weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
+    loopNum = config.dof[idx][1]
+    factor = 1.0 / (2π)^(dim * loopNum)
+    return weight * factor
 end

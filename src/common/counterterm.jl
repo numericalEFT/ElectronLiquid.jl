@@ -113,14 +113,14 @@ By definition, the chemical potential renormalization is defined as
 function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
-    @assert order <= 5 "Order $order hasn't been implemented!"
+    @assert order <= 6 "Order $order hasn't been implemented!"
     @assert length(δμ) + 1 >= order
     data = mergeInteraction(data)
     d = data
     # println("size: ", size(d[(1, 0)]))
     # z = Vector{eltype(values(d))}(undef, order)
     sample = collect(values(d))[1]
-    z = [zero(sample) for i in 1:order]
+    z = [zero(sample) for _ in 1:order]
     # z = Vector{eltype(values(d))}[]
     # z = []
     # println(typeof(z))
@@ -155,9 +155,29 @@ function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
             d[(3 + offset, 1)] .* δμ[2] +
             d[(2 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
             d[(1 + offset, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
-            d[(1 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
             d[(2 + offset, 1)] .* δμ[3] +
+            d[(1 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
             d[(1 + offset, 1)] .* δμ[4]
+    end
+    if order >= 6
+        # Σ6 = Σ60 + Σ51*δμ1 + ...
+        z[6] =
+            d[(6 + offset, 0)] +
+            d[(5 + offset, 1)] .* δμ[1] +
+            d[(4 + offset, 2)] .* δμ[1] .^ 2 +
+            d[(3 + offset, 3)] .* δμ[1] .^ 3 +
+            d[(2 + offset, 4)] .* δμ[1] .^ 4 +
+            d[(1 + offset, 5)] .* δμ[1] .^ 5 +
+            d[(4 + offset, 1)] .* δμ[2] +
+            d[(3 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+            d[(2 + offset, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
+            d[(1 + offset, 4)] .* 4 .* δμ[1] .^ 3 .* δμ[2] +
+            d[(3 + offset, 1)] .* δμ[3] +
+            d[(2 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
+            d[(1 + offset, 3)] .* (3 * δμ[2] .^ 2 .* δμ[1] + 3 * δμ[1] .^ 2 .* δμ[3]) +
+            d[(2 + offset, 1)] .* δμ[4] +
+            d[(1 + offset, 2)] .* (2 * δμ[1] .* δμ[4] + 2 * δμ[2] .* δμ[3]) +
+            d[(1 + offset, 1)] .* δμ[5]
     end
     return z
 end
@@ -250,9 +270,9 @@ function sigmaCT(order, μ, sw=Dict(key => 0.0 for key in keys(μ)); isfock=fals
     sw1 = collect(values(sw))[1]
     mu1 = collect(values(μ))[1]
 
-    δzi = [zero(sw1) for i in 1:order]
-    δz = [zero(sw1) for i in 1:order]
-    δμ = [zero(mu1) for i in 1:order]
+    δzi = [zero(sw1) for _ in 1:order]
+    δz = [zero(sw1) for _ in 1:order]
+    δμ = [zero(mu1) for _ in 1:order]
     for o in 1:order
         # println("zR: ", zR)
         μR = mergeInteraction(μ)
@@ -290,7 +310,7 @@ end
 
 function _inverse(z::AbstractVector{T}) where {T}
     order = length(z)
-    zi = [zero(z[1]) for i in 1:length(z)]
+    zi = [zero(z[1]) for _ in 1:length(z)]
     # zi = zeros(T, order)
     if order >= 1
         zi[1] = -z[1]
@@ -308,6 +328,10 @@ function _inverse(z::AbstractVector{T}) where {T}
         zi[5] = -z[1] .^ 5 + 4z[1] .^ 3 .* z[2] - 3z[1] .* z[2] .^ 2 - 3z[1] .^ 2 .* z[3] + 2z[2] .* z[3] + 2z[1] .* z[4] - z[5]
     end
     if order >= 6
+        zi[6] = z[1] .^ 6 - 5z[1] .^ 4 .* z[2] + 6z[1] .^ 2 .* z[2] .^ 2 + 4z[3] .* z[1] .^ 3
+        -3z[1] .^ 2 .* z[4] - 6z[1] .* z[2] .* z[3] - z[2] .^ 3 + z[3] .^ 2 + 2z[2] .* z[4] + 2z[1] .* z[5] - z[6]
+    end
+    if order >= 7
         error("order must be <= 5")
     end
     return zi

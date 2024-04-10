@@ -6,12 +6,12 @@ dim = 2
 rs = [0.5,]
 mass2 = [4.0,]
 Fs = [-0.0,]
-beta = [50.0]
-order = [3,]
-neval = 1e6
+beta = [40.0]
+order = [5,]
+neval = 1e8
 isDynamic = false
 isFock = false
-diagGenerate = :GV
+# diagGenerate = :GV
 # diagGenerate = :Parquet
 
 # mission = :Z
@@ -26,7 +26,8 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
     if mission == "Z"
         ######### calcualte Z factor ######################
         kgrid = [kF,]
-        ngrid = [-1, 0]
+        # ngrid = [-1, 0]
+        ngrid = [0,]
     elseif mission == "K"
         ######### calculate K dependence #####################
         Nk, korder = 4, 4
@@ -39,9 +40,12 @@ for (_rs, _mass2, _F, _beta, _order) in Iterators.product(rs, mass2, Fs, beta, o
         error("unknown mission")
     end
 
-    filename = "data_$(mission).jld2"
+    # filename = "data_$(mission)_test.jld2"
+    filename = "data_dK_test.jld2"
 
-    sigma, result = Sigma.MC(para; kgrid=kgrid, ngrid=ngrid,
-        neval=neval, filename=filename,
-        diagtype=diagGenerate)
+    # sigma, result = Sigma.MC_Clib(para; kgrid=kgrid, ngrid=ngrid,
+    # sigma, result = Sigma.MC(para; kgrid=kgrid, ngrid=ngrid,
+    # sigma, result = Sigma.MC_dk_Clib(para; kgrid=kgrid, ngrid=ngrid,
+    sigma, result = Sigma.MC_dk(para; kgrid=kgrid, ngrid=ngrid,
+        neval=neval, filename=filename)
 end
