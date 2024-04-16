@@ -123,6 +123,7 @@ include("ver4_lavg_Project.jl")
 include("ver4_lavg_beta.jl")
 include("ver4_OAA.jl")
 include("ver4_OAA_Clib.jl")
+include("ver4_AR.jl")
 
 # include("ver4_PH_l_vegas.jl")
 # include("ver4_PH_l_mcmc.jl")
