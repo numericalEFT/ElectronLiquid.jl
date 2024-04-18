@@ -332,7 +332,7 @@ function _inverse(z::AbstractVector{T}) where {T}
                 3z[1] .^ 2 .* z[4] - 6z[1] .* z[2] .* z[3] - z[2] .^ 3 + z[3] .^ 2 + 2z[2] .* z[4] + 2z[1] .* z[5] - z[6]
     end
     if order >= 7
-        error("order must be <= 5")
+        error("order must be <= 6")
     end
     return zi
 end
