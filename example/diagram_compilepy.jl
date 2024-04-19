@@ -11,9 +11,10 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 4
-filter = [Parquet.NoHartree, Parquet.Proper]
+diagtype = :sigma # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 3
+# filter = [Parquet.NoHartree, Parquet.Proper]
+filter = [Parquet.NoHartree,]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
 
@@ -49,5 +50,9 @@ else
     FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
 end
 
-# compile C library
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="gcc")
+# compile Python
+for p in FeynGraphs[1]
+    Compilers.compile_Python(FeynGraphs[3][p], "func_$(diagtype)_o$(p[1])$(p[2])$(p[3]).py")
+end
+
+println("Compile finished.")

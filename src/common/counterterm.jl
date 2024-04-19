@@ -328,8 +328,8 @@ function _inverse(z::AbstractVector{T}) where {T}
         zi[5] = -z[1] .^ 5 + 4z[1] .^ 3 .* z[2] - 3z[1] .* z[2] .^ 2 - 3z[1] .^ 2 .* z[3] + 2z[2] .* z[3] + 2z[1] .* z[4] - z[5]
     end
     if order >= 6
-        zi[6] = z[1] .^ 6 - 5z[1] .^ 4 .* z[2] + 6z[1] .^ 2 .* z[2] .^ 2 + 4z[3] .* z[1] .^ 3
-        -3z[1] .^ 2 .* z[4] - 6z[1] .* z[2] .* z[3] - z[2] .^ 3 + z[3] .^ 2 + 2z[2] .* z[4] + 2z[1] .* z[5] - z[6]
+        zi[6] = z[1] .^ 6 - 5z[1] .^ 4 .* z[2] + 6z[1] .^ 2 .* z[2] .^ 2 + 4z[3] .* z[1] .^ 3 -
+                3z[1] .^ 2 .* z[4] - 6z[1] .* z[2] .* z[3] - z[2] .^ 3 + z[3] .^ 2 + 2z[2] .* z[4] + 2z[1] .* z[5] - z[6]
     end
     if order >= 7
         error("order must be <= 5")
@@ -533,6 +533,7 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
 
     mu = Dict()
     for P in _partition
+        # P[3] >0 && continue
         v = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ"]
         err = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ.err"]
         mu[P] = measurement(v, err)
@@ -543,6 +544,7 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
 
     sw = Dict()
     for P in _partition
+        # P[3] >0 && continue
         v = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw"]
         err = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw.err"]
         sw[P] = measurement(v, err)

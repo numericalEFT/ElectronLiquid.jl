@@ -27,7 +27,7 @@ function MC(para; neval=1e6, reweight_goal=nothing,
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
     filter=[NoHartree], optimize_level=1, verbose=-1
 )
-    diagram = Diagram.diagram_freeE(para, partition, filter=filter, optimize_level=optimize_level)
+    diagram = Diagram.diagram_GV_freeE(para, partition, filter=filter, optimize_level=optimize_level)
 
     partition = diagram[1]
     neighbor = UEG.neighbor(partition)

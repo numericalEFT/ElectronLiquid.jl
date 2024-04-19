@@ -6,7 +6,6 @@ function integrand_parquetAD_Clib(idx, vars, config)
 
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
     loopNum = config.dof[idx][1]
-    # is_zero_order = partition[idx][1] == 0 ? true : false
     is_zero_order = partition[idx] == (0, 0, 0) ? true : false
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
