@@ -33,6 +33,10 @@ end
 function interaction_derive(τ1, τ2, K, p::ParaMC, idorder; idtype=Instant, tau_num=1, isLayered=false)
     dim, e0, ϵ0, mass2 = p.dim, p.e0, p.ϵ0, p.mass2
     qd = sqrt(dot(K, K))
+    if p.isDynamic == true
+        # for dynamic case Instant also has 2 tau
+        tau_num = 2
+    end
     if idorder[2] == 0
         if idtype == Instant
             if tau_num == 1
