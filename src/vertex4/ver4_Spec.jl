@@ -106,8 +106,13 @@ function Spec(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 4
     filter = diagpara[1].filter
+    if Proper in filter
+        MaxOrder = 5
+    else
+        MaxOrder = 4
+    end
+    
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -209,7 +214,7 @@ function Spec(para::ParaMC, diagram;
 
 end
 
-function MC_Spec(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], theta = [0,], phi = [0,],
+function MC_Spec(para; kamp=[para.kF,], kamp2=kamp, n=[0, 0, 0, 0], theta = [0,], phi = [0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
     # channels=[PHr, PHEr, PPr, Alli],
@@ -219,6 +224,10 @@ function MC_Spec(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], theta = [0
     verbose=0
 )
     kF = para.kF
+
+    if Proper in filter
+        root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir = root_dir)
@@ -244,7 +253,7 @@ function MC_Spec(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], theta = [0
         root_dir = root_dir, reweight_goal=reweight_goal
     )
 
-    if isnothing(ver4) == false
+    if isnothing(ver4) == false && verbose != -1
         # for (p, data) in ver4
         for p in partition
             data = ver4[p]
@@ -256,7 +265,7 @@ function MC_Spec(para; kamp=[para.kF,], kamp2=kamp, n=[-1, 0, 0, -1], theta = [0
                     @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
                     for (ki, k) in enumerate(kamp)
                         factor = 1.0
-                        d1, d2 = real(data[1, ti, ki]) * factor, real(data[2, ti, pidx, ki]) * factor
+                        d1, d2 = real(data[1, ti,pidx, ki]) * factor, real(data[2, ti, pidx, ki]) * factor
                         s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
                         di, ex = (s - a), (a) * 2.0
                         @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k / kF, "$d1", "$d2", "$di", "$ex", "$s", "$a")
