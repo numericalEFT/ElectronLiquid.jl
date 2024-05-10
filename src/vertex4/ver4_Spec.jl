@@ -28,7 +28,7 @@ function integrand_Spec(idx, var, config)
         varK.data[2, 3] = -kamp * sin(x/2) * cos(y)
         varK.data[3, 3] = -kamp * sin(y)
         varK.data[1, 2] = kamp2 * cos(x/2)
-        varK.data[2, 2] = -kamp2 * cos(x/2)
+        varK.data[2, 2] = -kamp2 * sin(x/2)
     else
         error("not implemented")
     end
