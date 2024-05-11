@@ -98,12 +98,17 @@ function lavg_Clib(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     integrand::Function=integrand_lavg_Clib,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 5
     filter = diagpara[1].filter
+    if Proper in filter
+        MaxOrder = 5
+    else
+        MaxOrder = 4
+    end
+    
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -208,10 +213,14 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     channel=:PH,
     partition=UEG.partition(para.order),
     transferLoop=nothing,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
     kF = para.kF
+
+    if Proper in filter
+        root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir = root_dir)
