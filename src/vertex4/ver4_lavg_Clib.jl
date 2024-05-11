@@ -206,7 +206,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
     channel=:PH,
-    partition=UEG.partition(para.order),
+    partition=UEG.partition(para.order), neighbor = UEG.neighbor(partition),
     transferLoop=nothing,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
     verbose=0
@@ -218,7 +218,6 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
-    neighbor = UEG.neighbor(partition)
     
 
     if isnothing(reweight_goal)
