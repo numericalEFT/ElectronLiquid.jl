@@ -112,7 +112,7 @@ function lavg_Project(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     integrand::Function=integrand_lavg_Project,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
@@ -222,10 +222,14 @@ function MC_lavg_Project(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
     # channels=[PHr, PHEr, PPr, Alli],
     partition=UEG.partition(para.order),
     transferLoop=nothing,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
     kF = para.kF
+
+    if Proper in filter
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir=root_dir)
