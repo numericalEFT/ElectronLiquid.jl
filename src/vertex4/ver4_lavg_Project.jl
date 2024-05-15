@@ -219,7 +219,7 @@ end
 function MC_lavg_Project(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
-    # channels=[PHr, PHEr, PPr, Alli],
+    channel=:PH,
     partition=UEG.partition(para.order),
     transferLoop=nothing,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
@@ -248,7 +248,7 @@ function MC_lavg_Project(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
         push!(reweight_goal, 1.0)
     end
 
-    ver4, result = Ver4.lavg_Project(para, diaginfo;
+    ver4, result = Ver4.lavg_Project(para, diaginfo; chan = channel,
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
