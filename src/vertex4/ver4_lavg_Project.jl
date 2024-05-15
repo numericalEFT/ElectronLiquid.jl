@@ -221,7 +221,7 @@ function MC_lavg_Project(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
     channel=:PH,
     partition=UEG.partition(para.order),
-    transferLoop=nothing,
+    transferLoop=nothing, neighbor = UEG.neighbor(partition),
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
@@ -236,7 +236,6 @@ function MC_lavg_Project(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
-    neighbor = UEG.neighbor(partition)
 
 
     if isnothing(reweight_goal)
