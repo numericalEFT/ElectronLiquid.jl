@@ -103,11 +103,7 @@ function lavg_Clib(para::ParaMC, diagram;
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
     filter = diagpara[1].filter
-    if Proper in filter
-        MaxOrder = 5
-    else
-        MaxOrder = 4
-    end
+    MaxOrder = 5
     
 
     # if para.isDynamic
