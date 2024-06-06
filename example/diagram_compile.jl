@@ -11,8 +11,8 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 5
+diagtype = :chargePolar # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 6
 filter = [Parquet.NoHartree]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0

@@ -1,19 +1,28 @@
 module Polarization
-using JLD2
+using JLD2, CSV
 
-using Printf, LinearAlgebra
+using Printf, LinearAlgebra, DataFrames
+using ..StaticArrays
+using ..Parameters
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
 using ..Lehmann
 
 using ..FeynmanDiagram
+import ..FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+import ..FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, NoBubble, Proper
+import ..FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import ..FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
+import ..FeynmanDiagram.Parquet: DiagPara, Ver4Diag, PolarDiag
 using ..Measurements
 
 using ..UEG
 using ..Propagator
 import ..Propagator: LeafStateAD
 using ..Diagram
+
+import ..Weight
 
 @inline function phase(varT, extT, l, β)
     tin, tout = varT[extT[1]], varT[extT[2]]
@@ -37,16 +46,21 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     end
 
     _partition = Vector{eltype(partition)}()
+    for p in partition
+        p[1] == 1 && p[3] > 0 && continue
+        push!(_partition, p)
+    end
+
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
         for p in partition
-            p[1] == 1 && p[3] > 0 && continue
-            push!(_partition, p)
             push!(reweight_goal, 8.0^(p[1] - 1))
         end
         push!(reweight_goal, 1.0)
     end
     neighbor = UEG.neighbor(_partition)
+    println(reweight_goal)
+    # println(neighbor)
 
     diaginfo = Polarization.diagram_loadinfo(para, _partition, root_dir=root_dir)
     polar, result = Polarization.KW_Clib(para, diaginfo;
@@ -102,7 +116,8 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
         end
         push!(reweight_goal, 1.0)
     end
-    neighbor = UEG.neighbor(partition)
+
+    println(reweight_goal)
 
     polar, result = Polarization.KW(para, diagram;
         isLayered2D=isLayered2D,

@@ -108,7 +108,7 @@ function integrandKW_Clib(idx, vars, config)
     end
 
     group = partition[idx]
-    evalfuncParquetAD_sigma_map[group](root, leafval)
+    evalfuncParquetAD_chargePolar_map[group](root, leafval)
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
