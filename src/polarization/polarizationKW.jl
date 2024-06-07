@@ -52,7 +52,7 @@ function integrandKW(idx, vars, config)
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
 
     loopNum = config.dof[idx][1]
-    factor = 1.0 / (2π)^(dim * loopNum)
+    factor = 1.0 / (2π)^(dim * loopNum) * para.spin
     return weight * factor
 end
 
@@ -113,7 +113,7 @@ function integrandKW_Clib(idx, vars, config)
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
     loopNum = config.dof[idx][1]
-    factor = 1.0 / (2π)^(dim * loopNum)
+    factor = 1.0 / (2π)^(dim * loopNum) * para.spin
     return weight * factor
 end
 
