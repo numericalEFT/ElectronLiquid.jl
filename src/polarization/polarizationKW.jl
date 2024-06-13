@@ -63,6 +63,7 @@ function integrandKW_Clib(idx, vars, config)
     momLoopPool, root = config.userdata[8:9]
     isLayered2D = config.userdata[10]
     partition = config.userdata[11]
+    Generator = config.userdata[end]
 
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     extidx = ExtKidx[1]
@@ -108,7 +109,11 @@ function integrandKW_Clib(idx, vars, config)
     end
 
     group = partition[idx]
-    evalfuncParquetAD_chargePolar_map[group](root, leafval)
+    if Generator == :GV
+        evalfuncGV_chargePolar_map[group](root, leafval)
+    else
+        evalfuncParquetAD_chargePolar_map[group](root, leafval)
+    end 
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -225,6 +230,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     integrand::Function=integrandKW_Clib,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     name="chargePolar",
+    Generator =:Parquet,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.ParquetAD_Clib"
@@ -275,7 +281,7 @@ function KW_Clib(para::ParaMC, diagram_info;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition),
+            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition,Generator),
             kwargs...
         )
     end
