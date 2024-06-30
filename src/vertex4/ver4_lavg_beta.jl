@@ -1,4 +1,10 @@
-function integrand_lavg_beta(pidx, var, config)
+function integrand_lavg_beta(idx, var, config)
+    weight = DiagramWeight(idx,var,config)
+    # println(weight)
+    return weight
+end
+
+function DiagramWeight(pidx, var, config)
     para, chan, filter, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:8]
     MaxLoopNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[9:end]
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
@@ -10,7 +16,6 @@ function integrand_lavg_beta(pidx, var, config)
     kamp = kampgrid[extKidx]
     kamp2 = kamp2grid[extKidx]
     qamp = qgrid[extKidx]
-    #varK.data[1, 1], varK.data[1, 2] = kF, kF
 
     if chan == :PH
         varK.data[1, 1] = kamp
@@ -63,6 +68,8 @@ function integrand_lavg_beta(pidx, var, config)
         end
     end
 
+    # println(idx,"",pidx)
+
     factor = para.NF / (2π)^(dim * loopNum)
     # factor = *legendfactor(x, l, dim)
     group = partition[idx]
@@ -82,32 +89,28 @@ function integrand_lavg_beta(pidx, var, config)
 
     for ri in 1:length(extT_labels[idx])
         if spin_conventions[idx][ri] == UpUp
-            wuu += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
+            wuu += root[ri] 
         elseif spin_conventions[idx][ri] == UpDown
-            wud += root[ri] * phase(varT, extT_labels[idx][ri], n, β)
+            wud += root[ri] 
         end
     end
     # println(wuu,wud)
+    wuu,wud = wuu * factor, wud*factor
 
-    return Weight(wuu * factor, wud * factor)
+    return Weight{ComplexF64}(wuu, wud)
 end
 
 function measure_lavg_beta(pidx, var, obs, relative_weight, config)
-    para, chan, filter , kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:8]
+    para, chan, filter, kampgrid, kamp2grid, qgrid, lgrid, n = config.userdata[1:8]
     MaxLoopNum, extT_labels, spin_conventions, leafstates, leafval, momLoopPool, root, partition, part_index, part_list = config.userdata[9:end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     varK, varT = var[1], var[2]
     x = config.var[3][1]
-    # error("$(varK.data[:, 1])")
-    # l = lgrid[var[4][1]]
     extKidx = var[4][1]
     kamp = kampgrid[extKidx]
     kamp2 = kamp2grid[extKidx]
     qamp = qgrid[extKidx]
-    varK.data[1, 1] = kamp
-    varK.data[1, 2] = kamp
-    varK.data[2, 2] = qamp
-    #varK.data[1, 1], varK.data[1, 2] = kF, kF
+
     if chan == :PH
         varK.data[1, 1] = kamp
         varK.data[1, 2] = kamp
@@ -134,68 +137,59 @@ function measure_lavg_beta(pidx, var, obs, relative_weight, config)
         error("not implemented")
     end
 
-
-    idx = part_index[pidx]
     loopNum = config.dof[pidx][1]
-    weight = integrand_lavg_beta(pidx, var, config)
+    weight = DiagramWeight(pidx, var, config)
+    # println(weight," ",relative_weight)
     factor = para.NF / (2π)^(dim * loopNum)
     inverse_probability = abs(relative_weight) / abs(weight)
+    FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
 
-    for (i, iidx) in enumerate(part_list[pidx])
-        if iidx == idx
-            for (Li, l) in enumerate(lgrid)
-                lf = legendfactor(x, l, dim)
-                obs[pidx][i, 1, Li, extKidx] += relative_weight.d * lf
-                obs[pidx][i, 2, Li, extKidx] += relative_weight.e * lf
-            end
-        else
-            FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
-            for (i, lfstat) in enumerate(leafstates[iidx])
-                lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
-                if lftype == 0
-                    continue
-                    # elseif isodd(lftype) #fermionic 
-                elseif lftype == 1 #fermionic 
-                    τ = varT[leafτ_o] - varT[leafτ_i]
-                    kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-                    ϵ = dot(kq, kq) / (2me) - μ
-                    order = lforders[1]
-                    leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order)
-                elseif lftype == 2 #bosonic 
-                    kq = FrontEnds.loop(momLoopPool, leafMomIdx)
-                    τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
-                    leafval[iidx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
-                else
-                    error("this leaftype $lftype not implemented!")
-                end
-            end
-            # factor = para.NF / (2π)^(dim * loopNum)
-            group = partition[iidx]
-            # if para.isDynamic
-            #     evalfuncParquetADDynamic_map[group](root, leafval[idx])
-            # else
-            if para.isDynamic
-                evalfuncParquetADDynamic_map[group](root, leafval[idx])
-            elseif Proper in filter
-                evalfunc_vertex4Proper_map[group](root, leafval[idx])
+    for (j, iidx) in enumerate(part_list[pidx])
+        for (i, lfstat) in enumerate(leafstates[iidx])
+            lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
+            if lftype == 0
+                continue
+                # elseif isodd(lftype) #fermionic 
+            elseif lftype == 1 #fermionic 
+                τ = varT[leafτ_o] - varT[leafτ_i]
+                kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+                ϵ = dot(kq, kq) / (2me) - μ
+                order = lforders[1]
+                leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order)
+            elseif lftype == 2 #bosonic 
+                kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+                τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+                leafval[iidx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
             else
-                evalfunc_vertex4_map[group](root, leafval[idx])
+                error("this leaftype $lftype not implemented!")
             end
-            # end
-            wuu = zero(ComplexF64)
-            wud = zero(ComplexF64)
-            for ri in 1:length(extT_labels[iidx])
-                if spin_conventions[iidx][ri] == UpUp
-                    wuu += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
-                elseif spin_conventions[iidx][ri] == UpDown
-                    wud += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
-                end
+        end
+        # factor = para.NF / (2π)^(dim * loopNum)
+        group = partition[iidx]
+        # if para.isDynamic
+        #     evalfuncParquetADDynamic_map[group](root, leafval[idx])
+        # else
+        if para.isDynamic
+            evalfuncParquetADDynamic_map[group](root, leafval[iidx])
+        elseif Proper in filter
+            evalfunc_vertex4Proper_map[group](root, leafval[iidx])
+        else
+            evalfunc_vertex4_map[group](root, leafval[iidx])
+        end
+        # end
+        wuu = zero(ComplexF64)
+        wud = zero(ComplexF64)
+        for ri in 1:length(extT_labels[iidx])
+            if spin_conventions[iidx][ri] == UpUp
+                wuu += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
+            elseif spin_conventions[iidx][ri] == UpDown
+                wud += root[ri] * phase(varT, extT_labels[iidx][ri], n, β)
             end
-            for (Li, l) in enumerate(lgrid)
-                lf = legendfactor(x, l, dim) * factor
-                obs[pidx][i, 1, Li, extKidx] += wuu * lf * inverse_probability
-                obs[pidx][i, 2, Li, extKidx] += wud * lf * inverse_probability
-            end
+        end
+        for (Li, l) in enumerate(lgrid)
+            lf = legendfactor(x, l, dim) * factor
+            obs[pidx][j, 1, Li, extKidx] += wuu * lf * inverse_probability
+            obs[pidx][j, 2, Li, extKidx] += wud * lf * inverse_probability
         end
     end
 end
@@ -208,12 +202,13 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
+    measurefreq=10, 
     print=0,
     alpha=3.0, #learning ratio
     config=nothing,
     solver=:mcmc,
     integrand::Function=integrand_lavg_beta,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
@@ -240,7 +235,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     Nk = length(kamp)
 
     @assert length(diagpara) == length(partition) == length(extT_labels) == length(spin_conventions)
-    
+
     maxMomNum = maximum([key[1] for key in partition]) + 3
 
 
@@ -291,6 +286,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
+            measurefreq = measurefreq,
             # type=ComplexF64, # type of the integrand
             userdata=(para, chan, filter, kamp, kamp2, q, l, n, maxMomNum, extT_labels,
                 spin_conventions, leafstates, leafvalues, momLoopPool,
@@ -328,37 +324,40 @@ end
 function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
-    # channels=[PHr, PHEr, PPr, Alli],
+    channel=:PH,
     partition=UEG.partition(para.order),
     transferLoop=nothing,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
     kF = para.kF
-    _order = para.order
+    if Proper in filter
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
+
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
-        filter=filter, transferLoop=transferLoop, root_dir = root_dir)
+        filter=filter, transferLoop=transferLoop, root_dir=root_dir)
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
     neighbor = UEG.neighbor(partition)
-    
+
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
-        for o in 0:_order
-            push!(reweight_goal, 8.0^(o)+1)
+        for o in 0:para.order
+            push!(reweight_goal, 1.0^(o) )
         end
         push!(reweight_goal, 1.0)
-        println(length(reweight_goal))
+        # println(length(reweight_goal))
     end
 
-    ver4, result = Ver4.lavg_Clib_beta(para, diaginfo;
+    ver4, result = Ver4.lavg_Clib_beta(para, diaginfo; chan = channel,
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        root_dir = root_dir, reweight_goal=reweight_goal
+        root_dir=root_dir, reweight_goal=reweight_goal
     )
 
     if isnothing(ver4) == false

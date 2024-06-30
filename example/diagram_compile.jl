@@ -11,12 +11,12 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :chargePolar # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 6
+diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 5
 filter = [Parquet.NoHartree]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-Generator = :GV
+Generator = :Parquet
 
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 
@@ -55,8 +55,8 @@ else
 end
 
 # compile C library
-root_dir = joinpath(@__DIR__, "source_codeGV")
-diagname = String(diagtype)
-# Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icx")
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), root_dir = root_dir,
-                                    c_source=joinpath(root_dir,"func_$(diagname)_GV.c"), lib_name = "$(diagname)_GV", compiler="icx")
+# root_dir = joinpath(@__DIR__, "source_codeGV")
+# diagname = String(diagtype)
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icx")
+# Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), root_dir = root_dir,
+#                                     c_source=joinpath(root_dir,"func_$(diagname)_GV.c"), lib_name = "$(diagname)_GV", compiler="icx")

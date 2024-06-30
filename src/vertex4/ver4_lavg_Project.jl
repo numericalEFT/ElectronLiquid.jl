@@ -82,10 +82,13 @@ function integrand_lavg_Project(idx, var, config)
         end
     end
 
+    # println(wuu,wud)
+
     return Weight(wuu * factor, wud * factor)
 end
 
 function measure_lavg_Project(idx, var, obs, weight, config)
+    # println(weight)
     lgrid = config.userdata[7]
     para = config.userdata[1]
     dim = para.dim
