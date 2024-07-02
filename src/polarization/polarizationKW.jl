@@ -175,7 +175,7 @@ function KW(para::ParaMC, diagram;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt=false, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
@@ -269,7 +269,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt = false, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, X, ExtKidx
     # observable of sigma diagram of different permutations
