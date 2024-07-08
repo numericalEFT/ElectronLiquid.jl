@@ -294,7 +294,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
             kwargs...
         )
     end
-    result = integrate(integrand; measure=measure_lavg_beta, config=config, solver=solver, neval=neval, print=print, kwargs...)
+    result = integrate(integrand; measure=measure_lavg_beta, thermal_ratio=5, config=config, solver=solver, neval=neval, print=print, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
