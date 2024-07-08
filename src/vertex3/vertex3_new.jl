@@ -24,4 +24,6 @@ import ..Propagator: LeafStateADDynamic
 
 import ..Weight
 
+include("ver3_KW.jl")
+
 end
