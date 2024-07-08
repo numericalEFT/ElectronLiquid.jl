@@ -1,15 +1,16 @@
-@inline function phase_ver3(varT, extT, ninL, noutL, β)
+@inline function phase_ver3(varT, extT, nqout, nkin, β)
     # println(extT)
-    tInL, tOutL, tInR = varT[extT[INL]], varT[extT[OUTL]], varT[extT[INR]]
-    winL, woutL = π * (2ninL + 1) / β, π * (2noutL + 1) / β
-    winR = winL - woutL
-    return exp(-1im * (tInL * winL - tOutL * woutL + tInR * winR))
+    # tq, tkin, tkout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    tkout, tkin, tq = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    wqout, wkin = π * (2nqout + 1) / β, π * (2nkin + 1) / β
+    wkout = wkin - wqout
+    return exp(-1im * (tkin * wkin - tq * wqout - tkout * wkout))
 end
 
-@inline function phase_ver3(varT, extT, n, β)
-    # println(extT)
-    return phase_ver3(varT, extT, n[1], n[2], β)
-end
+# @inline function phase_ver3(varT, extT, n, β)
+#     # println(extT)
+#     return phase_ver3(varT, extT, n[1], n[2], β)
+# end
 @inline function interactionTauNum(type::AnalyticProperty)
     if type == Instant
         return 1
@@ -60,17 +61,17 @@ function integrand_ver3KW(idx, var, config)
         end
     end
 
-    factor = para.NF / (2π)^(dim * loopNum)
+    # factor = para.NF / (2π)^(dim * (loopNum))
+    factor = 1.0 / (2π)^(dim * (loopNum))
     graphfuncs! = funcGraphs![idx]
     graphfuncs!(root, leafval[idx])
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
-    n = [nq, n1, 0]
     for ri in 1:length(extT_labels[idx])
         if spin_conventions[idx][ri] == UpUp
-            wuu += root[ri] * phase_ver3(varT, extT_labels[idx][ri], n, β)
+            wuu += root[ri] * phase_ver3(varT, extT_labels[idx][ri], nq, n1, β)
         elseif spin_conventions[idx][ri] == UpDown
-            wud += root[ri] * phase_ver3(varT, extT_labels[idx][ri], n, β)
+            wud += root[ri] * phase_ver3(varT, extT_labels[idx][ri], nq, n1, β)
         end
     end
 

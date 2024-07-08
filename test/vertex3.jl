@@ -5,9 +5,21 @@ end
 
 @testset "Vertex3" begin
 
-    @testset "Vertex3 init" begin
-        para = UEG.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=0.01, isDynamic=false)
-        Ver3.MC_KW_angle(para)
+    # @testset "Vertex3 init" begin
+    #     para = UEG.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=2, mass2=0.01, isDynamic=false)
+    #     ver3, result = Ver3.MC_KW_angle(para)
+    #     println(ver3[(2, 0, 0)])
+    # end
+
+    @testset "Vertex3 Dynamic O(1)" begin
+        para = UEG.ParaMC(rs=5.0, beta=25.0, Fs=0.0, order=1, mass2=0.01, isDynamic=true)
+        kin = [para.kF,]
+        # Nth = 4
+        # theta = [(i) / (Nth * π) for i in 0:Nth] # N+1 points
+        theta = [0.0,]
+        qout = [[para.kF * (1 - cos(θ)), -para.kF * sin(θ), 0.0] for θ in theta]
+        ver3, result = Ver3.MC_KW_angle(para; kin=kin, qout=qout, nkin=[0,], nqout=[1,])
+        println(ver3[(1, 0, 0)][:, 1, 1, :, 1])
     end
 
 end
