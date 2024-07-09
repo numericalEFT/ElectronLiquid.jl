@@ -192,7 +192,7 @@ function KW(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, thermal_ratio = 5, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
