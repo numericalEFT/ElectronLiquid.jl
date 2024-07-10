@@ -40,8 +40,10 @@ end
         theta = [(i) / (Nth * π) for i in 0:Nth] # N+1 points
         # theta = [0.0,]
         qout = [[para.kF * (1 - cos(θ)), -para.kF * sin(θ), 0.0] for θ in theta]
+        transferLoop = [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ver3, result = Ver3.MC_KW_angle(para;
-            kin=kin, qout=qout, nkin=[0,], nqout=[0,])
+            kin=kin, qout=qout, nkin=[0,], nqout=[0,],
+            filter=[NoHartree, Proper], transferLoop=transferLoop)
         println(ver3)
         # obs = ver3[(1, 0, 0)][:, 1, 1, :, 1]
         # println(obs)

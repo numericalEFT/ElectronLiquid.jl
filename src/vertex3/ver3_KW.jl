@@ -219,5 +219,18 @@ function MC_KW_angle(para;
         neval=neval, print=verbose,
         neighbor=neighbor, reweight_goal=reweight_goal)
 
+    if isnothing(ver3) == false
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (kin, nkin, qout, nqout, ver3)
+            end
+        end
+    end
+
     return ver3, result
 end
