@@ -1,8 +1,8 @@
 @inline function phase_ver3(varT, extT, nqout, nkin, β)
     # println(extT)
     # tq, tkin, tkout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
-    tkout, tkin, tq = varT[extT[1]], varT[extT[2]], varT[extT[3]]
-    wqout, wkin = π * (2nqout + 1) / β, π * (2nkin + 1) / β
+    tq, tkin, tkout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    wqout, wkin = π * (2nqout) / β, π * (2nkin + 1) / β
     wkout = wkin - wqout
     return exp(-1im * (tkin * wkin - tq * wqout - tkout * wkout))
 end
