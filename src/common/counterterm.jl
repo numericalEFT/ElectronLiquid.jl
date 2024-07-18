@@ -117,6 +117,7 @@ function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     @assert length(δμ) + 1 >= order
     data = mergeInteraction(data)
     d = data
+    println(keys(d))
     # println("size: ", size(d[(1, 0)]))
     # z = Vector{eltype(values(d))}(undef, order)
     sample = collect(values(d))[1]
