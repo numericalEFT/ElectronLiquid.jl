@@ -91,6 +91,7 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
+    diag_generator::Symbol=:parquet,
     filter=[NoHartree], extK=nothing, optimize_level=1, verbose=-1
 )
     kF = para.kF
@@ -112,7 +113,13 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
         push!(reweight_goal, 4.0)
     end
 
-    diagram = Diagram.diagram_parquet_noresponse(:sigma, para, partition, filter=filter, extK=extK, optimize_level=optimize_level)
+    if diag_generator == :Parquet
+        diagram = Diagram.diagram_parquet_noresponse(:sigma, para, partition, filter=filter, extK=extK, optimize_level=optimize_level)
+    elseif diag_generator == :GV
+        diagram = Diagram.diagram_GV_noresponse(:sigma, para, partition, filter=filter, optimize_level=optimize_level)
+    else
+        error("Unknown diag_generator: $diag_generator")
+    end
     sigma, result = Sigma.ParquetAD(para, diagram;
         isLayered2D=isLayered2D, print=verbose,
         neighbor=neighbor, reweight_goal=reweight_goal,

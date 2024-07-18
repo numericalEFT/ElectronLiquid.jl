@@ -117,6 +117,7 @@ function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     @assert length(δμ) + 1 >= order
     data = mergeInteraction(data)
     d = data
+    println(keys(d))
     # println("size: ", size(d[(1, 0)]))
     # z = Vector{eltype(values(d))}(undef, order)
     sample = collect(values(d))[1]
@@ -533,6 +534,7 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
 
     mu = Dict()
     for P in _partition
+        # P[3] >0 && continue
         v = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ"]
         err = filter(r -> r["partition"] == compactPartition(P), df)[1, "μ.err"]
         mu[P] = measurement(v, err)
@@ -543,6 +545,7 @@ function getSigma(df::DataFrame, paraid::Dict, order::Int)
 
     sw = Dict()
     for P in _partition
+        # P[3] >0 && continue
         v = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw"]
         err = filter(r -> r["partition"] == compactPartition(P), df)[1, "Σw.err"]
         sw[P] = measurement(v, err)

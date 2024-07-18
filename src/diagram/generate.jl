@@ -124,7 +124,7 @@ function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vecto
     return dict_graphs
 end
 
-function diagram_freeE(paramc::ParaMC, _partition::Vector{T},
+function diagram_GV_freeE(paramc::ParaMC, _partition::Vector{T},
     leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
     filter=[NoHartree], optimize_level=0
 ) where {T}
@@ -164,6 +164,50 @@ function diagram_freeE(paramc::ParaMC, _partition::Vector{T},
         push!(diagpara, diagPara(VacuumDiag, paramc.isDynamic, p[1], paramc.spin, filter))
     end
     return (partition, diagpara, dict_graphs)
+end
+
+function diagram_GV_noresponse(diagtype::Symbol, paramc::ParaMC, _partition::Vector{T},
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
+    filter=[NoHartree], optimize_level=0
+) where {T}
+    deriv_num = length(leaf_dep_funcs)
+    @assert length(_partition[1]) == deriv_num + 1 "partition should have $deriv_num+1 entries"
+
+    diagpara = Vector{DiagPara}()
+    MaxOrder = maximum([p[1] for p in _partition])
+    MinOrder = minimum([p[1] for p in _partition])
+    dict_graphs = Dict{NTuple{deriv_num + 1,Int},Vector{Graph}}()
+    spinPolarPara = 2.0 / paramc.spin - 1
+
+    for order in MinOrder:MaxOrder
+        partition_ind = findall(p -> p[1] == order, _partition)
+        partition_order = [_partition[i] for i in partition_ind]
+
+        diagrams = GV.diagsGV(diagtype, order, spinPolarPara=spinPolarPara, filter=filter)
+        optimize!(diagrams, level=optimize_level)
+        optimize!(diagrams, level=optimize_level)
+
+        renormalization_orders = Int[]
+        for i in 1:deriv_num
+            push!(renormalization_orders, maximum([p[i+1] for p in partition_order]))
+        end
+        # renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
+        dict_graph_order = taylorAD(diagrams, renormalization_orders, leaf_dep_funcs)
+        for key in keys(dict_graph_order)
+            p = (order, key...)
+            if p in _partition
+                dict_graphs[p] = dict_graph_order[key]
+            end
+        end
+    end
+
+    extT_labels = Vector{Vector{Int}}[]
+    partition = sort(collect(keys(dict_graphs)))
+    for p in partition
+        push!(diagpara, diagPara(_diagtype(diagtype), paramc.isDynamic, p[1], paramc.spin, filter))
+        push!(extT_labels, [collect(g.properties.extT) for g in dict_graphs[p]])
+    end
+    return (partition, diagpara, dict_graphs, extT_labels)
 end
 
 function _diagtype(type::Symbol)

@@ -67,9 +67,9 @@ include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
 
-# include("./vertex3/vertex3.jl")
-# using .Ver3
-# export Ver3
+include("./vertex3/vertex3_new.jl")
+using .Ver3
+export Ver3
 
 include("./freeEnergy/freeEnergy.jl")
 using .FreeEnergy
