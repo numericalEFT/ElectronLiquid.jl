@@ -111,7 +111,7 @@ end
     # Pi = -lindhard(q / 2.0 / kF, dim) * NF * massratio
     Pi = polarKW(q, 0, p)
     if ct
-        return p.fa / (1.0 - p.fa * Pi) + p.fa # counter term should be -fs for the KO interaction
+        return p.fa / (1.0 - p.fa * Pi) - p.fa # counter term should be -fs for the KO interaction
     else
         return p.fa / (1.0 - p.fa * Pi)
     end
