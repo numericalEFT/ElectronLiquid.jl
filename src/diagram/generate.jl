@@ -217,7 +217,7 @@ function _diagtype(type::Symbol)
         return Parquet.SigmaDiag
     elseif type == :green
         return Parquet.GreenDiag
-    elseif type == :chargePolar
+    elseif type == :chargePolar || type == :spinPolar
         return Parquet.PolarDiag
     elseif type == :vertex3
         return Parquet.Ver3Diag

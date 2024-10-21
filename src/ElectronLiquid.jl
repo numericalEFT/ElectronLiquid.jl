@@ -63,6 +63,10 @@ include("./polarization/polarization.jl")
 using .Polarization
 export Polarization
 
+include("./spinPolar/spinPolar.jl")
+using .SpinPolar
+export SpinPolar
+
 include("./vertex4/vertex4.jl")
 using .Ver4
 export Ver4
