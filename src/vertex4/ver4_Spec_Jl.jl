@@ -35,6 +35,11 @@ function integrand_Spec_Jl(idx, var, config)
     end
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
 
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
@@ -50,7 +55,8 @@ function integrand_Spec_Jl(idx, var, config)
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
             idorder = leafOrders[idx][i]
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.type))
+            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.type))
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
             # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=Instant, tau_num=1)
         else
             error("this leaftype $lftype not implemented!")
