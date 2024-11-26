@@ -10,6 +10,12 @@ function integrandKW(idx, vars, config)
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
+    
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -20,27 +26,12 @@ function integrandKW(idx, vars, config)
             order = leafOrders[idx][i][1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
+            diagid = leaf_maps[idx][i].properties
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            order = leafOrders[idx][i][2]
-            if dim == 3
-                invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
-            elseif dim == 2
-                if isLayered2D == false
-                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
-                else
-                    if order == 0
-                        q = sqrt(dot(kq, kq) + 1e-16)
-                        invK = 1.0 / q
-                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
-                    else
-                        leafval[idx][i] = 0.0 # no high-order counterterms
-                    end
-                end
-            else
-                error("not implemented!")
-            end
+            τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
+            idorder = leafOrders[idx][i]
+            # leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.type))
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
         else
             error("this leaftype $lftype not implemented!")
         end
