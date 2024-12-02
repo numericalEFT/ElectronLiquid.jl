@@ -42,7 +42,12 @@ function integrandKW(idx, vars, config)
                         leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
                     else
                         leafval[i] = 0.0 # no high-order counterterms
-                    end        else
+                    end
+                end
+            else
+                error("not implemented!")
+            end       
+        else
             error("this leaftype $lftype not implemented!")
         end
     end
