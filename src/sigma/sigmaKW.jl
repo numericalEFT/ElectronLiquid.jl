@@ -104,23 +104,18 @@ function integrandKW_Clib(idx, vars, config)
                 invK = 1.0 / (dot(kq, kq) + λ)
                 leafval[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
-                diagid = leaf_maps[idx][i].properties
-                kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-                τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
-                idorder = leafOrders[idx][i]
-                leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
-                # if isLayered2D == false
-                #     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                #     leafval[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
-                # else
-                #     if order == 0
-                #         q = sqrt(dot(kq, kq) + 1e-16)
-                #         invK = 1.0 / q
-                #         leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
-                #     else
-                #         leafval[i] = 0.0 # no high-order counterterms
-                #     end
-                # end
+                if isLayered2D == false
+                    invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
+                    leafval[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                else
+                    if order == 0
+                        q = sqrt(dot(kq, kq) + 1e-16)
+                        invK = 1.0 / q
+                        leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                    else
+                        leafval[i] = 0.0 # no high-order counterterms
+                    end
+                end
             else
                 error("not implemented!")
             end
