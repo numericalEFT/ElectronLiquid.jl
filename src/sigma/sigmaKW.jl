@@ -10,6 +10,12 @@ function integrandKW(idx, vars, config)
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
+
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -23,8 +29,9 @@ function integrandKW(idx, vars, config)
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
             order = leafOrders[idx][i][2]
             if dim == 3
-                invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+                leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
+                # invK = 1.0 / (dot(kq, kq) + λ)
+                # leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
                 if isLayered2D == false
                     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)

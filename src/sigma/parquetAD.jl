@@ -58,7 +58,7 @@ function ParquetAD(para::ParaMC, diagram;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafStat, momLoopPool, root, funcGraphs!, isLayered2D),
+            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafStat, leaf_maps, momLoopPool, root, funcGraphs!, isLayered2D),
             kwargs...
         )
     end
