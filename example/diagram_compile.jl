@@ -11,18 +11,18 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :spinPolar # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-order = 5
+diagtype = :vertex3 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+order = 6
 # filter = [Parquet.NoHartree, Parquet.Proper]
 filter = [Parquet.NoHartree]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-# Generator = :Parquet
-Generator = :GV
+Generator = :Parquet
+# Generator = :GV
 
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 
-if diagtype == :chargePolar || diagtype == :sigma || diagtype == :spinPolar 
+if diagtype == :chargePolar || diagtype == :sigma || diagtype == :spinPolar || diagtype == :vertex3
     _partition = UEG.partition(order)
 else
     _partition = UEG.partition(order, offset=0)
@@ -34,7 +34,6 @@ if diagtype == :vertex4 || diagtype == :vertex3
         o == 0 && sOrder > 0 && continue
         push!(partition, (o, sOrder, vOrder))
     end
-
     FeynGraphs = Diagram.diagram_parquet_response(diagtype, para, partition, optimize_level=1, filter=filter, transferLoop=KinL - KoutL)
 elseif diagtype == :green || diagtype == :freeEnergy || diagtype == :chargePolar || diagtype == :spinPolar
     partition = Vector{NTuple{3,Int}}()
@@ -57,8 +56,8 @@ else
 end
 
 # compile C library
-root_dir = joinpath(@__DIR__, "source_codeGV")
+root_dir = joinpath(@__DIR__, "source_codeParquetAD")
 diagname = String(diagtype)
-# Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icx")
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), root_dir = root_dir,
-                                    c_source=joinpath(root_dir,"func_$(diagname)_GV.c"), lib_name = "$(diagname)_GV", compiler="icx")
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icx")
+# Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), root_dir = root_dir,
+#                                     c_source=joinpath(root_dir,"func_$(diagname)_GV.c"), lib_name = "$(diagname)_GV", compiler="icx")
