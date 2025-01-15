@@ -7,6 +7,11 @@
     return exp(-1im * (tkin * wkin - tq * wqout - tkout * wkout))
 end
 
+@inline function _StringtoIntVector(str::AbstractString)
+    pattern = r"[-+]?\d+"
+    return [parse(Int, m.match) for m in eachmatch(pattern, str)]
+end
+
 # @inline function phase_ver3(varT, extT, n, β)
 #     # println(extT)
 #     return phase_ver3(varT, extT, n[1], n[2], β)
@@ -24,7 +29,7 @@ integrand of vertex3
 """
 function integrand_ver3KW_Clib(idx, var, config)
     para, kin, nkin, qout, nqout = config.userdata[1:5]
-    maxMomNum, extT_labels, spin_conventions, leafval, leaf_maps, momLoopPool, root, partition = config.userdata[6:end]
+    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[6:end]
 
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
     # leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
@@ -64,7 +69,7 @@ function integrand_ver3KW_Clib(idx, var, config)
     factor = 1.0 / (2π)^(dim * (loopNum))
     group = partition[idx]
 
-    evalfuncParquetADDynamic_map[group](root, leafval[idx])
+    evalfuncParquetAD_vertex3_map[group](root, leafval[idx])
 
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
@@ -126,6 +131,7 @@ function KW_Clib(para::ParaMC, diagram;
     Nnqout = length(nqout)
 
     maxMomNum = maximum([key[1] for key in partition]) + 2
+    MaxOrder = 6
 
     df = CSV.read(root_dir * "loopBasis_vertex3_maxOrder$(MaxOrder).csv", DataFrame)
     loopBasis = [df[!, col][1:maxMomNum] for col in names(df)]
@@ -226,7 +232,7 @@ function MC_KW_Clib(para;
         push!(reweight_goal, 1.0)
     end
 
-    ver3, result = Ver3.KW(para, diaginfo;
+    ver3, result = Ver3.KW_Clib(para, diaginfo;
         kin=kin, nkin=nkin,
         qout=qout, nqout=nqout,
         neval=neval, print=verbose,

@@ -1,6 +1,9 @@
 module Ver3
 
-using Printf, LinearAlgebra
+using JLD2, CSV
+using Printf, LinearAlgebra, DataFrames
+using ..StaticArrays
+using ..Parameters
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
@@ -13,10 +16,13 @@ import ..FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, 
 import ..FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FeynmanDiagram.Parquet: DiagPara, Ver4Diag, PolarDiag, Ver3Diag
 using ..Measurements
+using ..Diagram
 
 using ..UEG
 using ..Propagator
-import ..ExprTreeF64
+import ..Propagator: LeafStateADDynamic
+
+# import ..ExprTreeF64
 import ..Weight
 
 function diagPara(para::ParaMC, order, filter, transferLoop)
@@ -137,9 +143,9 @@ end
 #     return phase(varT, extT, n[1], n[2], n[3], β)
 # end
 
-include("ver3KW.jl")
+# include("ver3KW.jl")
 include("ver3KW_Clib.jl")
-include("ver3angleavg.jl")
+# include("ver3angleavg.jl")
 include("source_codeParquetAD/Cwrapper_vertex3_ParquetAD.jl")
 
 
