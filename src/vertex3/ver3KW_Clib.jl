@@ -155,8 +155,8 @@ function KW_Clib(para::ParaMC, diagram;
     root = zeros(Float64, maximum(length.(extT_labels)))
 
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
-    K.data[:, 1] .= UEG.getK(kin[1], dim, 1)
-    K.data[:, 2] .= UEG.getK(kin[1], dim, 1) .- qout[1]
+    K.data[:, 1] .= UEG.getK(qout[1], dim, 1)
+    K.data[:, 2] .= UEG.getK(kin[1], dim, 1)
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
 
@@ -253,13 +253,11 @@ function MC_KW_Clib(para;
         for p in partition
             data = ver3[p]
             printstyled("partition: $p\n", color=:yellow)
-            @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
+            @printf("%12s    %16s   \n", "k/kF", "ver3")
             for (ki, k) in enumerate(qout)
                 factor = 1.0
-                d1, d2 = real(data[1, 1, 1, ki, 1]) * factor, real(data[2, 1, 1, ki, 1]) * factor
-                s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
-                di, ex = (s - a), (a) * 2.0
-                @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k, "$d1", "$d2", "$di", "$ex", "$s", "$a")
+                d = real(data[1, 1, 1, ki, 1]) * factor + real(data[2, 1, 1, ki, 1]) * factor
+                @printf("%12.6f    %16s  \n", k, "$d")
             end
         end
     end
