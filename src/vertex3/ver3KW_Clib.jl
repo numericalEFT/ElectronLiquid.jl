@@ -249,6 +249,19 @@ function MC_KW_Clib(para;
                 f[key] = (kin, nkin, qout, nqout, ver3)
             end
         end
+
+        for p in partition
+            data = ver3[p]
+            printstyled("partition: $p\n", color=:yellow)
+            @printf("%12s    %16s    %16s    %16s    %16s    %16s    %16s\n", "k/kF", "uu", "ud", "di", "ex", "symmetric", "asymmetric")
+            for (ki, k) in enumerate(qout)
+                factor = 1.0
+                d1, d2 = real(data[1, 1, 1, ki, 1]) * factor, real(data[2, 1, 1, ki, 1]) * factor
+                s, a = (d1 + d2) / 2.0, (d1 - d2) / 2.0
+                di, ex = (s - a), (a) * 2.0
+                @printf("%12.6f    %16s    %16s    %16s    %16s    %16s    %16s\n", k, "$d1", "$d2", "$di", "$ex", "$s", "$a")
+            end
+        end
     end
 
     return ver3, result
