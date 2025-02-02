@@ -147,6 +147,7 @@ end
 include("ver3KW_Clib.jl")
 # include("ver3angleavg.jl")
 include("source_codeParquetAD/Cwrapper_vertex3_ParquetAD.jl")
+include("source_codeParquetAD_Proper/Cwrapper_vertex3_ParquetAD.jl")
 
 
 const evalfuncParquetAD_vertex3_map = Dict(
@@ -206,6 +207,65 @@ const evalfuncParquetAD_vertex3_map = Dict(
     (5, 0, 1) => eval_vertex3_ParquetAD501!,
     (5, 1, 0) => eval_vertex3_ParquetAD510!,
     (6, 0, 0) => eval_vertex3_ParquetAD600!
+)
+
+const evalfuncParquetAD_vertex3_proper_map = Dict(
+    (1, 0, 0) => eval_vertex3_ParquetAD_proper100!,
+    (1, 0, 1) => eval_vertex3_ParquetAD_proper101!,
+    (1, 0, 2) => eval_vertex3_ParquetAD_proper102!,
+    (1, 0, 3) => eval_vertex3_ParquetAD_proper103!,
+    (1, 0, 4) => eval_vertex3_ParquetAD_proper104!,
+    (1, 0, 5) => eval_vertex3_ParquetAD_proper105!,
+    (1, 1, 0) => eval_vertex3_ParquetAD_proper110!,
+    (1, 1, 1) => eval_vertex3_ParquetAD_proper111!,
+    (1, 1, 2) => eval_vertex3_ParquetAD_proper112!,
+    (1, 1, 3) => eval_vertex3_ParquetAD_proper113!,
+    (1, 1, 4) => eval_vertex3_ParquetAD_proper114!,
+    (1, 2, 0) => eval_vertex3_ParquetAD_proper120!,
+    (1, 2, 1) => eval_vertex3_ParquetAD_proper121!,
+    (1, 2, 2) => eval_vertex3_ParquetAD_proper122!,
+    (1, 2, 3) => eval_vertex3_ParquetAD_proper123!,
+    (1, 3, 0) => eval_vertex3_ParquetAD_proper130!,
+    (1, 3, 1) => eval_vertex3_ParquetAD_proper131!,
+    (1, 3, 2) => eval_vertex3_ParquetAD_proper132!,
+    (1, 4, 0) => eval_vertex3_ParquetAD_proper140!,
+    (1, 4, 1) => eval_vertex3_ParquetAD_proper141!,
+    (1, 5, 0) => eval_vertex3_ParquetAD_proper150!,
+    (2, 0, 0) => eval_vertex3_ParquetAD_proper200!,
+    (2, 0, 1) => eval_vertex3_ParquetAD_proper201!,
+    (2, 0, 2) => eval_vertex3_ParquetAD_proper202!,
+    (2, 0, 3) => eval_vertex3_ParquetAD_proper203!,
+    (2, 0, 4) => eval_vertex3_ParquetAD_proper204!,
+    (2, 1, 0) => eval_vertex3_ParquetAD_proper210!,
+    (2, 1, 1) => eval_vertex3_ParquetAD_proper211!,
+    (2, 1, 2) => eval_vertex3_ParquetAD_proper212!,
+    (2, 1, 3) => eval_vertex3_ParquetAD_proper213!,
+    (2, 2, 0) => eval_vertex3_ParquetAD_proper220!,
+    (2, 2, 1) => eval_vertex3_ParquetAD_proper221!,
+    (2, 2, 2) => eval_vertex3_ParquetAD_proper222!,
+    (2, 3, 0) => eval_vertex3_ParquetAD_proper230!,
+    (2, 3, 1) => eval_vertex3_ParquetAD_proper231!,
+    (2, 4, 0) => eval_vertex3_ParquetAD_proper240!,
+    (3, 0, 0) => eval_vertex3_ParquetAD_proper300!,
+    (3, 0, 1) => eval_vertex3_ParquetAD_proper301!,
+    (3, 0, 2) => eval_vertex3_ParquetAD_proper302!,
+    (3, 0, 3) => eval_vertex3_ParquetAD_proper303!,
+    (3, 1, 0) => eval_vertex3_ParquetAD_proper310!,
+    (3, 1, 1) => eval_vertex3_ParquetAD_proper311!,
+    (3, 1, 2) => eval_vertex3_ParquetAD_proper312!,
+    (3, 2, 0) => eval_vertex3_ParquetAD_proper320!,
+    (3, 2, 1) => eval_vertex3_ParquetAD_proper321!,
+    (3, 3, 0) => eval_vertex3_ParquetAD_proper330!,
+    (4, 0, 0) => eval_vertex3_ParquetAD_proper400!,
+    (4, 0, 1) => eval_vertex3_ParquetAD_proper401!,
+    (4, 0, 2) => eval_vertex3_ParquetAD_proper402!,
+    (4, 1, 0) => eval_vertex3_ParquetAD_proper410!,
+    (4, 1, 1) => eval_vertex3_ParquetAD_proper411!,
+    (4, 2, 0) => eval_vertex3_ParquetAD_proper420!,
+    (5, 0, 0) => eval_vertex3_ParquetAD_proper500!,
+    (5, 0, 1) => eval_vertex3_ParquetAD_proper501!,
+    (5, 1, 0) => eval_vertex3_ParquetAD_proper510!,
+    (6, 0, 0) => eval_vertex3_ParquetAD_proper600!
 )
 
 end

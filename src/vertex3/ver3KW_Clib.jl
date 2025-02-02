@@ -28,20 +28,27 @@ end
 integrand of vertex3
 """
 function integrand_ver3KW_Clib(idx, var, config)
-    para, kin, nkin, qout, nqout = config.userdata[1:5]
-    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[6:end]
+    para, filter, kin, nkin, qout, nqout = config.userdata[1:6]
+    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[7:end]
 
     dim, β, me, μ = para.dim, para.β, para.me, para.μ
     # leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
     varK, varT = var[1], var[2]
+    x = var[3][1]
     loopNum = config.dof[idx][1]
-    k1 = kin[var[3][1]]
-    n1 = nkin[var[4][1]]
-    q = qout[var[5][1]]
-    nq = nqout[var[6][1]]
+    k1 = kin[var[4][1]]
+    n1 = nkin[var[5][1]]
+    q = qout[var[6][1]]
+    nq = nqout[var[7][1]]
 
     varK.data[1, 1] = q
-    varK.data[1, 2] = k1
+    if dim == 3
+        varK.data[1, 2] = (k1 - q / 2) * x
+        varK.data[2, 2] = (k1 - q / 2) * sqrt(1 - x^2)
+    else
+        varK.data[1, 2] = (k1 - q / 2) * cos(x)
+        varK.data[2, 2] = (k1 - q / 2) * sin(x)
+    end
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
 
@@ -69,7 +76,12 @@ function integrand_ver3KW_Clib(idx, var, config)
     factor = 1.0 / (2π)^(dim * (loopNum))
     group = partition[idx]
 
-    evalfuncParquetAD_vertex3_map[group](root, leafval[idx])
+    if Proper in filter
+        evalfuncParquetAD_vertex3_proper_map[group](root, leafval[idx])
+    else
+        evalfuncParquetAD_vertex3_map[group](root, leafval[idx])
+    end
+
 
     wuu = zero(ComplexF64)
     wud = zero(ComplexF64)
@@ -87,10 +99,10 @@ function integrand_ver3KW_Clib(idx, var, config)
 end
 
 function measure_ver3KW_Clib(idx, var, obs, weight, config)
-    KINidx = var[3][1]
-    NKINidx = var[4][1]
-    QOUTidx = var[5][1]
-    NQOUTidx = var[6][1]
+    KINidx = var[4][1]
+    NKINidx = var[5][1]
+    QOUTidx = var[6][1]
+    NQOUTidx = var[7][1]
     obs[idx][1, KINidx, NKINidx, QOUTidx, NQOUTidx] += weight.d
     obs[idx][2, KINidx, NKINidx, QOUTidx, NQOUTidx] += weight.e
 end
@@ -160,23 +172,29 @@ function KW_Clib(para::ParaMC, diagram;
     T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
     T.data[1] = 0.0
 
+    if dim == 3
+        X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    elseif dim == 2
+        X = MCIntegration.Continuous(0.0, 2π, alpha=alpha) #x=θ
+    end
+
     KIN = MCIntegration.Discrete(1, Nkin, alpha=alpha)
     NKIN = MCIntegration.Discrete(1, Nnkin, alpha=alpha)
     QOUT = MCIntegration.Discrete(1, Nqout, alpha=alpha)
     NQOUT = MCIntegration.Discrete(1, Nnqout, alpha=alpha)
 
-    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     obs = [zeros(ComplexF64, 2, Nkin, Nnkin, Nqout, Nnqout) for p in diagpara]
     # println("obs size:", size(obs[1]))
 
     if isnothing(config)
         config = MCIntegration.Configuration(;
-            var=(K, T, KIN, NKIN, QOUT, NQOUT),
+            var=(K, T, X, KIN, NKIN, QOUT, NQOUT),
             dof=dof,
             obs=obs,
             type=Weight,
             # type=ComplexF64, # type of the integrand
-            userdata=(para, kin, nkin, qout, nqout, maxMomNum, extT_labels,
+            userdata=(para, filter, kin, nkin, qout, nqout, maxMomNum, extT_labels,
                 spin_conventions, leafstates, leafvalues, momLoopPool,
                 root, partition),
             kwargs...
@@ -210,16 +228,20 @@ function MC_KW_Clib(para;
     kin=[para.kF,], nkin=[0,],
     qout=[0.0,], nqout=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
-    filter=[NoHartree,],
+    filter=[NoHartree],
+    transferLoop=nothing,
     channels=[PHr, PHEr, PPr, Alli],
     partition=UEG.partition(para.order),
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0)
 
     kF = para.kF
-    neighbor = UEG.neighbor(partition)
 
-    diaginfo = Ver3.diagram_loadinfo(para, partition, filter=filter, root_dir=root_dir)
+    if Proper in filter
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
+
+    diaginfo = Ver3.diagram_loadinfo(para, partition, filter=filter, transferLoop=transferLoop, root_dir=root_dir)
     println(partition)
     neighbor = UEG.neighbor(partition)
 
