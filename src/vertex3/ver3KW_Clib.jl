@@ -73,7 +73,7 @@ function integrand_ver3KW_Clib(idx, var, config)
     end
 
     # factor = para.NF / (2π)^(dim * (loopNum))
-    factor = 1.0 / (2π)^(dim * (loopNum))
+    factor = 1.0 / (2π)^(dim * (loopNum)) / 2
     group = partition[idx]
 
     if Proper in filter
