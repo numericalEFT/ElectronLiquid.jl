@@ -279,7 +279,7 @@ function MC_KW_Clib(para;
             for (ki, k) in enumerate(qout)
                 factor = 1.0
                 d = real(data[1, 1, 1, ki, 1]) * factor + real(data[2, 1, 1, ki, 1]) * factor
-                @printf("%12.6f    %16s  \n", k, "$d")
+                @printf("%12.6f    %16s  \n", k/kF, "$d")
             end
         end
     end
