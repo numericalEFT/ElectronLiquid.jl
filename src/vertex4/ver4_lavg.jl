@@ -204,7 +204,8 @@ function MC_lavg(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1
     channels=[PHr, PHEr, PPr, Alli],
     partition=UEG.partition(para.order),
     transferLoop=nothing, extK=nothing, optimize_level=1,
-    verbose=0
+    verbose=0,
+    kwargs...
 )
     kF = para.kF
 
@@ -228,7 +229,8 @@ function MC_lavg(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
-        reweight_goal=reweight_goal
+        reweight_goal=reweight_goal,
+        kwargs...
     )
 
     if isnothing(ver4) == false
