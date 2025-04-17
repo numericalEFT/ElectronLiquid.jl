@@ -10,6 +10,12 @@ function integrandKW(idx, vars, config)
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
+    
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -20,27 +26,27 @@ function integrandKW(idx, vars, config)
             order = leafOrders[idx][i][1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
-            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
-            order = leafOrders[idx][i][2]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            order = lforders[2]
             if dim == 3
                 invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+                leafval[i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
                 if isLayered2D == false
                     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
-                    leafval[idx][i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
+                    leafval[i] = e0^2 / 2ϵ0 * invK * (λ * invK)^order
                 else
                     if order == 0
                         q = sqrt(dot(kq, kq) + 1e-16)
                         invK = 1.0 / q
-                        leafval[idx][i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
+                        leafval[i] = e0^2 / 2ϵ0 * invK * tanh(λ * q)
                     else
-                        leafval[idx][i] = 0.0 # no high-order counterterms
+                        leafval[i] = 0.0 # no high-order counterterms
                     end
                 end
             else
                 error("not implemented!")
-            end
+            end       
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -52,7 +58,7 @@ function integrandKW(idx, vars, config)
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
 
     loopNum = config.dof[idx][1]
-    factor = 1.0 / (2π)^(dim * loopNum)
+    factor = 1.0 / (2π)^(dim * loopNum) * para.spin
     return weight * factor
 end
 
@@ -63,6 +69,7 @@ function integrandKW_Clib(idx, vars, config)
     momLoopPool, root = config.userdata[8:9]
     isLayered2D = config.userdata[10]
     partition = config.userdata[11]
+    Generator = config.userdata[end]
 
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
     extidx = ExtKidx[1]
@@ -108,12 +115,16 @@ function integrandKW_Clib(idx, vars, config)
     end
 
     group = partition[idx]
-    evalfuncParquetAD_sigma_map[group](root, leafval)
+    if Generator == :GV
+        evalfuncGV_chargePolar_map[group](root, leafval)
+    else
+        evalfuncParquetAD_chargePolar_map[group](root, leafval)
+    end 
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
     loopNum = config.dof[idx][1]
-    factor = 1.0 / (2π)^(dim * loopNum)
+    factor = 1.0 / (2π)^(dim * loopNum) * para.spin
     return weight * factor
 end
 
@@ -170,7 +181,7 @@ function KW(para::ParaMC, diagram;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt=false, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, ExtKidx
     # observable of sigma diagram of different permutations
@@ -187,7 +198,7 @@ function KW(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, kwargs...)
+    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, thermal_ratio = 5, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -225,6 +236,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     integrand::Function=integrandKW_Clib,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     name="chargePolar",
+    Generator =:Parquet,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.ParquetAD_Clib"
@@ -263,7 +275,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt = false, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, X, ExtKidx
     # observable of sigma diagram of different permutations
@@ -275,7 +287,7 @@ function KW_Clib(para::ParaMC, diagram_info;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition),
+            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition,Generator),
             kwargs...
         )
     end

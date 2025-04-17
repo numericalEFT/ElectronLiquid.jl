@@ -1,19 +1,28 @@
 module Polarization
-using JLD2
+using JLD2, CSV
 
-using Printf, LinearAlgebra
+using Printf, LinearAlgebra, DataFrames
+using ..StaticArrays
+using ..Parameters
 using ..CompositeGrids
 using ..ElectronGas
 using ..MCIntegration
 using ..Lehmann
 
 using ..FeynmanDiagram
+import ..FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+import ..FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, NoBubble, Proper
+import ..FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import ..FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
+import ..FeynmanDiagram.Parquet: DiagPara, Ver4Diag, PolarDiag
 using ..Measurements
 
 using ..UEG
 using ..Propagator
 import ..Propagator: LeafStateAD
 using ..Diagram
+
+import ..Weight
 
 @inline function phase(varT, extT, l, β)
     tin, tout = varT[extT[1]], varT[extT[2]]
@@ -27,8 +36,12 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD/")
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), Generator=:Parquet
 )
+    if Generator==:GV
+        root_dir = joinpath(@__DIR__, "source_codeGV/")
+    end
+
     @assert para.spin == 2 "Only spin-unpolarized case is supported for compiled C library"
     kF = para.kF
 
@@ -37,22 +50,27 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     end
 
     _partition = Vector{eltype(partition)}()
+    for p in partition
+        p[1] == 1 && p[3] > 0 && continue
+        push!(_partition, p)
+    end
+
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
         for p in partition
-            p[1] == 1 && p[3] > 0 && continue
-            push!(_partition, p)
             push!(reweight_goal, 8.0^(p[1] - 1))
         end
         push!(reweight_goal, 1.0)
     end
     neighbor = UEG.neighbor(_partition)
+    println(reweight_goal)
+    # println(neighbor)
 
     diaginfo = Polarization.diagram_loadinfo(para, _partition, root_dir=root_dir)
     polar, result = Polarization.KW_Clib(para, diaginfo;
         root_dir=root_dir, isLayered2D=isLayered2D,
         neighbor=neighbor, reweight_goal=reweight_goal,
-        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread)
+        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread, Generator = Generator)
 
     if isnothing(polar) == false
         if isnothing(filename) == false
@@ -102,7 +120,8 @@ function MC(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=nothing,
         end
         push!(reweight_goal, 1.0)
     end
-    neighbor = UEG.neighbor(partition)
+
+    println(reweight_goal)
 
     polar, result = Polarization.KW(para, diagram;
         isLayered2D=isLayered2D,
@@ -159,6 +178,7 @@ function diagram_loadinfo(paramc::ParaMC, _partition::Vector{T};
 end
 
 include("source_codeParquetAD/Cwrapper_chargePolar_ParquetAD.jl")
+include("source_codeGV/Cwrapper_chargePolar_GV.jl")
 
 const evalfuncParquetAD_chargePolar_map = Dict(
     (1, 0, 0) => eval_chargePolar_ParquetAD100!,
@@ -202,6 +222,50 @@ const evalfuncParquetAD_chargePolar_map = Dict(
     (5, 0, 1) => eval_chargePolar_ParquetAD501!,
     (5, 1, 0) => eval_chargePolar_ParquetAD510!,
     (6, 0, 0) => eval_chargePolar_ParquetAD600!
+)
+
+const evalfuncGV_chargePolar_map = Dict(
+    (1, 0, 0) => eval_chargePolar_GV100!,
+    (1, 1, 0) => eval_chargePolar_GV110!,
+    (1, 2, 0) => eval_chargePolar_GV120!,
+    (1, 3, 0) => eval_chargePolar_GV130!,
+    (1, 4, 0) => eval_chargePolar_GV140!,
+    (1, 5, 0) => eval_chargePolar_GV150!,
+    (2, 0, 0) => eval_chargePolar_GV200!,
+    (2, 0, 1) => eval_chargePolar_GV201!,
+    (2, 0, 2) => eval_chargePolar_GV202!,
+    (2, 0, 3) => eval_chargePolar_GV203!,
+    (2, 0, 4) => eval_chargePolar_GV204!,
+    (2, 1, 0) => eval_chargePolar_GV210!,
+    (2, 1, 1) => eval_chargePolar_GV211!,
+    (2, 1, 2) => eval_chargePolar_GV212!,
+    (2, 1, 3) => eval_chargePolar_GV213!,
+    (2, 2, 0) => eval_chargePolar_GV220!,
+    (2, 2, 1) => eval_chargePolar_GV221!,
+    (2, 2, 2) => eval_chargePolar_GV222!,
+    (2, 3, 0) => eval_chargePolar_GV230!,
+    (2, 3, 1) => eval_chargePolar_GV231!,
+    (2, 4, 0) => eval_chargePolar_GV240!,
+    (3, 0, 0) => eval_chargePolar_GV300!,
+    (3, 0, 1) => eval_chargePolar_GV301!,
+    (3, 0, 2) => eval_chargePolar_GV302!,
+    (3, 0, 3) => eval_chargePolar_GV303!,
+    (3, 1, 0) => eval_chargePolar_GV310!,
+    (3, 1, 1) => eval_chargePolar_GV311!,
+    (3, 1, 2) => eval_chargePolar_GV312!,
+    (3, 2, 0) => eval_chargePolar_GV320!,
+    (3, 2, 1) => eval_chargePolar_GV321!,
+    (3, 3, 0) => eval_chargePolar_GV330!,
+    (4, 0, 0) => eval_chargePolar_GV400!,
+    (4, 0, 1) => eval_chargePolar_GV401!,
+    (4, 0, 2) => eval_chargePolar_GV402!,
+    (4, 1, 0) => eval_chargePolar_GV410!,
+    (4, 1, 1) => eval_chargePolar_GV411!,
+    (4, 2, 0) => eval_chargePolar_GV420!,
+    (5, 0, 0) => eval_chargePolar_GV500!,
+    (5, 0, 1) => eval_chargePolar_GV501!,
+    (5, 1, 0) => eval_chargePolar_GV510!,
+    (6, 0, 0) => eval_chargePolar_GV600!
 )
 
 end

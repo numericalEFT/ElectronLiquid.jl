@@ -119,9 +119,13 @@ end
 include("exchange_interaction.jl")
 include("ver4_lavg.jl")
 include("ver4_lavg_Clib.jl")
+include("ver4_lavg_Project.jl")
+include("ver4_lavg_beta.jl")
 include("ver4_OAA.jl")
 include("ver4_OAA_Clib.jl")
-
+include("ver4_AR.jl")
+include("ver4_Spec.jl")
+include("ver4_Spec_Jl.jl")
 # include("ver4_PH_l_vegas.jl")
 # include("ver4_PH_l_mcmc.jl")
 # include("ver4_ParquetAD_compile_dynamic.jl")
@@ -136,26 +140,42 @@ const evalfunc_vertex4_map = Dict(
     (0, 0, 2) => eval_vertex4_ParquetAD002!,
     (0, 0, 3) => eval_vertex4_ParquetAD003!,
     (0, 0, 4) => eval_vertex4_ParquetAD004!,
+    (0, 0, 5) => eval_vertex4_ParquetAD005!,
     (1, 0, 0) => eval_vertex4_ParquetAD100!,
     (1, 0, 1) => eval_vertex4_ParquetAD101!,
     (1, 0, 2) => eval_vertex4_ParquetAD102!,
     (1, 0, 3) => eval_vertex4_ParquetAD103!,
+    (1, 0, 4) => eval_vertex4_ParquetAD104!,
     (1, 1, 0) => eval_vertex4_ParquetAD110!,
     (1, 1, 1) => eval_vertex4_ParquetAD111!,
     (1, 1, 2) => eval_vertex4_ParquetAD112!,
+    (1, 1, 3) => eval_vertex4_ParquetAD113!,
     (1, 2, 0) => eval_vertex4_ParquetAD120!,
     (1, 2, 1) => eval_vertex4_ParquetAD121!,
+    (1, 2, 2) => eval_vertex4_ParquetAD122!,
     (1, 3, 0) => eval_vertex4_ParquetAD130!,
+    (1, 3, 1) => eval_vertex4_ParquetAD131!,
+    (1, 4, 0) => eval_vertex4_ParquetAD140!,
     (2, 0, 0) => eval_vertex4_ParquetAD200!,
     (2, 0, 1) => eval_vertex4_ParquetAD201!,
     (2, 0, 2) => eval_vertex4_ParquetAD202!,
+    (2, 0, 3) => eval_vertex4_ParquetAD203!,
     (2, 1, 0) => eval_vertex4_ParquetAD210!,
     (2, 1, 1) => eval_vertex4_ParquetAD211!,
+    (2, 1, 2) => eval_vertex4_ParquetAD212!,
     (2, 2, 0) => eval_vertex4_ParquetAD220!,
+    (2, 2, 1) => eval_vertex4_ParquetAD221!,
+    (2, 3, 0) => eval_vertex4_ParquetAD230!,
     (3, 0, 0) => eval_vertex4_ParquetAD300!,
     (3, 0, 1) => eval_vertex4_ParquetAD301!,
+    (3, 0, 2) => eval_vertex4_ParquetAD302!,
     (3, 1, 0) => eval_vertex4_ParquetAD310!,
-    (4, 0, 0) => eval_vertex4_ParquetAD400!
+    (3, 1, 1) => eval_vertex4_ParquetAD311!,
+    (3, 2, 0) => eval_vertex4_ParquetAD320!,
+    (4, 0, 0) => eval_vertex4_ParquetAD400!,
+    (4, 0, 1) => eval_vertex4_ParquetAD401!,
+    (4, 1, 0) => eval_vertex4_ParquetAD410!,
+    (5, 0, 0) => eval_vertex4_ParquetAD500!
 )
 
 const evalfunc_vertex4Proper_map = Dict(
@@ -176,7 +196,7 @@ const evalfunc_vertex4Proper_map = Dict(
     (1, 1, 3) => eval_vertex4Proper_ParquetAD113!,
     (1, 2, 0) => eval_vertex4Proper_ParquetAD120!,
     (1, 2, 1) => eval_vertex4Proper_ParquetAD121!,
-    (1, 2, 2) => eval_vertex4Proper_ParquetAD121!,
+    (1, 2, 2) => eval_vertex4Proper_ParquetAD122!,
     (1, 3, 0) => eval_vertex4Proper_ParquetAD130!,
     (1, 3, 1) => eval_vertex4Proper_ParquetAD131!,
     (1, 4, 0) => eval_vertex4Proper_ParquetAD140!,

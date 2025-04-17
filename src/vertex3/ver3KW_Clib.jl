@@ -1,0 +1,288 @@
+@inline function phase_ver3(varT, extT, nqout, nkin, β)
+    # println(extT)
+    # tq, tkin, tkout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    tq, tkin, tkout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    wqout, wkin = π * (2nqout) / β, π * (2nkin + 1) / β
+    wkout = wkin - wqout
+    return exp(-1im * (tkin * wkin - tq * wqout - tkout * wkout))
+end
+
+@inline function _StringtoIntVector(str::AbstractString)
+    pattern = r"[-+]?\d+"
+    return [parse(Int, m.match) for m in eachmatch(pattern, str)]
+end
+
+# @inline function phase_ver3(varT, extT, n, β)
+#     # println(extT)
+#     return phase_ver3(varT, extT, n[1], n[2], β)
+# end
+@inline function interactionTauNum(type::AnalyticProperty)
+    if type == Instant
+        return 1
+    else
+        return 2
+    end
+end
+
+"""
+integrand of vertex3
+"""
+function integrand_ver3KW_Clib(idx, var, config)
+    para, filter, kin, nkin, qout, nqout = config.userdata[1:6]
+    maxMomNum, extT_labels, spin_conventions, leafStat, leafval, momLoopPool, root, partition = config.userdata[7:end]
+
+    dim, β, me, μ = para.dim, para.β, para.me, para.μ
+    # leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
+    varK, varT = var[1], var[2]
+    x = var[3][1]
+    loopNum = config.dof[idx][1]
+    k1 = kin[var[4][1]]
+    n1 = nkin[var[5][1]]
+    q = qout[var[6][1]]
+    nq = nqout[var[7][1]]
+
+    varK.data[1, 1] = q
+    if dim == 3
+        varK.data[1, 2] = (k1 - q / 2) * x
+        varK.data[2, 2] = (k1 - q / 2) * sqrt(1 - x^2)
+    else
+        varK.data[1, 2] = (k1 - q / 2) * cos(x)
+        varK.data[2, 2] = (k1 - q / 2) * sin(x)
+    end
+
+    FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
+
+    for (i, lfstat) in enumerate(leafStat[idx])
+        lftype, lforders, leafτ_i, leafτ_o, leafMomIdx, tau_num = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx, lfstat.tau_num
+        if lftype == 0
+            continue
+            # elseif isodd(lftype) #fermionic 
+        elseif lftype == 1 #fermionic 
+            τ = varT[leafτ_o] - varT[leafτ_i]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            ϵ = dot(kq, kq) / (2me) - μ
+            order = lforders[1]
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
+        elseif lftype == 2 #bosonic 
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx)
+            τ2, τ1 = varT[leafτ_o], varT[leafτ_i]
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, lforders; idtype=Instant, tau_num=tau_num)
+        else
+            error("this leaftype $lftype not implemented!")
+        end
+    end
+
+    # factor = para.NF / (2π)^(dim * (loopNum))
+    factor = 1.0 / (2π)^(dim * (loopNum)) / 2
+    group = partition[idx]
+
+    if Proper in filter
+        evalfuncParquetAD_vertex3_proper_map[group](root, leafval[idx])
+    else
+        evalfuncParquetAD_vertex3_map[group](root, leafval[idx])
+    end
+
+
+    wuu = zero(ComplexF64)
+    wud = zero(ComplexF64)
+    for ri in 1:length(extT_labels[idx])
+        if spin_conventions[idx][ri] == UpUp
+            wuu += root[ri] * phase_ver3(varT, extT_labels[idx][ri], nq, n1, β)
+        elseif spin_conventions[idx][ri] == UpDown
+            wud += root[ri] * phase_ver3(varT, extT_labels[idx][ri], nq, n1, β)
+        end
+    end
+
+    return Weight(wuu * factor, wud * factor)
+
+    # return Weight(1.0, 1.0)
+end
+
+function measure_ver3KW_Clib(idx, var, obs, weight, config)
+    KINidx = var[4][1]
+    NKINidx = var[5][1]
+    QOUTidx = var[6][1]
+    NQOUTidx = var[7][1]
+    obs[idx][1, KINidx, NKINidx, QOUTidx, NQOUTidx] += weight.d
+    obs[idx][2, KINidx, NKINidx, QOUTidx, NQOUTidx] += weight.e
+end
+
+function KW_Clib(para::ParaMC, diagram;
+    kin=[para.kF,], #amplitude of kin
+    nkin=[0,], # matfreq of kin
+    qout=[0.0,],
+    nqout=[0,],
+    neval=1e6, #number of evaluations
+    print=0,
+    alpha=3.0, #learning ratio
+    config=nothing,
+    solver=:mcmc,
+    integrand::Function=integrand_ver3KW_Clib,
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
+    kwargs...)
+
+    dim, β, kF, NF = para.dim, para.β, para.kF, para.NF
+    partition, diagpara, extT_labels, spin_conventions = diagram
+    filter = diagpara[1].filter
+
+    if NoBubble in diagpara[1].filter
+        UEG.MCinitialize!(para, false)
+    else
+        UEG.MCinitialize!(para, true)
+    end
+
+    for p in diagpara
+        @assert diagpara[1].filter == p.filter "filter should be the same"
+    end
+
+    @assert length(diagpara) == length(extT_labels) == length(spin_conventions)
+
+    Nkin = length(kin)
+    Nnkin = length(nkin)
+    Nqout = length(qout)
+    Nnqout = length(nqout)
+
+    maxMomNum = maximum([key[1] for key in partition]) + 2
+    MaxOrder = 6
+
+    df = CSV.read(root_dir * "loopBasis_vertex3_maxOrder$(MaxOrder).csv", DataFrame)
+    loopBasis = [df[!, col][1:maxMomNum] for col in names(df)]
+    momLoopPool = FrontEnds.LoopPool(:K, dim, loopBasis)
+
+
+    leafstates = Vector{Vector{LeafStateADDynamic}}()
+    leafvalues = Vector{Vector{Float64}}()
+
+    for key in partition
+        key_str = join(string.(key))
+        df = CSV.read(root_dir * "leafinfo_vertex3_$key_str.csv", DataFrame)
+        leafstates_par = Vector{LeafStateADDynamic}()
+        for row in eachrow(df)
+            push!(leafstates_par, LeafStateADDynamic(row[2], _StringtoIntVector(row[3]), row[4:end]..., 1))
+        end
+        push!(leafstates, leafstates_par)
+        push!(leafvalues, df[!, names(df)[1]])
+    end
+
+    root = zeros(Float64, maximum(length.(extT_labels)))
+
+    K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
+    K.data[:, 1] .= UEG.getK(qout[1], dim, 1)
+    K.data[:, 2] .= UEG.getK(kin[1], dim, 1)
+    T = MCIntegration.Continuous(0.0, β, offset=1, alpha=alpha)
+    T.data[1] = 0.0
+
+    if dim == 3
+        X = MCIntegration.Continuous(-1.0, 1.0, alpha=alpha) #x=cos(θ)
+    elseif dim == 2
+        X = MCIntegration.Continuous(0.0, 2π, alpha=alpha) #x=θ
+    end
+
+    KIN = MCIntegration.Discrete(1, Nkin, alpha=alpha)
+    NKIN = MCIntegration.Discrete(1, Nnkin, alpha=alpha)
+    QOUT = MCIntegration.Discrete(1, Nqout, alpha=alpha)
+    NQOUT = MCIntegration.Discrete(1, Nnqout, alpha=alpha)
+
+    dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1, 1, 1, 1] for p in diagpara] # K, T, ExtKidx
+    obs = [zeros(ComplexF64, 2, Nkin, Nnkin, Nqout, Nnqout) for p in diagpara]
+    # println("obs size:", size(obs[1]))
+
+    if isnothing(config)
+        config = MCIntegration.Configuration(;
+            var=(K, T, X, KIN, NKIN, QOUT, NQOUT),
+            dof=dof,
+            obs=obs,
+            type=Weight,
+            # type=ComplexF64, # type of the integrand
+            userdata=(para, filter, kin, nkin, qout, nqout, maxMomNum, extT_labels,
+                spin_conventions, leafstates, leafvalues, momLoopPool,
+                root, partition),
+            kwargs...
+        )
+    end
+    result = integrate(integrand; measure=measure_ver3KW_Clib, config=config, solver=solver, neval=neval, print=print, kwargs...)
+
+    if isnothing(result) == false
+        if print >= 0
+            report(result.config)
+            # report(result; pick=o -> (real(o[1, 1, 1])), name="uu")
+            # report(result; pick=o -> (real(o[2, 1, 1])), name="ud")
+        end
+
+        datadict = Dict{eltype(partition),Any}()
+        for k in 1:length(dof)
+            avg, std = result.mean[k], result.stdev[k]
+            r = measurement.(real(avg), real(std))
+            i = measurement.(imag(avg), imag(std))
+            data = Complex.(r, i)
+            datadict[partition[k]] = data
+        end
+        return datadict, result
+    else
+        return nothing, nothing
+    end
+
+end
+
+function MC_KW_Clib(para;
+    kin=[para.kF,], nkin=[0,],
+    qout=[0.0,], nqout=[0,],
+    neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
+    filter=[NoHartree],
+    transferLoop=nothing,
+    channels=[PHr, PHEr, PPr, Alli],
+    partition=UEG.partition(para.order),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
+    verbose=0)
+
+    kF = para.kF
+
+    if Proper in filter
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
+
+    diaginfo = Ver3.diagram_loadinfo(para, partition, filter=filter, transferLoop=transferLoop, root_dir=root_dir)
+    println(partition)
+    neighbor = UEG.neighbor(partition)
+
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder, vOrder) in partition
+            # push!(reweight_goal, 8.0^(order + vOrder - 1))
+            push!(reweight_goal, 8.0^(order - 1))
+        end
+        push!(reweight_goal, 1.0)
+    end
+
+    ver3, result = Ver3.KW_Clib(para, diaginfo;
+        kin=kin, nkin=nkin,
+        qout=qout, nqout=nqout,
+        neval=neval, print=verbose,
+        neighbor=neighbor, root_dir=root_dir, reweight_goal=reweight_goal)
+
+    if isnothing(ver3) == false
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(UEG.short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (kin, nkin, qout, nqout, ver3)
+            end
+        end
+
+        for p in partition
+            data = ver3[p]
+            printstyled("partition: $p\n", color=:yellow)
+            @printf("%12s    %16s   \n", "k/kF", "ver3")
+            for (ki, k) in enumerate(qout)
+                factor = 1.0
+                d = real(data[1, 1, 1, ki, 1]) * factor + real(data[2, 1, 1, ki, 1]) * factor
+                @printf("%12.6f    %16s  \n", k/kF, "$d")
+            end
+        end
+    end
+
+    return ver3, result
+end
