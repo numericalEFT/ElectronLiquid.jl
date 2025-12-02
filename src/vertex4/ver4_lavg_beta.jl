@@ -1,5 +1,5 @@
 function integrand_lavg_beta(idx, var, config)
-    weight = DiagramWeight(idx,var,config)
+    weight = DiagramWeight(idx, var, config)
     # println(weight)
     return weight
 end
@@ -89,13 +89,13 @@ function DiagramWeight(pidx, var, config)
 
     for ri in 1:length(extT_labels[idx])
         if spin_conventions[idx][ri] == UpUp
-            wuu += root[ri] 
+            wuu += root[ri]
         elseif spin_conventions[idx][ri] == UpDown
-            wud += root[ri] 
+            wud += root[ri]
         end
     end
     # println(wuu,wud)
-    wuu,wud = wuu * factor, wud*factor
+    wuu, wud = wuu * factor, wud * factor
 
     return Weight{ComplexF64}(wuu, wud)
 end
@@ -202,7 +202,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     n=[0, 0, 0],
     l=[0,],
     neval=1e6, #number of evaluations
-    measurefreq=10, 
+    measurefreq=10,
     print=0,
     alpha=3.0, #learning ratio
     config=nothing,
@@ -286,7 +286,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
             dof=dof,
             obs=obs,
             type=Weight,
-            measurefreq = measurefreq,
+            measurefreq=measurefreq,
             # type=ComplexF64, # type of the integrand
             userdata=(para, chan, filter, kamp, kamp2, q, l, n, maxMomNum, extT_labels,
                 spin_conventions, leafstates, leafvalues, momLoopPool,
@@ -341,19 +341,21 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
-    neighbor = UEG.neighbor(partition)
+
+    sample_partitions = [(o, 0) for o in 0:para.order]
+    neighbor = UEG.neighbor(sample_partitions)
 
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
         for o in 0:para.order
-            push!(reweight_goal, 1.0^(o) )
+            push!(reweight_goal, 1.0^(o))
         end
         push!(reweight_goal, 1.0)
         # println(length(reweight_goal))
     end
 
-    ver4, result = Ver4.lavg_Clib_beta(para, diaginfo; chan = channel,
+    ver4, result = Ver4.lavg_Clib_beta(para, diaginfo; chan=channel,
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,
