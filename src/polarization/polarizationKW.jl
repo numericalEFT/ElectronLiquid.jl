@@ -15,7 +15,7 @@ function integrandKW(idx, vars, config)
     else
         tau_num = 1
     end
-    
+
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -46,7 +46,7 @@ function integrandKW(idx, vars, config)
                 end
             else
                 error("not implemented!")
-            end       
+            end
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -119,7 +119,7 @@ function integrandKW_Clib(idx, vars, config)
         evalfuncGV_chargePolar_map[group](root, leafval)
     else
         evalfuncParquetAD_chargePolar_map[group](root, leafval)
-    end 
+    end
 
     n = ngrid[varN[1]]
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
@@ -198,7 +198,7 @@ function KW(para::ParaMC, diagram;
         )
     end
 
-    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, thermal_ratio = 5, kwargs...)
+    result = integrate(integrand; config=config, measure=measureKW, print=print, neval=neval, solver=solver, nburnin=neval / 5, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -236,7 +236,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     integrand::Function=integrandKW_Clib,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     name="chargePolar",
-    Generator =:Parquet,
+    Generator=:Parquet,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.ParquetAD_Clib"
@@ -275,7 +275,7 @@ function KW_Clib(para::ParaMC, diagram_info;
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
     T.data[1] = 0.0
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
-    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt = false, alpha=alpha)
+    ExtKidx = MCIntegration.Discrete(1, length(kgrid), adapt=false, alpha=alpha)
 
     dof = [[p.innerLoopNum, p.totalTauNum - 1, 1, 1] for p in diagpara] # K, T, X, ExtKidx
     # observable of sigma diagram of different permutations
@@ -287,7 +287,7 @@ function KW_Clib(para::ParaMC, diagram_info;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
-            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition,Generator),
+            userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition, Generator),
             kwargs...
         )
     end
