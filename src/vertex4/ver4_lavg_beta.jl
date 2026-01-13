@@ -332,7 +332,8 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 )
     kF = para.kF
     if Proper in filter
-        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+        # root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+        root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper_NoAlli/")
     end
 
 
