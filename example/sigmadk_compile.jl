@@ -11,6 +11,7 @@ partition = Vector{NTuple{4,Int}}()
 for p in _partition
     push!(partition, (p..., 1))
 end
+println(partition)
 FeynGraphs = Diagram.diagram_parquet_noresponse(:sigma, para, partition, [pr -> pr isa FrontEnds.BareGreenId,
         pr -> pr isa FrontEnds.BareInteractionId, pr -> pr.extK[1] != 0], optimize_level=1)
 
