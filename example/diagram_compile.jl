@@ -1,5 +1,6 @@
 using ElectronLiquid
 using FeynmanDiagram
+using Dates
 
 @inline function totalMomNum(order::Int, diagtype::Symbol)
     if diagtype == :vertex3
@@ -11,7 +12,8 @@ using FeynmanDiagram
     end
 end
 
-diagtype = :vertex3 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+# diagtype = :vertex3 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
 order = 6
 filter = [Parquet.NoHartree, Parquet.Proper]
 # filter = [Parquet.NoHartree]
@@ -28,6 +30,7 @@ else
     _partition = UEG.partition(order, offset=0)
 end
 
+println("Generating diagrams...", now())
 if diagtype == :vertex4 || diagtype == :vertex3
     partition = Vector{NTuple{3,Int}}()
     for (o, sOrder, vOrder) in _partition
@@ -54,6 +57,8 @@ else
     partition = _partition
     FeynGraphs = Diagram.diagram_parquet_noresponse(diagtype, para, partition, optimize_level=1)
 end
+
+println("Compiling C library...", now())
 
 # compile C library
 root_dir = joinpath(@__DIR__, "source_codeParquetAD")

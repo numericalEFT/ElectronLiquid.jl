@@ -105,8 +105,8 @@ function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vecto
         # Max_ID_o = maximum([p[3] for p in partition_order])
         para = diagPara(diagtype, isDynamic, order, spin, filter, transferLoop)
         graph_df = Parquet.build(para, extK; channels=channels)
-        optimize!(graph_df.diagram, level=optimize_level)
-        optimize!(graph_df.diagram, level=optimize_level)
+        # optimize!(graph_df.diagram, level=optimize_level)
+        optimize!(graph_df.diagram)
 
         renormalization_orders = Int[]
         for i in 1:deriv_num
@@ -142,8 +142,8 @@ function diagram_GV_freeE(paramc::ParaMC, _partition::Vector{T},
         partition_order = [_partition[i] for i in partition_ind]
 
         diagrams = GV.diagsGV(:freeEnergy, order, spinPolarPara=spinPolarPara, filter=filter)
-        optimize!(diagrams, level=optimize_level)
-        optimize!(diagrams, level=optimize_level)
+        # optimize!(diagrams, level=optimize_level)
+        optimize!(diagrams)
 
         renormalization_orders = Int[]
         for i in 1:deriv_num
@@ -184,8 +184,8 @@ function diagram_GV_noresponse(diagtype::Symbol, paramc::ParaMC, _partition::Vec
         partition_order = [_partition[i] for i in partition_ind]
 
         diagrams = GV.diagsGV(diagtype, order, spinPolarPara=spinPolarPara, filter=filter)
-        optimize!(diagrams, level=optimize_level)
-        optimize!(diagrams, level=optimize_level)
+        # optimize!(diagrams, level=optimize_level)
+        optimize!(diagrams)
 
         renormalization_orders = Int[]
         for i in 1:deriv_num
