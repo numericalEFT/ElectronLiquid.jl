@@ -38,7 +38,7 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), Generator=:Parquet
 )
-    if Generator==:GV
+    if Generator == :GV
         root_dir = joinpath(@__DIR__, "source_codeGV/")
     end
 
@@ -70,7 +70,7 @@ function MC_Clib(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_goal=not
     polar, result = Polarization.KW_Clib(para, diaginfo;
         root_dir=root_dir, isLayered2D=isLayered2D,
         neighbor=neighbor, reweight_goal=reweight_goal,
-        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread, Generator = Generator)
+        kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread, Generator=Generator)
 
     if isnothing(polar) == false
         if isnothing(filename) == false
@@ -180,92 +180,24 @@ end
 include("source_codeParquetAD/Cwrapper_chargePolar_ParquetAD.jl")
 include("source_codeGV/Cwrapper_chargePolar_GV.jl")
 
-const evalfuncParquetAD_chargePolar_map = Dict(
-    (1, 0, 0) => eval_chargePolar_ParquetAD100!,
-    (1, 1, 0) => eval_chargePolar_ParquetAD110!,
-    (1, 2, 0) => eval_chargePolar_ParquetAD120!,
-    (1, 3, 0) => eval_chargePolar_ParquetAD130!,
-    (1, 4, 0) => eval_chargePolar_ParquetAD140!,
-    (1, 5, 0) => eval_chargePolar_ParquetAD150!,
-    (2, 0, 0) => eval_chargePolar_ParquetAD200!,
-    (2, 0, 1) => eval_chargePolar_ParquetAD201!,
-    (2, 0, 2) => eval_chargePolar_ParquetAD202!,
-    (2, 0, 3) => eval_chargePolar_ParquetAD203!,
-    (2, 0, 4) => eval_chargePolar_ParquetAD204!,
-    (2, 1, 0) => eval_chargePolar_ParquetAD210!,
-    (2, 1, 1) => eval_chargePolar_ParquetAD211!,
-    (2, 1, 2) => eval_chargePolar_ParquetAD212!,
-    (2, 1, 3) => eval_chargePolar_ParquetAD213!,
-    (2, 2, 0) => eval_chargePolar_ParquetAD220!,
-    (2, 2, 1) => eval_chargePolar_ParquetAD221!,
-    (2, 2, 2) => eval_chargePolar_ParquetAD222!,
-    (2, 3, 0) => eval_chargePolar_ParquetAD230!,
-    (2, 3, 1) => eval_chargePolar_ParquetAD231!,
-    (2, 4, 0) => eval_chargePolar_ParquetAD240!,
-    (3, 0, 0) => eval_chargePolar_ParquetAD300!,
-    (3, 0, 1) => eval_chargePolar_ParquetAD301!,
-    (3, 0, 2) => eval_chargePolar_ParquetAD302!,
-    (3, 0, 3) => eval_chargePolar_ParquetAD303!,
-    (3, 1, 0) => eval_chargePolar_ParquetAD310!,
-    (3, 1, 1) => eval_chargePolar_ParquetAD311!,
-    (3, 1, 2) => eval_chargePolar_ParquetAD312!,
-    (3, 2, 0) => eval_chargePolar_ParquetAD320!,
-    (3, 2, 1) => eval_chargePolar_ParquetAD321!,
-    (3, 3, 0) => eval_chargePolar_ParquetAD330!,
-    (4, 0, 0) => eval_chargePolar_ParquetAD400!,
-    (4, 0, 1) => eval_chargePolar_ParquetAD401!,
-    (4, 0, 2) => eval_chargePolar_ParquetAD402!,
-    (4, 1, 0) => eval_chargePolar_ParquetAD410!,
-    (4, 1, 1) => eval_chargePolar_ParquetAD411!,
-    (4, 2, 0) => eval_chargePolar_ParquetAD420!,
-    (5, 0, 0) => eval_chargePolar_ParquetAD500!,
-    (5, 0, 1) => eval_chargePolar_ParquetAD501!,
-    (5, 1, 0) => eval_chargePolar_ParquetAD510!,
-    (6, 0, 0) => eval_chargePolar_ParquetAD600!
-)
+const evalfuncParquetAD_chargePolar_map = Dict{Tuple{Int,Int,Int},Function}()
+const evalfuncGV_chargePolar_map = Dict{Tuple{Int,Int,Int},Function}()
 
-const evalfuncGV_chargePolar_map = Dict(
-    (1, 0, 0) => eval_chargePolar_GV100!,
-    (1, 1, 0) => eval_chargePolar_GV110!,
-    (1, 2, 0) => eval_chargePolar_GV120!,
-    (1, 3, 0) => eval_chargePolar_GV130!,
-    (1, 4, 0) => eval_chargePolar_GV140!,
-    (1, 5, 0) => eval_chargePolar_GV150!,
-    (2, 0, 0) => eval_chargePolar_GV200!,
-    (2, 0, 1) => eval_chargePolar_GV201!,
-    (2, 0, 2) => eval_chargePolar_GV202!,
-    (2, 0, 3) => eval_chargePolar_GV203!,
-    (2, 0, 4) => eval_chargePolar_GV204!,
-    (2, 1, 0) => eval_chargePolar_GV210!,
-    (2, 1, 1) => eval_chargePolar_GV211!,
-    (2, 1, 2) => eval_chargePolar_GV212!,
-    (2, 1, 3) => eval_chargePolar_GV213!,
-    (2, 2, 0) => eval_chargePolar_GV220!,
-    (2, 2, 1) => eval_chargePolar_GV221!,
-    (2, 2, 2) => eval_chargePolar_GV222!,
-    (2, 3, 0) => eval_chargePolar_GV230!,
-    (2, 3, 1) => eval_chargePolar_GV231!,
-    (2, 4, 0) => eval_chargePolar_GV240!,
-    (3, 0, 0) => eval_chargePolar_GV300!,
-    (3, 0, 1) => eval_chargePolar_GV301!,
-    (3, 0, 2) => eval_chargePolar_GV302!,
-    (3, 0, 3) => eval_chargePolar_GV303!,
-    (3, 1, 0) => eval_chargePolar_GV310!,
-    (3, 1, 1) => eval_chargePolar_GV311!,
-    (3, 1, 2) => eval_chargePolar_GV312!,
-    (3, 2, 0) => eval_chargePolar_GV320!,
-    (3, 2, 1) => eval_chargePolar_GV321!,
-    (3, 3, 0) => eval_chargePolar_GV330!,
-    (4, 0, 0) => eval_chargePolar_GV400!,
-    (4, 0, 1) => eval_chargePolar_GV401!,
-    (4, 0, 2) => eval_chargePolar_GV402!,
-    (4, 1, 0) => eval_chargePolar_GV410!,
-    (4, 1, 1) => eval_chargePolar_GV411!,
-    (4, 2, 0) => eval_chargePolar_GV420!,
-    (5, 0, 0) => eval_chargePolar_GV500!,
-    (5, 0, 1) => eval_chargePolar_GV501!,
-    (5, 1, 0) => eval_chargePolar_GV510!,
-    (6, 0, 0) => eval_chargePolar_GV600!
-)
+for sym in names(@__MODULE__; all=true)
+    s_str = String(sym)
+
+    m_chargePolar = match(r"^evalfuncParquetAD_chargePolar_map(\d)(\d)(\d)!$", s_str)
+    if m_chargePolar !== nothing
+        o, i, j = parse.(Int, m_chargePolar.captures)
+        evalfuncParquetAD_chargePolar_map[(o, i, j)] = getfield(@__MODULE__, sym)
+        continue
+    end
+
+    m_GV = match(r"^evalfuncGV_chargePolar_map(\d)(\d)(\d)!$", s_str)
+    if m_GV !== nothing
+        o, i, j, = parse.(Int, m_GV.captures)
+        evalfuncGV_chargePolar_map[(o, i, j)] = getfield(@__MODULE__, sym)
+    end
+end
 
 end

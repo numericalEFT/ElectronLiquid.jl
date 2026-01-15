@@ -135,92 +135,24 @@ include("source_codeParquetAD/Cwrapper_vertex4_ParquetAD.jl")
 # include("source_codeParquetAD_Proper/Cwrapper_vertex4_ParquetAD.jl")
 include("source_codeParquetAD_Proper_NoAlli/Cwrapper_vertex4_ParquetAD.jl")
 
-const evalfunc_vertex4_map = Dict(
-    (0, 0, 0) => eval_vertex4_ParquetAD000!,
-    (0, 0, 1) => eval_vertex4_ParquetAD001!,
-    (0, 0, 2) => eval_vertex4_ParquetAD002!,
-    (0, 0, 3) => eval_vertex4_ParquetAD003!,
-    (0, 0, 4) => eval_vertex4_ParquetAD004!,
-    (0, 0, 5) => eval_vertex4_ParquetAD005!,
-    (1, 0, 0) => eval_vertex4_ParquetAD100!,
-    (1, 0, 1) => eval_vertex4_ParquetAD101!,
-    (1, 0, 2) => eval_vertex4_ParquetAD102!,
-    (1, 0, 3) => eval_vertex4_ParquetAD103!,
-    (1, 0, 4) => eval_vertex4_ParquetAD104!,
-    (1, 1, 0) => eval_vertex4_ParquetAD110!,
-    (1, 1, 1) => eval_vertex4_ParquetAD111!,
-    (1, 1, 2) => eval_vertex4_ParquetAD112!,
-    (1, 1, 3) => eval_vertex4_ParquetAD113!,
-    (1, 2, 0) => eval_vertex4_ParquetAD120!,
-    (1, 2, 1) => eval_vertex4_ParquetAD121!,
-    (1, 2, 2) => eval_vertex4_ParquetAD122!,
-    (1, 3, 0) => eval_vertex4_ParquetAD130!,
-    (1, 3, 1) => eval_vertex4_ParquetAD131!,
-    (1, 4, 0) => eval_vertex4_ParquetAD140!,
-    (2, 0, 0) => eval_vertex4_ParquetAD200!,
-    (2, 0, 1) => eval_vertex4_ParquetAD201!,
-    (2, 0, 2) => eval_vertex4_ParquetAD202!,
-    (2, 0, 3) => eval_vertex4_ParquetAD203!,
-    (2, 1, 0) => eval_vertex4_ParquetAD210!,
-    (2, 1, 1) => eval_vertex4_ParquetAD211!,
-    (2, 1, 2) => eval_vertex4_ParquetAD212!,
-    (2, 2, 0) => eval_vertex4_ParquetAD220!,
-    (2, 2, 1) => eval_vertex4_ParquetAD221!,
-    (2, 3, 0) => eval_vertex4_ParquetAD230!,
-    (3, 0, 0) => eval_vertex4_ParquetAD300!,
-    (3, 0, 1) => eval_vertex4_ParquetAD301!,
-    (3, 0, 2) => eval_vertex4_ParquetAD302!,
-    (3, 1, 0) => eval_vertex4_ParquetAD310!,
-    (3, 1, 1) => eval_vertex4_ParquetAD311!,
-    (3, 2, 0) => eval_vertex4_ParquetAD320!,
-    (4, 0, 0) => eval_vertex4_ParquetAD400!,
-    (4, 0, 1) => eval_vertex4_ParquetAD401!,
-    (4, 1, 0) => eval_vertex4_ParquetAD410!,
-    (5, 0, 0) => eval_vertex4_ParquetAD500!
-)
+const evalfunc_vertex4_map = Dict{Tuple{Int,Int,Int},Function}()
+const evalfunc_vertex4Proper_map = Dict{Tuple{Int,Int,Int},Function}()
 
-const evalfunc_vertex4Proper_map = Dict(
-    (0, 0, 0) => eval_vertex4Proper_ParquetAD000!,
-    (0, 0, 1) => eval_vertex4Proper_ParquetAD001!,
-    (0, 0, 2) => eval_vertex4Proper_ParquetAD002!,
-    (0, 0, 3) => eval_vertex4Proper_ParquetAD003!,
-    (0, 0, 4) => eval_vertex4Proper_ParquetAD004!,
-    (0, 0, 5) => eval_vertex4Proper_ParquetAD005!,
-    (1, 0, 0) => eval_vertex4Proper_ParquetAD100!,
-    (1, 0, 1) => eval_vertex4Proper_ParquetAD101!,
-    (1, 0, 2) => eval_vertex4Proper_ParquetAD102!,
-    (1, 0, 3) => eval_vertex4Proper_ParquetAD103!,
-    (1, 0, 4) => eval_vertex4Proper_ParquetAD104!,
-    (1, 1, 0) => eval_vertex4Proper_ParquetAD110!,
-    (1, 1, 1) => eval_vertex4Proper_ParquetAD111!,
-    (1, 1, 2) => eval_vertex4Proper_ParquetAD112!,
-    (1, 1, 3) => eval_vertex4Proper_ParquetAD113!,
-    (1, 2, 0) => eval_vertex4Proper_ParquetAD120!,
-    (1, 2, 1) => eval_vertex4Proper_ParquetAD121!,
-    (1, 2, 2) => eval_vertex4Proper_ParquetAD122!,
-    (1, 3, 0) => eval_vertex4Proper_ParquetAD130!,
-    (1, 3, 1) => eval_vertex4Proper_ParquetAD131!,
-    (1, 4, 0) => eval_vertex4Proper_ParquetAD140!,
-    (2, 0, 0) => eval_vertex4Proper_ParquetAD200!,
-    (2, 0, 1) => eval_vertex4Proper_ParquetAD201!,
-    (2, 0, 2) => eval_vertex4Proper_ParquetAD202!,
-    (2, 0, 3) => eval_vertex4Proper_ParquetAD203!,
-    (2, 1, 0) => eval_vertex4Proper_ParquetAD210!,
-    (2, 1, 1) => eval_vertex4Proper_ParquetAD211!,
-    (2, 1, 2) => eval_vertex4Proper_ParquetAD212!,
-    (2, 2, 0) => eval_vertex4Proper_ParquetAD220!,
-    (2, 2, 1) => eval_vertex4Proper_ParquetAD221!,
-    (2, 3, 0) => eval_vertex4Proper_ParquetAD230!,
-    (3, 0, 0) => eval_vertex4Proper_ParquetAD300!,
-    (3, 0, 1) => eval_vertex4Proper_ParquetAD301!,
-    (3, 0, 2) => eval_vertex4Proper_ParquetAD302!,
-    (3, 1, 0) => eval_vertex4Proper_ParquetAD310!,
-    (3, 1, 1) => eval_vertex4Proper_ParquetAD311!,
-    (3, 2, 0) => eval_vertex4Proper_ParquetAD320!,
-    (4, 0, 0) => eval_vertex4Proper_ParquetAD400!,
-    (4, 0, 1) => eval_vertex4Proper_ParquetAD401!,
-    (4, 1, 0) => eval_vertex4Proper_ParquetAD410!,
-    (5, 0, 0) => eval_vertex4Proper_ParquetAD500!
-)
+for sym in names(@__MODULE__; all=true)
+    s_str = String(sym)
+
+    m_ver4 = match(r"^eval_vertex4_ParquetAD(\d)(\d)(\d)!$", s_str)
+    if m_ver4 !== nothing
+        o, i, j = parse.(Int, m_ver4.captures)
+        evalfunc_vertex4_map[(o, i, j)] = getfield(@__MODULE__, sym)
+        continue
+    end
+
+    m_ver4Proper = match(r"^eval_vertex4Proper_ParquetAD(\d)(\d)(\d)!$", s_str)
+    if m_ver4Proper !== nothing
+        o, i, j = parse.(Int, m_ver4Proper.captures)
+        evalfunc_vertex4Proper_map[(o, i, j)] = getfield(@__MODULE__, sym)
+    end
+end
 
 end
