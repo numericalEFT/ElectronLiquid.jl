@@ -309,7 +309,9 @@ function MC_dk_Reweight(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_g
 )
     @assert para.spin == 2 "Only spin-unpolarized case is supported for compiled C library"
     kF = para.kF
-    neighbor = UEG.neighbor(partition)
+
+    sample_partitions = [(o, 0) for o in 1:para.order]
+    neighbor = UEG.neighbor(sample_partitions)
 
     if isLayered2D
         @assert (para.dim == 2) "Only 2D systems supports the tanh screened Coulomb interaction"

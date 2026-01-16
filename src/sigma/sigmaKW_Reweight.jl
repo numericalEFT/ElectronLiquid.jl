@@ -110,6 +110,7 @@ function measureKW_Reweight(pidx, vars, obs, relative_weight, config) # for the 
                 kq = FrontEnds.loop(momLoopPool, leafMomIdx)
                 ϵ = dot(kq, kq) / (2me) - μ
                 order = lforders[1]
+                println(lforders[1])
                 leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order)
             elseif lftype == 2 #bosonic
                 kq = FrontEnds.loop(momLoopPool, leafMomIdx)
