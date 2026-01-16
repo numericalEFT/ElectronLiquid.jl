@@ -26,6 +26,8 @@ end
 include("parquetAD.jl")
 include("sigmaKW.jl")
 include("sigma_dk.jl")
+include("sigmaKW_Reweight.jl")
+include("sigmadk_Reweight.jl")
 # include("sigmaCuba.jl")
 # include("sigmaVegas.jl")
 

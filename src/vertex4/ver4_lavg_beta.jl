@@ -212,7 +212,7 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 5
+    MaxOrder = 6
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -332,8 +332,8 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 )
     kF = para.kF
     if Proper in filter
-        # root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
         root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper_NoAlli/")
+        # root_dir = joinpath(@__DIR__, "source_codeParquetAD_Proper/")
     end
 
 
