@@ -212,7 +212,12 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 6
+    # println(extT_labels)
+    if Proper in diagpara[1].filter
+        MaxOrder = 6
+    else
+        MaxOrder = 5
+    end
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -256,6 +261,8 @@ function lavg_Clib_beta(para::ParaMC, diagram;
         push!(leafvalues, df[!, names(df)[1]])
     end
 
+    # println(leafvalues)
+
     root = zeros(Float64, maximum(length.(extT_labels)))
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=3)
     K.data[:, 1] .= UEG.getK(kF, dim, 1)
@@ -275,7 +282,6 @@ function lavg_Clib_beta(para::ParaMC, diagram;
     part_index = [findall(x -> x == (ni, 0, 0), partition)[1] for ni in 0:para.order]
     part_list = [findall(x -> x[1] == ni, partition) for ni in 0:para.order]
     max_part_num = maximum([length([p for p in partition if p[1] == partition[i][1]]) for i in part_index])
-
 
     dof = [[diagpara[i].innerLoopNum, diagpara[i].totalTauNum - 1, 1, 1] for i in part_index] # K, T, ExtKidx
     obs = [zeros(ComplexF64, max_part_num, 2, Nl, Nk) for i in part_index]
@@ -339,6 +345,8 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir=root_dir)
+
+    println(diaginfo)
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
