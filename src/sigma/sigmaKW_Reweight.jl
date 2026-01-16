@@ -142,6 +142,7 @@ function measureKW_Reweight(pidx, vars, obs, relative_weight, config) # for the 
         n = ngrid[nidx]
         wsigma = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[iidx]))
         obs[pidx][j, nidx, extidx] += wsigma * factor * inverse_probability
+    end
 end
 
 
