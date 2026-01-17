@@ -319,9 +319,9 @@ function MC_dk_Reweight(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_g
 
     if isnothing(reweight_goal)
         reweight_goal = Float64[]
-        for (order, sOrder, vOrder) in partition
-            reweight_factor = 2.0^(2order + sOrder + vOrder - 2)
-            if (order, sOrder, vOrder) == (1, 0, 0)
+        for o in 1:para.order
+            reweight_factor = 2.0^(2o - 2)
+            if o == 1
                 reweight_factor = 4.0
             end
             push!(reweight_goal, reweight_factor)
