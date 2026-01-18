@@ -332,7 +332,7 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
     channel=:PH,
     partition=UEG.partition(para.order),
-    transferLoop=nothing,
+    transferLoop=nothing, measurefreq=10,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
@@ -345,8 +345,6 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir=root_dir)
-
-    println(diaginfo)
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
@@ -367,7 +365,7 @@ function MC_lavg_beta(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
     ver4, result = Ver4.lavg_Clib_beta(para, diaginfo; chan=channel,
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
-        neighbor=neighbor,
+        neighbor=neighbor, measurefreq=measurefreq,
         root_dir=root_dir, reweight_goal=reweight_goal
     )
 

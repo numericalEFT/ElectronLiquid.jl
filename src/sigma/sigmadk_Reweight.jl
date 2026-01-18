@@ -1,5 +1,5 @@
-function integranddk_Reweight(idx,vars,config)
-    weight = DiagramdkWeight(idx,vars,config)
+function integranddk_Reweight(idx, vars, config)
+    weight = DiagramdkWeight(idx, vars, config)
     return weight
 end
 
@@ -18,7 +18,7 @@ function DiagramdkWeight(pidx, vars, config)
     varK.data[1, 1] = kgrid[extidx]
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
-    
+
     idx = part_index[pidx]
     for (i, lfstat) in enumerate(leafstates[idx])
         lftype, lforders, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
@@ -31,21 +31,7 @@ function DiagramdkWeight(pidx, vars, config)
             ϵ = dot(kq, kq) / (2me) - μ
             dmu_order, dk_order = lforders[1], lforders[3]
             order = dmu_order + dk_order
-            if order == 0
-                leafval[idx][i] = Propagator.green(τ, ϵ, β)
-            elseif order == 1
-                leafval[idx][i] = Spectral.kernelFermiT_dω(τ, ϵ, β) * (-1)^dmu_order
-            elseif order == 2
-                leafval[idx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-            elseif order == 3
-                leafval[idx][i] = Spectral.kernelFermiT_dω3(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-            elseif order == 4
-                leafval[idx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-            elseif order == 5
-                leafval[idx][i] = Spectral.kernelFermiT_dω5(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-            else
-                error("not implemented!")
-            end
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order) * (-1)^dmu_order / factorial(dmu_order)
             if dk_order != 0
                 leafval[idx][i] *= kq[1] / me * momLoopPool[leafMomIdx][1]
             end
@@ -117,36 +103,22 @@ function measuredk_Reweight(pidx, vars, obs, relative_weight, config) # for the 
     inverse_probability = abs(relative_weight) / abs(weight)
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
 
-    for (j,iidx) in enumerate(part_list[pidx])
+    for (j, iidx) in enumerate(part_list[pidx])
         for (i, lfstat) in enumerate(leafstates[iidx])
             lftype, lforders, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
             if lftype == 0
                 continue
-            # elseif isodd(lftype) #fermionic 
+                # elseif isodd(lftype) #fermionic 
             elseif lftype == 1 #fermionic 
                 τ = varT[leafτ_o] - varT[leafτ_i]
                 kq = FrontEnds.loop(momLoopPool, leafMomIdx)
                 ϵ = dot(kq, kq) / (2me) - μ
                 dmu_order, dk_order = lforders[1], lforders[3]
                 order = dmu_order + dk_order
-                if order == 0
-                    leafval[iidx][i] = Propagator.green(τ, ϵ, β)
-                elseif order == 1
-                    leafval[iidx][i] = Spectral.kernelFermiT_dω(τ, ϵ, β) * (-1)^dmu_order
-                elseif order == 2
-                    leafval[iidx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-                elseif order == 3
-                    leafval[iidx][i] = Spectral.kernelFermiT_dω3(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-                elseif order == 4
-                    leafval[iidx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-                elseif order == 5
-                    leafval[iidx][i] = Spectral.kernelFermiT_dω5(τ, ϵ, β) * (-1)^dmu_order / factorial(dmu_order)
-                else
-                    error("not implemented!")
+                leafval[iidx][i] = Propagator.green_derive(τ, ϵ, β, order) * (-1)^dmu_order / factorial(dmu_order)
+                if dk_order != 0
+                    leafval[iidx][i] *= kq[1] / me * momLoopPool[leafMomIdx][1]
                 end
-            if dk_order != 0
-                leafval[iidx][i] *= kq[1] / me * momLoopPool[leafMomIdx][1]
-            end
             elseif lftype == 2 #bosonic
                 kq = FrontEnds.loop(momLoopPool, leafMomIdx)
                 order, dk_order = lforders[2], lforders[3]
@@ -204,6 +176,7 @@ function ParquetAD_dk_Reweight(para::ParaMC, diagram_info;
     integrand::Function=integranddk_Reweight,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     name="sigmadk",
+    measurefreq=5,
     kwargs...
 )
     @assert solver == :mcmc "Only :mcmc is supported for Sigma.ParquetAD_Clib"
@@ -244,7 +217,7 @@ function ParquetAD_dk_Reweight(para::ParaMC, diagram_info;
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
     ExtKidx = MCIntegration.Discrete(1, length(kgrid), alpha=alpha)
 
-    part_index = [findall(x -> x == (ni, 0, 0), partition)[1] for ni in 1:para.order]
+    part_index = [findall(x -> x == (ni, 0, 0, 1), partition)[1] for ni in 1:para.order]
     part_list = [findall(x -> x[1] == ni, partition) for ni in 1:para.order]
     max_part_num = maximum([length([p for p in partition if p[1] == partition[i][1]]) for i in part_index])
 
@@ -259,6 +232,7 @@ function ParquetAD_dk_Reweight(para::ParaMC, diagram_info;
             dof=dof,
             type=ComplexF64, # type of the integrand
             obs=obs,
+            measurefreq=measurefreq,
             userdata=(para, kgrid, ngrid, maxMomNum, extT_labels, leafstates, leafvalues, momLoopPool, root, isLayered2D, partition, part_index, part_list),
             kwargs...
         )
@@ -285,7 +259,7 @@ function ParquetAD_dk_Reweight(para::ParaMC, diagram_info;
         #     datadict[key] = data
         # end
         for k in 1:length(dof)
-            for (i,iidx) in enumerate(part_list[k])
+            for (i, iidx) in enumerate(part_list[k])
                 avg = result.mean[k][i, :, :]
                 std = result.stdev[k][i, :, :]
                 r = measurement.(real.(avg), real.(std))
@@ -305,6 +279,7 @@ function MC_dk_Reweight(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_g
     # spinPolarPara::Float64=0.0, # spin-polarization parameter (n_up - n_down) / (n_up + n_down) ∈ [0,1]
     filename::Union{String,Nothing}=nothing, partition=UEG.partition(para.order),
     isLayered2D=false, # whether to use the screened Coulomb interaction in 2D or not 
+    measurefreq=5,
     root_dir=joinpath(@__DIR__, "source_codeParquetAD/"), verbose=-1
 )
     @assert para.spin == 2 "Only spin-unpolarized case is supported for compiled C library"
@@ -329,10 +304,15 @@ function MC_dk_Reweight(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_g
         push!(reweight_goal, 4.0)
     end
 
-    diaginfo = Sigma.diagram_loadinfo(para, partition, root_dir=root_dir, filename="extvars_sigmadk.jld2")
+    _partition = Vector{NTuple{4,Int}}(undef, length(partition))
+    for (i, p) in enumerate(partition)
+        _partition[i] = (p..., 1)
+    end
+
+    diaginfo = Sigma.diagram_loadinfo(para, _partition, root_dir=root_dir, filename="extvars_sigmadk.jld2")
     sigma, result = Sigma.ParquetAD_dk_Reweight(para, diaginfo;
         root_dir=root_dir, isLayered2D=isLayered2D,
-        neighbor=neighbor, reweight_goal=reweight_goal,
+        neighbor=neighbor, reweight_goal=reweight_goal, measurefreq=measurefreq,
         kgrid=kgrid, ngrid=ngrid, neval=neval, parallel=:nothread, print=verbose)
 
     if isnothing(sigma) == false
@@ -346,7 +326,7 @@ function MC_dk_Reweight(para; kgrid=[para.kF,], ngrid=[0], neval=1e6, reweight_g
                 f[key] = (ngrid, kgrid, sigma)
             end
         end
-        for (ip, key) in enumerate(partition)
+        for (ip, key) in enumerate(_partition)
             println("Group ", key)
             @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
             r, i = real(sigma[key]), imag(sigma[key])
