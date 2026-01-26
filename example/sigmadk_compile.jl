@@ -3,7 +3,7 @@ using FeynmanDiagram
 
 COMPILER = "/opt/intel/oneapi/2025.0/bin/icx"
 diagtype = :sigma
-order = 7
+order = 6
 para = UEG.ParaMC(rs=1.0, beta=25, order=order, isDynamic=false)
 _partition = UEG.partition(order)
 
@@ -13,6 +13,7 @@ for p in _partition
 end
 println(partition)
 FeynGraphs = Diagram.diagram_parquet_noresponse(:sigma, para, partition, [pr -> pr isa FrontEnds.BareGreenId,
+        # FeynGraphs = Diagram.diagram_GV_noresponse(:sigma, para, partition, [pr -> pr isa FrontEnds.BareGreenId,
         pr -> pr isa FrontEnds.BareInteractionId, pr -> pr.extK[1] != 0], optimize_level=1)
 
 Diagram.compileC_ParquetAD_toFiles(FeynGraphs, order + 1, "sigmadk", compiler=COMPILER)
