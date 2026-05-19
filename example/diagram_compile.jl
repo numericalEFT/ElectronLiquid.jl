@@ -12,11 +12,12 @@ using Dates
     end
 end
 
-# diagtype = :vertex3 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
-diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+COMPILER = "/opt/intel/oneapi/2025.0/bin/icx"
+diagtype = :sigma # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
+# diagtype = :vertex4 # :sigma, :vertex3, :vertex4, :freeEnergy, :green, :chargePolar
 order = 6
-filter = [Parquet.NoHartree, Parquet.Proper]
-# filter = [Parquet.NoHartree]
+# filter = [Parquet.NoHartree, Parquet.Proper]
+filter = [Parquet.NoHartree]
 KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
 KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
 Generator = :Parquet
@@ -63,6 +64,6 @@ println("Compiling C library...", now())
 # compile C library
 root_dir = joinpath(@__DIR__, "source_codeParquetAD")
 diagname = String(diagtype)
-Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler="icx")
+Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), compiler=COMPILER)
 # Diagram.compileC_ParquetAD_toFiles(FeynGraphs, totalMomNum(order, diagtype), String(diagtype), root_dir = root_dir,
 #                                     c_source=joinpath(root_dir,"func_$(diagname)_GV.c"), lib_name = "$(diagname)_GV", compiler="icx")

@@ -169,10 +169,10 @@ function diagram_loadinfo(paramc::ParaMC, _partition::Vector{T};
     return (_partition, diagpara, extT_labels)
 end
 
-include("source_codeParquetAD/Cwrapper_sigma_ParquetAD.jl")
-include("source_codeParquetAD/Cwrapper_sigmadk_ParquetAD.jl")
-# include("source_codeGV/Cwrapper_sigmaGV.jl")
-# include("source_codeGV/Cwrapper_sigmaParquetAD_dk.jl")
+# include("source_codeParquetAD/Cwrapper_sigma_ParquetAD.jl")
+# include("source_codeParquetAD/Cwrapper_sigmadk_ParquetAD.jl")
+include("source_codeGV/Cwrapper_sigma_GV.jl")
+include("source_codeGV/Cwrapper_sigmadk_GV.jl")
 
 const evalfuncParquetAD_sigma_map = Dict{Tuple{Int,Int,Int},Function}()
 const evalfuncParquetAD_sigmadk_map = Dict{Tuple{Int,Int,Int,Int},Function}()
