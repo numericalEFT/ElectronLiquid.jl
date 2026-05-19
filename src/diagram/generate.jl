@@ -104,16 +104,16 @@ function diagdict_parquet(diagtype::Union{DiagramType,Symbol}, _partition::Vecto
         # Max_GD_o = maximum([p[2] for p in partition_order])
         # Max_ID_o = maximum([p[3] for p in partition_order])
         para = diagPara(diagtype, isDynamic, order, spin, filter, transferLoop)
-        graph_df = Parquet.build(para, extK; channels=channels)
-        # optimize!(graph_df.diagram, level=optimize_level)
-        optimize!(graph_df.diagram)
+        diagrams = _parquet_diagrams(para, extK, channels)
+        # optimize!(diagrams, level=optimize_level)
+        optimize!(diagrams)
 
         renormalization_orders = Int[]
         for i in 1:deriv_num
             push!(renormalization_orders, maximum([p[i+1] for p in partition_order]))
         end
         # renormalization_orders = [Max_GD_o, Max_ID_o, extra_deriv_orders...]
-        dict_graph_order = taylorAD(graph_df.diagram, renormalization_orders, leaf_dep_funcs)
+        dict_graph_order = taylorAD(diagrams, renormalization_orders, leaf_dep_funcs)
         for key in keys(dict_graph_order)
             p = (order, key...)
             if p in _partition
@@ -225,5 +225,14 @@ function _diagtype(type::Symbol)
         return Parquet.Ver4Diag
     else
         error("$type is not implemented")
+    end
+end
+
+function _parquet_diagrams(para::DiagPara, extK, channels)
+    if para.type == GreenDiag
+        graph = isnothing(extK) ? Parquet.green(para) : Parquet.green(para, extK)
+        return isnothing(graph) ? Graph[] : [graph]
+    else
+        return Parquet.build(para, extK; channels=channels).diagram
     end
 end

@@ -51,9 +51,9 @@ include("./diagram/diagram.jl")
 using .Diagram
 export Diagram
 
-# include("./green/green.jl")
-# using .Green
-# export Green
+include("./green/green.jl")
+using .Green
+export Green
 
 include("./sigma/sigma.jl")
 using .Sigma
