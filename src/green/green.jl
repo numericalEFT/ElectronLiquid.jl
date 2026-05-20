@@ -89,7 +89,7 @@ function _result_dict(partition, result, transform)
 end
 
 function _save_data(filename::Union{String,Nothing}, para::ParaMC, grid, kgrid, data)
-    isnothing(filename) && return
+    (isnothing(filename) || isnothing(data)) && return
     jldopen(filename, "a+") do f
         key = "$(UEG.short(para))"
         if haskey(f, key)
@@ -99,6 +99,55 @@ function _save_data(filename::Union{String,Nothing}, para::ParaMC, grid, kgrid, 
         f[key] = (grid, kgrid, data)
     end
 end
+
+_k_over_kF(k::Number, kF) = k / kF
+_k_over_kF(k, kF) = k[1] / kF
+
+function _print_real_data(io::IO, para::ParaMC, partition, grid, kgrid, data, grid_label)
+    kF = para.kF
+    for key in partition
+        println(io, "Group ", key)
+        @printf(io, "%10s  %10s   %10s \n", "q/kF", "avg", "err")
+        r = data[key]
+        for (ig, g) in enumerate(grid)
+            println(io, "$grid_label = $g")
+            for (iq, q) in enumerate(kgrid)
+                @printf(io, "%10.6f  %10.6f ± %10.6f\n",
+                    _k_over_kF(q, kF), r[ig, iq].val, r[ig, iq].err)
+            end
+        end
+    end
+end
+
+function _print_complex_data(io::IO, para::ParaMC, partition, grid, kgrid, data, grid_label)
+    kF = para.kF
+    for key in partition
+        println(io, "Group ", key)
+        @printf(io, "%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
+        r, i = real(data[key]), imag(data[key])
+        for (ig, g) in enumerate(grid)
+            println(io, "$grid_label = $g")
+            for (iq, q) in enumerate(kgrid)
+                @printf(io, "%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n",
+                    _k_over_kF(q, kF), r[ig, iq].val, r[ig, iq].err, i[ig, iq].val, i[ig, iq].err)
+            end
+        end
+    end
+end
+
+function _print_data(io::IO, para::ParaMC, partition, grid, kgrid, data, kind::Symbol)
+    isnothing(data) && return
+    if kind == :KT
+        _print_real_data(io, para, partition, grid, kgrid, data, "t")
+    elseif kind == :KW
+        _print_complex_data(io, para, partition, grid, kgrid, data, "n")
+    else
+        error("unsupported Green data kind: $kind")
+    end
+end
+
+_print_data(para::ParaMC, partition, grid, kgrid, data, kind::Symbol) =
+    _print_data(stdout, para, partition, grid, kgrid, data, kind)
 
 include("greenKT.jl")
 include("greenKW.jl")
@@ -121,6 +170,7 @@ function MC(para::ParaMC;
         kgrid=kgrid, tgrid=tgrid, neval=neval, print=verbose,
         isLayered2D=isLayered2D, kwargs...)
     _save_data(filename, para, tgrid, kgrid, data)
+    _print_data(para, partition, tgrid, kgrid, data, :KT)
     return data, result
 end
 
@@ -142,6 +192,7 @@ function MC_KW(para::ParaMC;
         kgrid=kgrid, ngrid=ngrid, neval=neval, print=verbose,
         isLayered2D=isLayered2D, kwargs...)
     _save_data(filename, para, ngrid, kgrid, data)
+    _print_data(para, partition, ngrid, kgrid, data, :KW)
     return data, result
 end
 
