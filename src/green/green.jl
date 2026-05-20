@@ -1,5 +1,6 @@
 module Green
 
+using JLD2
 using Printf, LinearAlgebra
 using ..CompositeGrids
 using ..ElectronGas
@@ -7,68 +8,19 @@ using ..MCIntegration
 using ..Lehmann
 
 using ..FeynmanDiagram
+import ..FeynmanDiagram.FrontEnds: Filter, NoHartree
+import ..FeynmanDiagram.Parquet: DiagPara, GreenDiag
 using ..Measurements
 
 using ..UEG
 using ..Propagator
-import ..ExprTreeF64
-
-function diagPara(para::ParaMC, order::Int, filter)
-    inter = [FeynmanDiagram.Interaction(ChargeCharge, para.isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
-    DiagParaF64(
-        type=GreenDiag,
-        innerLoopNum=order,
-        hasTau=true,
-        spin=para.spin,
-        firstLoopIdx=2,
-        interaction=inter,
-        filter=filter
-    )
-end
+using ..Diagram
 
 function diagram(paramc::ParaMC, _partition::Vector{T};
-    filter=[
-        FeynmanDiagram.NoHartree,
-        # Girreducible,
-        # Proper,   #one interaction irreduble diagrams or not
-        # NoBubble, #allow the bubble diagram or not
-    ]
+    filter=[NoHartree], extK=nothing, optimize_level=1
 ) where {T}
-    println("Build the sigma diagrams into an expression tree ...")
-    println("Diagram set: ", _partition)
-
-    dim = paramc.dim
-    diag = Vector{ExprTreeF64}()
-    diagpara = Vector{DiagParaF64}()
-    partition = Vector{T}()
-    for p in _partition
-        para = diagPara(paramc, p[1], filter)
-        d = Parquet.green(para)
-        dp = DiagTree.derivative([d,], BareGreenId, p[2], index=1)
-        dpp = DiagTree.derivative(dp, BareInteractionId, p[3], index=2)
-
-        # the Taylor expansion should be d^n f(x) / dx^n / n!, so there is a factor of 1/n! for each derivative
-        for d in dpp
-            d.factor *= 1 / factorial(p[2]) / factorial(p[3])
-        end
-
-        if isempty(dpp) == false
-            if paramc.isFock && (p != (1, 0, 0)) # the Fock diagram itself should not be removed
-                DiagTree.removeHartreeFock!(dpp)
-            end
-            push!(diagpara, para)
-            push!(partition, p)
-            push!(diag, ExprTree.build(dpp, dim))
-        else
-            @warn("partition $p doesn't have any diagram. It will be ignored.")
-        end
-    end
-
-    root = [d.root for d in diag] #get the list of root nodes
-    #assign the external Tau to the corresponding diagrams
-    #diag: vector of ExprTreeF64
-    result = (partition, diagpara, diag, root)
-    return result
+    return Diagram.diagram_parquet_noresponse(:green, paramc, _partition;
+        filter=filter, extK=extK, optimize_level=optimize_level)
 end
 
 @inline function phase(varT, extT, l, β)
@@ -76,9 +28,172 @@ end
     return exp(1im * π * (2l + 1) / β * (tout - tin))
 end
 
+function default_partition(para::ParaMC)
+    return [p for p in UEG.partition(para.order, offset=0) if !(p[1] == 0 && p[3] > 0)]
+end
+
+function _prepare_parquetad(para::ParaMC, diagram)
+    partition, diagpara, FeynGraphs, extT_labels = diagram
+    maxMomNum = maximum(p[1] for p in partition) + 1
+
+    funcGraphs! = Dict{Int,Function}()
+    leaf_maps = Vector{Dict{Int,Graph}}()
+    for (i, key) in enumerate(partition)
+        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
+        push!(leaf_maps, leafmap)
+    end
+
+    leafStat, loopbasis = FeynmanDiagram.leafstates(leaf_maps, maxMomNum)
+    momLoopPool = FrontEnds.LoopPool(:K, para.dim, loopbasis)
+    root = zeros(Float64, maximum(length.(extT_labels)))
+
+    return maxMomNum, funcGraphs!, leafStat, leaf_maps, momLoopPool, root
+end
+
+function _eval_leafvalues!(idx, varK, varT, para::ParaMC, leafStat, leaf_maps, momLoopPool, isLayered2D::Bool)
+    leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = leafStat
+    dim, β, me, μ = para.dim, para.β, para.me, para.μ
+    tau_num = para.isDynamic ? 2 : 1
+
+    for (i, lftype) in enumerate(leafType[idx])
+        if lftype == 0
+            continue
+        elseif lftype == 1
+            τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            ϵ = dot(kq, kq) / (2me) - μ
+            leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, leafOrders[idx][i][1])
+        elseif lftype == 2
+            diagid = leaf_maps[idx][i].properties
+            τ1, τ2 = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
+            kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            leafval[idx][i] = Propagator.interaction_derive(
+                τ1, τ2, kq, para, leafOrders[idx][i];
+                idtype=diagid.type, tau_num=tau_num, isLayered=isLayered2D,
+            )
+        else
+            error("this leaftype $lftype not implemented!")
+        end
+    end
+
+    return leafval[idx]
+end
+
+function _result_dict(partition, result, transform)
+    datadict = Dict{eltype(partition),Any}()
+    for (o, key) in enumerate(partition)
+        avg, std = result.mean[o], result.stdev[o]
+        datadict[key] = transform(avg, std)
+    end
+    return datadict
+end
+
+function _save_data(filename::Union{String,Nothing}, para::ParaMC, grid, kgrid, data)
+    (isnothing(filename) || isnothing(data)) && return
+    jldopen(filename, "a+") do f
+        key = "$(UEG.short(para))"
+        if haskey(f, key)
+            @warn("replacing existing data for $key")
+            delete!(f, key)
+        end
+        f[key] = (grid, kgrid, data)
+    end
+end
+
+_k_over_kF(k::Number, kF) = k / kF
+_k_over_kF(k, kF) = k[1] / kF
+
+function _print_real_data(io::IO, para::ParaMC, partition, grid, kgrid, data, grid_label)
+    kF = para.kF
+    for key in partition
+        println(io, "Group ", key)
+        @printf(io, "%10s  %10s   %10s \n", "q/kF", "avg", "err")
+        r = data[key]
+        for (ig, g) in enumerate(grid)
+            println(io, "$grid_label = $g")
+            for (iq, q) in enumerate(kgrid)
+                @printf(io, "%10.6f  %10.6f ± %10.6f\n",
+                    _k_over_kF(q, kF), r[ig, iq].val, r[ig, iq].err)
+            end
+        end
+    end
+end
+
+function _print_complex_data(io::IO, para::ParaMC, partition, grid, kgrid, data, grid_label)
+    kF = para.kF
+    for key in partition
+        println(io, "Group ", key)
+        @printf(io, "%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
+        r, i = real(data[key]), imag(data[key])
+        for (ig, g) in enumerate(grid)
+            println(io, "$grid_label = $g")
+            for (iq, q) in enumerate(kgrid)
+                @printf(io, "%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n",
+                    _k_over_kF(q, kF), r[ig, iq].val, r[ig, iq].err, i[ig, iq].val, i[ig, iq].err)
+            end
+        end
+    end
+end
+
+function _print_data(io::IO, para::ParaMC, partition, grid, kgrid, data, kind::Symbol)
+    isnothing(data) && return
+    if kind == :KT
+        _print_real_data(io, para, partition, grid, kgrid, data, "t")
+    elseif kind == :KW
+        _print_complex_data(io, para, partition, grid, kgrid, data, "n")
+    else
+        error("unsupported Green data kind: $kind")
+    end
+end
+
+_print_data(para::ParaMC, partition, grid, kgrid, data, kind::Symbol) =
+    _print_data(stdout, para, partition, grid, kgrid, data, kind)
+
 include("greenKT.jl")
-include("densityKT.jl")
-# include("sigmaCuba.jl")
-# include("sigmaVegas.jl")
+include("greenKW.jl")
+
+function MC(para::ParaMC;
+    kgrid=[para.kF],
+    tgrid=[para.β - 1e-8],
+    neval=1e6,
+    filename::Union{String,Nothing}=nothing,
+    partition=default_partition(para),
+    isLayered2D=false,
+    filter=[NoHartree],
+    extK=nothing,
+    optimize_level=1,
+    verbose=-1,
+    kwargs...
+)
+    diagram_info = diagram(para, partition; filter=filter, extK=extK, optimize_level=optimize_level)
+    data, result = KT(para, diagram_info;
+        kgrid=kgrid, tgrid=tgrid, neval=neval, print=verbose,
+        isLayered2D=isLayered2D, kwargs...)
+    _save_data(filename, para, tgrid, kgrid, data)
+    _print_data(para, partition, tgrid, kgrid, data, :KT)
+    return data, result
+end
+
+function MC_KW(para::ParaMC;
+    kgrid=[para.kF],
+    ngrid=[0],
+    neval=1e6,
+    filename::Union{String,Nothing}=nothing,
+    partition=default_partition(para),
+    isLayered2D=false,
+    filter=[NoHartree],
+    extK=nothing,
+    optimize_level=1,
+    verbose=-1,
+    kwargs...
+)
+    diagram_info = diagram(para, partition; filter=filter, extK=extK, optimize_level=optimize_level)
+    data, result = KW(para, diagram_info;
+        kgrid=kgrid, ngrid=ngrid, neval=neval, print=verbose,
+        isLayered2D=isLayered2D, kwargs...)
+    _save_data(filename, para, ngrid, kgrid, data)
+    _print_data(para, partition, ngrid, kgrid, data, :KW)
+    return data, result
+end
 
 end

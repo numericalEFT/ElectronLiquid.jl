@@ -22,29 +22,18 @@ const parafileName = "para.csv" # ROOT/common/para.csv
 Hard-coded counterterm partitions for the self-energy in the form (n_loop, n_μ, n_λ).
 """
 function partition(order::Int)
-    # normal order, G order, W order
-    # NOTE: partitions of the form (0, nμ, nλ) vanish for Σ diagrams,
-    #       since there is no interaction line at zeroth loop order
+    # n1: normal order (>= 1)
+    # n2: G order (>= 0)
+    # n3: W order (>= 0)
+    # constrain：n1 + n2 + n3 <= order
     par = [
-        # order 1
-        (1, 0, 0),
-        # order 2
-        (2, 0, 0), (1, 1, 0), (1, 0, 1),
-        # order 3
-        (3, 0, 0), (2, 1, 0), (2, 0, 1),
-        (1, 1, 1), (1, 2, 0), (1, 0, 2),
-        # order 4
-        (4, 0, 0), (3, 1, 0), (3, 0, 1), (2, 1, 1), (2, 2, 0),
-        (2, 0, 2), (1, 3, 0), (1, 0, 3), (1, 2, 1), (1, 1, 2),
-        #order 5
-        (5, 0, 0), (4, 1, 0), (4, 0, 1), (3, 2, 0), (3, 1, 1), (3, 0, 2), (2, 3, 0), (2, 2, 1),
-        (2, 1, 2), (2, 0, 3), (1, 4, 0), (1, 3, 1), (1, 2, 2), (1, 1, 3), (1, 0, 4),
-        #order 6
-        (6, 0, 0), (5, 1, 0), (5, 0, 1), (4, 2, 0), (4, 1, 1), (4, 0, 2), (3, 3, 0), (3, 2, 1),
-        (3, 1, 2), (3, 0, 3), (2, 4, 0), (2, 3, 1), (2, 2, 2), (2, 1, 3), (2, 0, 4), (1, 5, 0),
-        (1, 4, 1), (1, 3, 2), (1, 2, 3), (1, 1, 4), (1, 0, 5),
+        (n1, n2, n3)
+        for n1 in 1:order
+        for n2 in 0:(order-n1)
+        for n3 in 0:(order-n1-n2)
     ]
-    return sort([p for p in par if p[1] + p[2] + p[3] <= order])
+
+    return sort(par, by=x -> (sum(x), x[1], x[2]))
 end
 
 """
@@ -113,7 +102,7 @@ By definition, the chemical potential renormalization is defined as
 function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
     # _partition = sort([k for k in keys(rdata)])
     # println(_partition)
-    @assert order <= 6 "Order $order hasn't been implemented!"
+    @assert order <= 7 "Order $order hasn't been implemented!"
     @assert length(δμ) + 1 >= order
     data = mergeInteraction(data)
     d = data
@@ -178,6 +167,32 @@ function chemicalpotential_renormalization(order, data, δμ; offset::Int=0)
             d[(2 + offset, 1)] .* δμ[4] +
             d[(1 + offset, 2)] .* (2 * δμ[1] .* δμ[4] + 2 * δμ[2] .* δμ[3]) +
             d[(1 + offset, 1)] .* δμ[5]
+    end
+    if order >= 7
+        # Σ6 = Σ60 + Σ51*δμ1 + ...
+        z[7] =
+            d[(7 + offset, 0)] +
+            d[(6 + offset, 1)] .* δμ[1] +
+            d[(5 + offset, 2)] .* δμ[1] .^ 2 +
+            d[(4 + offset, 3)] .* δμ[1] .^ 3 +
+            d[(3 + offset, 4)] .* δμ[1] .^ 4 +
+            d[(2 + offset, 5)] .* δμ[1] .^ 5 +
+            d[(1 + offset, 6)] .* δμ[1] .^ 6 +
+            d[(5 + offset, 1)] .* δμ[2] +
+            d[(4 + offset, 2)] .* 2 .* δμ[1] .* δμ[2] +
+            d[(3 + offset, 3)] .* 3 .* δμ[1] .^ 2 .* δμ[2] +
+            d[(2 + offset, 4)] .* 4 .* δμ[1] .^ 3 .* δμ[2] +
+            d[(1 + offset, 5)] .* 5 .* δμ[1] .^ 4 .* δμ[2] +
+            d[(4 + offset, 1)] .* δμ[3] +
+            d[(3 + offset, 2)] .* (δμ[2] .^ 2 + 2 * δμ[1] .* δμ[3]) +
+            d[(2 + offset, 3)] .* (3 * δμ[2] .^ 2 .* δμ[1] + 3 * δμ[1] .^ 2 .* δμ[3]) +
+            d[(1 + offset, 4)] .* (4 * δμ[1] .^ 3 .* δμ[3] + 6 * δμ[1] .^ 2 .* δμ[2] .^ 2) +
+            d[(3 + offset, 1)] .* δμ[4] +
+            d[(2 + offset, 2)] .* (2 * δμ[1] .* δμ[4] + 2 * δμ[2] .* δμ[3]) +
+            d[(1 + offset, 3)] .* (3 * δμ[1] .^2 .* δμ[4] + 6 * δμ[2] .* δμ[3] .* δμ[1] + δμ[2] .^ 3 ) +
+            d[(2 + offset, 1)] .* δμ[5] +
+            d[(1 + offset, 2)] .* (2 * δμ[2] .* δμ[4] + δμ[3] .^ 2 + 2 * δμ[1] .* δμ[5]) +
+            d[(1 + offset, 1)] .* δμ[6]
     end
     return z
 end
@@ -332,6 +347,12 @@ function _inverse(z::AbstractVector{T}) where {T}
                 3z[1] .^ 2 .* z[4] - 6z[1] .* z[2] .* z[3] - z[2] .^ 3 + z[3] .^ 2 + 2z[2] .* z[4] + 2z[1] .* z[5] - z[6]
     end
     if order >= 7
+        zi[7] = -z[1] .^ 7 + 6z[1] .^ 5 .* z[2] - 5z[1] .^ 4 .* z[3] - 10z[1] .^ 3 .* z[2] .^ 2 +
+                4z[1] .^ 3 .* z[4] + 12z[1] .^ 2 .* z[2] .* z[3] - 3z[1] .^ 2 .* z[5] +
+                4z[1] .* z[2] .^ 3 - 6z[1] .* z[2] .* z[4] - 3z[1] .* z[3] .^ 2 +
+                2z[1] .* z[6] - 3z[2] .^ 2 .* z[3] + 2z[2] .* z[5] + 2z[3] .* z[4] - z[7]
+    end
+    if order >= 8
         error("order must be <= 6")
     end
     return zi

@@ -98,12 +98,13 @@ function lavg_Clib(para::ParaMC, diagram;
     config=nothing,
     solver=:mcmc,
     integrand::Function=integrand_lavg_Clib,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     kwargs...
 )
     partition, diagpara, extT_labels, spin_conventions = diagram
-    MaxOrder = 5
     filter = diagpara[1].filter
+    MaxOrder = 5
+    
 
     # if para.isDynamic
     #     root_dir = joinpath(@__DIR__, "source_codeParquetAD/dynamic/")
@@ -205,20 +206,23 @@ end
 function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], n=[-1, 0, 0, -1], l=[0,],
     neval=1e6, filename::Union{String,Nothing}=nothing, reweight_goal=nothing,
     filter=[NoHartree],    # filter=[NoHartree, NoBubble, Proper],
-    # channels=[PHr, PHEr, PPr, Alli],
-    partition=UEG.partition(para.order),
+    channel=:PH,
+    partition=UEG.partition(para.order), neighbor = UEG.neighbor(partition),
     transferLoop=nothing,
-    root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/"),
+    root_dir=joinpath(@__DIR__, "source_codeParquetAD/"),
     verbose=0
 )
     kF = para.kF
+
+    if Proper in filter
+        root_dir=joinpath(@__DIR__, "source_codeParquetAD_Proper/")
+    end
 
     diaginfo = Ver4.diagram_loadinfo(para, partition,
         filter=filter, transferLoop=transferLoop, root_dir = root_dir)
 
     partition = diaginfo[1] # diagram like (1, 1, 0) is absent, so the partition will be modified
     println(partition)
-    neighbor = UEG.neighbor(partition)
     
 
     if isnothing(reweight_goal)
@@ -230,7 +234,7 @@ function MC_lavg_Clib(para; kamp=[para.kF,], kamp2=kamp, q=[0.0 for k in kamp], 
         push!(reweight_goal, 1.0)
     end
 
-    ver4, result = Ver4.lavg_Clib(para, diaginfo;
+    ver4, result = Ver4.lavg_Clib(para, diaginfo; chan = channel,
         kamp=kamp, kamp2=kamp2, q=q, n=n, l=l,
         neval=neval, print=verbose,
         neighbor=neighbor,

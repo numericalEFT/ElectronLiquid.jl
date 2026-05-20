@@ -33,7 +33,6 @@ function compileC_ParquetAD_toFiles(FeynGraphs, maxMomNum::Int, diagname::String
     leafinfo_toFile(partition, leaf_maps, maxMomNum, root_dir, diagname)
 
     ### save the external tau variables' indexes and spin channel to a jld2 file
-
     if has_extT
         if noresponse
             extvar_toFile(partition, root_dir, diagname, extT_labels)

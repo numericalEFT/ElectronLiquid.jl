@@ -23,6 +23,8 @@ function green_derive(τ, ϵ, β, order)
         result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
     elseif order == 5
         result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
+    elseif order == 6
+        result = Spectral.kernelFermiT_dω6(τ, ϵ, β) / 720.0
     else
         error("not implemented!")
         # result = Propagator.green(τ, ϵ, β) * 0.0

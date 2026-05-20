@@ -2,14 +2,21 @@ function integrandKW(idx, vars, config)
     varK, varT, varN, ExtKidx = vars
     para, kgrid, ngrid, MaxLoopNum, extT_labels = config.userdata[1:5]
     leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafMomIdx = config.userdata[6]
-    momLoopPool, root = config.userdata[7:8]
-    graphfuncs! = config.userdata[9][idx]
+    leaf_maps, momLoopPool, root = config.userdata[7:9]
+    graphfuncs! = config.userdata[10][idx]
     isLayered2D = config.userdata[end]
     dim, β, me, λ, μ, e0, ϵ0 = para.dim, para.β, para.me, para.mass2, para.μ, para.e0, para.ϵ0
 
     extidx = ExtKidx[1]
     varK.data[1, 1] = kgrid[extidx]
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    # test
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
+
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -20,11 +27,15 @@ function integrandKW(idx, vars, config)
             order = leafOrders[idx][i][1]
             leafval[idx][i] = Propagator.green_derive(τ, ϵ, β, order)
         elseif lftype == 2 #bosonic 
+            diagid = leaf_maps[idx][i].properties
             kq = FrontEnds.loop(momLoopPool, leafMomIdx[idx][i])
+            τ2, τ1 = varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]]
             order = leafOrders[idx][i][2]
+            idorder = leafOrders[idx][i]
             if dim == 3
-                invK = 1.0 / (dot(kq, kq) + λ)
-                leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
+                leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
+                # invK = 1.0 / (dot(kq, kq) + λ)
+                # leafval[idx][i] = e0^2 / ϵ0 * invK * (λ * invK)^order
             elseif dim == 2
                 if isLayered2D == false
                     invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
@@ -69,6 +80,12 @@ function integrandKW_Clib(idx, vars, config)
     varK.data[1, 1] = kgrid[extidx]
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:MaxLoopNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
+    
     for (i, lfstat) in enumerate(leafstates)
         lftype, lforders, leafτ_i, leafτ_o, leafMomIdx = lfstat.type, lfstat.orders, lfstat.inTau_idx, lfstat.outTau_idx, lfstat.loop_idx
         if lftype == 0

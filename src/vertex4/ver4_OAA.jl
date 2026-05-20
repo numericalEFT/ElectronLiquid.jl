@@ -43,6 +43,11 @@ function diagram_weight_OAA(idx, var, config)
     end
 
     FrontEnds.update(momLoopPool, varK.data[:, 1:maxMomNum])
+    if para.isDynamic
+        tau_num = 2
+    else
+        tau_num = 1
+    end
 
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
@@ -61,7 +66,7 @@ function diagram_weight_OAA(idx, var, config)
             # println(kq, (k1, k2, x))
             # @assert dot(kq, kq) ≈ (k1^2 + k2^2 - 2k1 * k2 * x) "$(dot(kq, kq)) != $(k1^2 + k2^2 - 2k1 * k2 * x)"
             idorder = leafOrders[idx][i]
-            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, param, idorder; idtype=diagid.type, tau_num=interactionTauNum(diagid.type))
+            leafval[idx][i] = Propagator.interaction_derive(τ1, τ2, kq, para, idorder; idtype=diagid.type, tau_num=tau_num)
         else
             error("this leaftype $lftype not implemented!")
         end
